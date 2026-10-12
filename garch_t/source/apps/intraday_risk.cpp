@@ -159,7 +159,7 @@ bool resolve_paths(Options& o) {
         fs::path d(o.data);
         if (!d.has_filename()) d = d.parent_path();
         std::string name = d.filename().string();
-        if (name.empty() || name == "." || name == "..") name = "resultado";
+        if (name.empty() || name == "." || name == "..") name = "output";
         if (!default_prices) {  // another price file of the same dataset: its own results folder
             std::string stem = fs::path(o.prices).stem().string();
             if (stem.rfind("prices_15m_", 0) == 0) stem = stem.substr(11);
@@ -234,7 +234,7 @@ int main(int argc, char** argv) {
     try {
         std::filesystem::create_directories(opt.out);
         g_report = open_out(opt.out + "/report.txt");
-        say("dataset: %s\nresults: %s\n", opt.data.c_str(), opt.out.c_str());
+        say("dataset: %s\nresults: %s\n", paths::display(opt.data).c_str(), paths::display(opt.out).c_str());
         const std::vector<double>& confs = opt.replay.engine.confidences;
 
         // ---------------------------------------------------------------- inputs
@@ -284,7 +284,7 @@ int main(int argc, char** argv) {
             opt.replay.window_days = std::clamp(sessions / 2, 20, 60);
         }
         say("loaded %zu bars x %zu assets from %s in %.2f s (rows %zu, duplicates %zu, bad %zu, unknown %zu)\n",
-                    in.bars.num_bars(), n, opt.prices.c_str(), load_s, in.bars.rows_read, in.bars.duplicates,
+                    in.bars.num_bars(), n, paths::display(opt.prices).c_str(), load_s, in.bars.rows_read, in.bars.duplicates,
                     in.bars.bad_rows, in.bars.unknown_tickers);
         size_t missing = 0;
         for (double v : in.bars.close) missing += !(std::isfinite(v) && v > 0);
@@ -516,7 +516,7 @@ int main(int argc, char** argv) {
                     "wall %.3f s\n",
                     res.bars, res.forecasts.size(), res.unscored, res.unscored_overnight, res.fills_applied,
                     res.fills_unknown, res.off_grid, res.engine_seconds, res.wall_seconds);
-        say("\noutputs written to %s (report: report.txt)\n", opt.out.c_str());
+        say("\noutputs written to %s (report: report.txt)\n", paths::display(opt.out).c_str());
     } catch (const std::exception& e) {
         std::fprintf(stderr, "error: %s\n", e.what());
         if (g_report) std::fprintf(g_report, "error: %s\n", e.what());
