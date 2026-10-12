@@ -1,6 +1,6 @@
-dataset: C:\Users\User\Documents\Poli\TCC\data\b3_real
-results: C:\Users\User\Documents\Poli\TCC\garch_t\results\b3_real
-loaded 1669 bars x 15 assets from C:\Users\User\Documents\Poli\TCC\data\b3_real\prices_15m.csv in 0.13 s (rows 25028, duplicates 0, bad 0, unknown 0)
+dataset: data/b3_real
+results: garch_t/results/b3_real
+loaded 1669 bars x 15 assets from data/b3_real/prices_15m.csv in 0.14 s (rows 25028, duplicates 0, bad 0, unknown 0)
   missing/invalid closes: 7 of 25035 cells
 session: first bar closes 10:15, 15-minute bars, 28 bars/day; 60 sessions, window 30 days (automatic: half of the sessions, at most 60)
 
@@ -51,8 +51,8 @@ GARCH(1,1)-t models at the last refit (deseasonalized returns); EWMA correlation
 Last forecast (2026-10-09 17:00:00 -> next bar): sigma 36886, VaR99 101757, ES99 129442, nu_p 8.90
 
 Performance (15 assets, 8 threads for refits)
-  per-bar update (fills + filters + correlations + VaR/ES): p50 1.90 us, p95 2.60 us, p99 3.40 us, max 15.00 us
-  end-of-day refit (GARCH fits + correlation dynamics + tails + overnight): p50 47.0 ms, p95 74.3 ms, max 84.5 ms
-  replay: 1669 bars, 840 forecasts scored (0 unscored: target bar never printed; 0 overnight unscored: late opening), 0 fills applied (0 unknown), 0 off-grid bars, engine 1.558 s, wall 1.562 s
+  per-bar update (fills + filters + correlations + VaR/ES): p50 1.90 us, p95 2.60 us, p99 14.90 us, max 17.00 us
+  end-of-day refit (GARCH fits + correlation dynamics + tails + overnight): p50 38.9 ms, p95 69.1 ms, max 77.7 ms
+  replay: 1669 bars, 840 forecasts scored (0 unscored: target bar never printed; 0 overnight unscored: late opening), 0 fills applied (0 unknown), 0 off-grid bars, engine 1.341 s, wall 1.345 s
 
-outputs written to C:\Users\User\Documents\Poli\TCC\garch_t\results\b3_real (report: report.txt)
+outputs written to garch_t/results/b3_real (report: report.txt)

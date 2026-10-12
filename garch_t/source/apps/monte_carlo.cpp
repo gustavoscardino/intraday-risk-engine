@@ -281,7 +281,7 @@ int main(int argc, char** argv) {
     say("Average portfolio nu %.2f; correlation dynamics a %.4f, b %.4f (EWMA: lambda = b)\n", nu_sum / ok_runs,
                 a_sum / ok_runs, b_sum / ok_runs);
     if (!f) return 1;
-    say("Summary written to %s/monte_carlo_summary.csv (report: report.txt)\n", out.c_str());
+    say("Summary written to %s/monte_carlo_summary.csv (report: report.txt)\n", paths::display(out).c_str());
     if (g_report) std::fclose(g_report);
     if (failed > 0) {  // the pooled numbers above cover the successful markets only
         std::fprintf(stderr, "error: %d of %d markets failed (see above)\n", failed, seeds);

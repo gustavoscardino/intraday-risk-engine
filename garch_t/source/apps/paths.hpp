@@ -86,6 +86,16 @@ inline std::string resolve_dataset(const std::string& arg) {
 // Default output folder: garch_t/results/<name>.
 inline std::string results_dir(const std::string& name) { return (project_root() / "results" / name).string(); }
 
+// A path as shown in reports: relative to the folder that holds garch_t and data
+// ("data/synthetic", "garch_t/results/synthetic"), so reports do not depend on the machine.
+inline std::string display(const std::string& p) {
+    std::error_code ec;
+    const fs::path base = project_root().parent_path();
+    const fs::path rel = fs::relative(fs::absolute(p, ec), base, ec);
+    if (ec || rel.empty() || *rel.begin() == "..") return p;
+    return rel.generic_string();
+}
+
 // While alive, the Windows console shows UTF-8 text (paths with accents); restored afterwards.
 struct Utf8Console {
 #if defined(_WIN32)

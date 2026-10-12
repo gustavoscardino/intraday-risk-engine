@@ -1,6 +1,6 @@
-dataset: C:\Users\User\Documents\Poli\TCC\data\synthetic
-results: C:\Users\User\Documents\Poli\TCC\garch_t\results\synthetic_degraded
-loaded 4198 bars x 15 assets from ../data/synthetic/prices_15m_degraded.csv in 0.35 s (rows 62856, duplicates 171, bad 0, unknown 0)
+dataset: data/synthetic
+results: garch_t/results/synthetic_degraded
+loaded 4198 bars x 15 assets from data/synthetic/prices_15m_degraded.csv in 0.39 s (rows 62856, duplicates 171, bad 0, unknown 0)
   missing/invalid closes: 285 of 62970 cells
 session: first bar closes 10:15, 15-minute bars, 28 bars/day; 150 sessions, window 60 days (automatic: half of the sessions, at most 60)
 
@@ -57,9 +57,9 @@ GARCH(1,1)-t models at the last refit (deseasonalized returns); EWMA correlation
 Last forecast (2026-10-02 17:00:00 -> next bar): sigma 35492, VaR99 98535, ES99 127299, nu_p 5.82
 
 Performance (15 assets, 8 threads for refits)
-  per-bar update (fills + filters + correlations + VaR/ES): p50 4.10 us, p95 14.17 us, p99 20.55 us, max 1554.30 us
-  end-of-day refit (GARCH fits + correlation dynamics + tails + overnight): p50 45.9 ms, p95 68.0 ms, max 121.9 ms
-  option book Monte Carlo (10000 scenarios, full revaluation): p50 6.78 ms per bar
-  replay: 4198 bars, 2517 forecasts scored (1 unscored: target bar never printed; 0 overnight unscored: late opening), 21 fills applied (0 unknown), 0 off-grid bars, engine 4.469 s, wall 22.871 s
+  per-bar update (fills + filters + correlations + VaR/ES): p50 3.90 us, p95 13.50 us, p99 19.70 us, max 1376.10 us
+  end-of-day refit (GARCH fits + correlation dynamics + tails + overnight): p50 45.3 ms, p95 52.6 ms, max 117.6 ms
+  option book Monte Carlo (10000 scenarios, full revaluation): p50 6.73 ms per bar
+  replay: 4198 bars, 2517 forecasts scored (1 unscored: target bar never printed; 0 overnight unscored: late opening), 21 fills applied (0 unknown), 0 off-grid bars, engine 4.342 s, wall 22.186 s
 
-outputs written to C:\Users\User\Documents\Poli\TCC\garch_t\results\synthetic_degraded (report: report.txt)
+outputs written to garch_t/results/synthetic_degraded (report: report.txt)

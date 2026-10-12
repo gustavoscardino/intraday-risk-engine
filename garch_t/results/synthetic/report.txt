@@ -1,6 +1,6 @@
-dataset: C:\Users\User\Documents\Poli\TCC\data\synthetic
-results: C:\Users\User\Documents\Poli\TCC\garch_t\results\synthetic
-loaded 4198 bars x 15 assets from C:\Users\User\Documents\Poli\TCC\data\synthetic\prices_15m.csv in 0.34 s (rows 62970, duplicates 0, bad 0, unknown 0)
+dataset: data/synthetic
+results: garch_t/results/synthetic
+loaded 4198 bars x 15 assets from data/synthetic/prices_15m.csv in 0.38 s (rows 62970, duplicates 0, bad 0, unknown 0)
 session: first bar closes 10:15, 15-minute bars, 28 bars/day; 150 sessions, window 60 days (automatic: half of the sessions, at most 60)
 
 Backtest of the one-bar-ahead forecasts (2517 bars, overnight gap excluded)
@@ -56,9 +56,9 @@ GARCH(1,1)-t models at the last refit (deseasonalized returns); EWMA correlation
 Last forecast (2026-10-02 17:00:00 -> next bar): sigma 35212, VaR99 96065, ES99 123000, nu_p 6.29
 
 Performance (15 assets, 8 threads for refits)
-  per-bar update (fills + filters + correlations + VaR/ES): p50 3.70 us, p95 7.27 us, p99 18.40 us, max 1331.90 us
-  end-of-day refit (GARCH fits + correlation dynamics + tails + overnight): p50 42.2 ms, p95 68.9 ms, max 119.2 ms
-  option book Monte Carlo (10000 scenarios, full revaluation): p50 6.65 ms per bar
-  replay: 4198 bars, 2517 forecasts scored (1 unscored: target bar never printed; 0 overnight unscored: late opening), 21 fills applied (0 unknown), 0 off-grid bars, engine 4.180 s, wall 22.097 s
+  per-bar update (fills + filters + correlations + VaR/ES): p50 3.70 us, p95 6.80 us, p99 18.40 us, max 1779.30 us
+  end-of-day refit (GARCH fits + correlation dynamics + tails + overnight): p50 42.8 ms, p95 52.0 ms, max 137.8 ms
+  option book Monte Carlo (10000 scenarios, full revaluation): p50 6.91 ms per bar
+  replay: 4198 bars, 2517 forecasts scored (1 unscored: target bar never printed; 0 overnight unscored: late opening), 21 fills applied (0 unknown), 0 off-grid bars, engine 4.142 s, wall 22.639 s
 
-outputs written to C:\Users\User\Documents\Poli\TCC\garch_t\results\synthetic (report: report.txt)
+outputs written to garch_t/results/synthetic (report: report.txt)
