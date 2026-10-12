@@ -1,0 +1,4 @@
+# keep each script's native line endings on every machine
+*.bat text eol=crlf
+*.sh  text eol=lf
+*.exe binary

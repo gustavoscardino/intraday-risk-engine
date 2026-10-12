@@ -1,0 +1,24 @@
+GARCH-t engine benchmarks (8 hardware threads)
+
+log-likelihood (n = 100000)
+  Student-t value only       33.03 ns/obs
+  Student-t value+gradient   31.09 ns/obs
+  Normal value only           8.94 ns/obs
+
+maximum-likelihood fit (BFGS, analytic gradient, std errors included)
+         n     t (ms) Normal(ms)    iters    evals
+      1000       2.04       1.29       18       53
+      1680       3.18       1.24       18       50
+      5000       9.73       4.42       21       55
+     20000      39.54      14.19       13       49
+  warm-started daily refit, n = 1680, no std errors: 0.47 ms
+
+online filter update: 3.71 ns/update (270 M updates/s)
+
+Student-t quantile: 5.50 us/call
+
+portfolio engine (window 60 days x 28 bars = 1680 bars)
+  assets    refit 1 thr  refit all thr   bar update+VaR       bars/s
+      15       139.8 ms        80.7 ms          1.20 us       833333
+      50       426.8 ms       145.8 ms          9.50 us       105263
+     200      1236.8 ms       600.6 ms        155.20 us         6443
