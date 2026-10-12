@@ -1,0 +1,16 @@
+ticker,name,sector,market_beta
+XPET3,Austral Petroleum,Energy,1.15
+XELE3,Blue Ridge Power,Energy,0.60
+XBAN4,Horizon Bank,Financials,1.05
+XSEG3,Watchtower Insurance,Financials,0.80
+XMIN3,Golden Valley Mining,Materials,1.20
+XSID3,North Iron Steel,Materials,1.35
+XVAR3,Good Price Retail,Consumer,1.40
+XCON3,Southern Foods,Consumer,0.75
+XTEC3,Tecnova Systems,Technology,1.30
+XTEL3,TeleSouth Communications,Technology,0.65
+XAGR3,AgroFields,Materials,0.85
+XPAP3,Ipe Pulp and Paper,Materials,0.90
+XSAU3,Integral Health,Consumer,0.95
+XIMB3,Concrete Realty,Consumer,1.25
+XLOG3,LogSouth Transport,Technology,1.10
