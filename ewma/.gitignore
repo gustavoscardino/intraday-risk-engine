@@ -1,0 +1,6 @@
+# temporary build folder (build.bat / build.sh recreate it)
+source/build*/
+__pycache__/
+
+# the ready-to-run Windows programs are part of the project
+!bin/*.exe

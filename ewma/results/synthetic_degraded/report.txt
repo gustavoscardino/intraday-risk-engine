@@ -1,0 +1,94 @@
+EWMA intraday risk (EWMA-N (ref), EWMA-N, EWMA-t)
+dataset: data/synthetic
+prices:  data/synthetic/prices_15m_degraded.csv
+results: ewma/results/synthetic_degraded
+read 62856 rows x 15 assets (unparseable 0, unknown tickers 0); 21 fills, 4 options
+session: first bar closes 10:15, 15-minute bars, 28 bars/day; 150 sessions, window 60 days (automatic: half of the sessions, at most 60)
+models: lambda estimated daily, nu estimated daily, diurnal profile pooled, overnight on, data-quality layer ON
+
+Backtest of the one-bar-ahead forecasts (2517 bars, overnight gap excluded)
+  model            conf   exc    rate            95% CI expected  Kupiec p     CC p  ES Z2 p    zone ES ratio
+  EWMA-N (ref)    0.950   119   4.73% [ 3.97%,  5.63%]    5.00%    0.5274   0.6806   0.1729   green    1.116
+  EWMA-N (ref)    0.975    62   2.46% [ 1.93%,  3.15%]    2.50%    0.9058   0.8986   0.0575   green    1.205
+  EWMA-N (ref)    0.990    35   1.39% [ 1.00%,  1.93%]    1.00%    0.0630   0.1083   0.0005  yellow    1.279
+  EWMA-N          0.950   116   4.61% [ 3.86%,  5.50%]    5.00%    0.3616   0.5097   0.4303   green    1.109
+  EWMA-N          0.975    61   2.42% [ 1.89%,  3.10%]    2.50%    0.8049   0.8889   0.1879   green    1.188
+  EWMA-N          0.990    38   1.51% [ 1.10%,  2.07%]    1.00%    0.0168   0.0503   0.0005  yellow    1.170
+  EWMA-t          0.950   127   5.05% [ 4.26%,  5.97%]    5.00%    0.9164   0.9658   0.4298   green    1.011
+  EWMA-t          0.975    56   2.22% [ 1.72%,  2.88%]    2.50%    0.3678   0.5443   0.6827   green    1.080
+  EWMA-t          0.990    29   1.15% [ 0.80%,  1.65%]    1.00%    0.4538   0.4837   0.2134   green    1.042
+  Berkowitz density test (whole distribution): EWMA-N (ref) p = 0.0026; EWMA-N p = 0.1053; EWMA-t p = 0.4335;
+
+Coverage by time of day (exception rate, Kupiec p in brackets)
+  model            conf        open (3 bars)               midday       close (3 bars)
+  EWMA-N (ref)    0.950      10.82% [0.0001]       3.74% [0.0072]       5.93% [0.4971]
+  EWMA-N (ref)    0.975       7.46% [0.0000]       1.97% [0.1175]       1.11% [0.1011]
+  EWMA-N (ref)    0.990       4.48% [0.0000]       1.11% [0.6238]       0.37% [0.2327]
+  EWMA-N          0.950       4.85% [0.9103]       5.00% [0.9959]       1.48% [0.0019]
+  EWMA-N          0.975       2.99% [0.6215]       2.63% [0.7184]       0.37% [0.0052]
+  EWMA-N          0.990       2.61% [0.0273]       1.57% [0.0193]       0.00% [0.0198]
+  EWMA-t          0.950       5.60% [0.6597]       5.26% [0.6053]       2.96% [0.0976]
+  EWMA-t          0.975       2.99% [0.6215]       2.37% [0.7194]       0.37% [0.0052]
+  EWMA-t          0.990       1.87% [0.2036]       1.21% [0.3574]       0.00% [0.0198]
+
+Other horizons / books
+  model                  conf     n   exc    rate            95% CI  Kupiec p     CC p    zone ES ratio
+  overnight EWMA-N      0.950    90     5   5.56% [ 2.40%, 12.35%]    0.8121   0.7218   green    1.348
+  overnight EWMA-N      0.975    90     3   3.33% [ 1.14%,  9.35%]    0.6297   0.8018   green    1.427
+  overnight EWMA-N      0.990    90     3   3.33% [ 1.14%,  9.35%]    0.0796   0.1937  yellow    1.252
+  overnight EWMA-t      0.950    90     5   5.56% [ 2.40%, 12.35%]    0.8121   0.7218   green    1.251
+  overnight EWMA-t      0.975    90     3   3.33% [ 1.14%,  9.35%]    0.6297   0.8018   green    1.244
+  overnight EWMA-t      0.990    90     2   2.22% [ 0.61%,  7.74%]    0.3155   0.5771   green    1.146
+  book delta-linear     0.950  2517   130   5.16% [ 4.37%,  6.10%]    0.7057   0.8092   green    0.999
+  book delta-linear     0.975  2517    53   2.11% [ 1.61%,  2.74%]    0.1929   0.4257   green    1.100
+  book delta-linear     0.990  2517    32   1.27% [ 0.90%,  1.79%]    0.1892   0.3075   green    1.010
+  overnight EWMA-N Berkowitz p = 0.4662 (90 sessions)
+  overnight EWMA-t Berkowitz p = 0.4530 (90 sessions)
+
+EWMA parameters (91 daily re-estimations; diurnal profile pooled)
+  lambda (EWMA-N / EWMA-t): last 0.9790, range 0.9405 to 0.9805 (median 0.9651); half-life 32.7 bars
+  nu (EWMA-t):              last 7.41, range 5.66 to 8.13 (median 6.60), fitted on 1197 standardized outcomes
+  overnight:                lambda 0.9744, nu 5.35
+  EWMA-N (ref):             lambda 0.94 fixed, raw returns, Normal
+
+Data-quality layer
+  feed rows: 62682 accepted, 171 duplicates discarded, 126 out of order (accepted), 3 delayed past the bar close (discarded), 0 off-grid
+  cells: 288 GAP, 10 STALE; jumps with |z| > 6: 11 SUSPECT decided by the next bar -> 3 bad ticks excluded (SPIKE), 8 real shocks kept, 0 undecided; 0 in market-wide moves (kept at once)
+  modes: NORMAL 4059 bars (96.69%), DEGRADED 139 (3.31%), FREEZE 0 (0.00%); 0 forecasts kept frozen
+  alerts: 94 (0 critical, 49 warning) -> alerts.csv; events -> dq_events.csv
+    2026-06-03 10:30:00 XVAR3  SHOCK_KEPT move of -9.69% confirmed by the next bar (-11.44%): real shock, kept
+    2026-06-18 12:00:00 XLOG3  SHOCK_KEPT move of -3.81% confirmed by the next bar (-2.08%): real shock, kept
+    2026-07-08 13:45:00 XPET3  SPIKE      bad tick: move of +6.44% reverted by the next bar (-0.42% left): price excluded
+    2026-07-17 10:15:00 XSAU3  SHOCK_KEPT move of -3.11% confirmed by the next bar (-2.81%): real shock, kept
+    2026-07-28 11:30:00 XBAN4  SPIKE      bad tick: move of -7.07% reverted by the next bar (-0.24% left): price excluded
+    2026-08-21 13:15:00 XVAR3  SHOCK_KEPT move of -8.70% confirmed by the next bar (-9.88%): real shock, kept
+    2026-09-03 12:45:00 XSAU3  SHOCK_KEPT move of +1.91% confirmed by the next bar (+2.53%): real shock, kept
+    2026-09-04 13:00:00 XAGR3  SHOCK_KEPT move of +2.12% confirmed by the next bar (+1.86%): real shock, kept
+    2026-09-14 13:30:00 XSID3  SHOCK_KEPT move of -2.33% confirmed by the next bar (-2.55%): real shock, kept
+    2026-09-21 15:15:00 XTEC3  SPIKE      bad tick: move of +9.60% reverted by the next bar (-0.22% left): price excluded
+    2026-10-02 16:45:00 XTEC3  SHOCK_KEPT move of -4.55% confirmed by the next bar (-3.66%): real shock, kept
+
+Detection against the clean file (data/synthetic/prices_15m.csv)
+  flag           injected  detected   recall    other cells
+  GAP                 285       285     100%              3
+  DUPLICATE           171       171     100%              0
+  OUT_OF_ORDER        129       126      98%              0
+  DELAY                 0         0        -              3
+  STALE                10        10     100%              0
+  SPIKE                 3         3     100%              0
+  (other cells: flags where the clean file has no such fault, e.g. bars that never traded)
+
+Robustness: EWMA-t VaR 99 of this run vs the same market with a clean feed
+  2517 forecasts compared: mean deviation 0.481%, max 8.03% (at 2026-07-28 11:30:00), 267 bars off by more than 1%
+  clean-feed backtest EWMA-t 0.950: 129 exceptions (5.13%), zone green
+  clean-feed backtest EWMA-t 0.975: 56 exceptions (2.22%), zone green
+  clean-feed backtest EWMA-t 0.990: 30 exceptions (1.19%), zone green
+
+Last forecast (2026-10-02 17:00:00 -> next bar): sigma ref 17928 / EWMA 30246; VaR99 ref 41707, N 70362, t 76297; ES99 ref 47782, N 80612, t 95329 (nu 7.41)
+
+Performance (15 assets)
+  per-bar update (fills + DQ + filters + VaR/ES of 3 models): p50 0.70 us, p95 1.40 us, p99 4.50 us, max 32.90 us
+  end-of-day refit (profile + lambda + nu + filters + overnight): p50 2.94 ms, p95 3.25 ms, max 7.01 ms
+  replay: 4198 bars, 2517 forecasts scored (1 unscored: target bar never printed; 0 overnight unscored), 21 fills applied (0 unknown), engine 0.277 s, wall 0.381 s
+
+outputs written to ewma/results/synthetic_degraded (report: report.txt)
