@@ -1,0 +1,621 @@
+time,ticker,flag,detail
+2026-03-02 12:45:00,XIMB3,GAP,no row for this bar
+2026-03-02 13:30:00,XSID3,GAP,no row for this bar
+2026-03-02 14:30:00,XTEL3,GAP,no row for this bar
+2026-03-02 16:00:00,XIMB3,DUPLICATE,repeated row discarded (file line 358)
+2026-03-02 16:45:00,XLOG3,GAP,no row for this bar
+2026-03-03 10:45:00,XTEC3,DUPLICATE,repeated row discarded (file line 457)
+2026-03-03 10:45:00,XELE3,GAP,no row for this bar
+2026-03-03 13:00:00,XTEL3,DUPLICATE,repeated row discarded (file line 594)
+2026-03-03 14:30:00,XIMB3,GAP,no row for this bar
+2026-03-03 16:15:00,XELE3,DUPLICATE,repeated row discarded (file line 781)
+2026-03-03 17:00:00,XAGR3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-03-04 12:00:00,XVAR3,DUPLICATE,repeated row discarded (file line 952)
+2026-03-04 12:30:00,XVAR3,GAP,no row for this bar
+2026-03-04 15:30:00,XVAR3,DUPLICATE,repeated row discarded (file line 1162)
+2026-03-04 16:00:00,XPET3,DUPLICATE,repeated row discarded (file line 1187)
+2026-03-04 16:15:00,XSAU3,DUPLICATE,repeated row discarded (file line 1215)
+2026-03-04 16:15:00,XLOG3,GAP,no row for this bar
+2026-03-05 12:00:00,XTEL3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-03-05 13:30:00,XTEL3,DUPLICATE,repeated row discarded (file line 1467)
+2026-03-05 16:00:00,XIMB3,DUPLICATE,repeated row discarded (file line 1622)
+2026-03-06 11:15:00,XPET3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-03-09 12:15:00,XSID3,GAP,no row for this bar
+2026-03-09 15:45:00,XSID3,DUPLICATE,repeated row discarded (file line 2439)
+2026-03-09 16:00:00,XAGR3,GAP,no row for this bar
+2026-03-09 16:30:00,XMIN3,DUPLICATE,repeated row discarded (file line 2483)
+2026-03-09 16:30:00,XIMB3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-03-10 11:15:00,XAGR3,DUPLICATE,repeated row discarded (file line 2594)
+2026-03-10 11:15:00,XVAR3,GAP,no row for this bar
+2026-03-10 11:30:00,XLOG3,GAP,no row for this bar
+2026-03-10 13:00:00,XELE3,GAP,no row for this bar
+2026-03-10 13:45:00,XLOG3,GAP,no row for this bar
+2026-03-10 14:00:00,XTEC3,GAP,no row for this bar
+2026-03-10 15:45:00,XMIN3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-03-10 16:45:00,XAGR3,GAP,no row for this bar
+2026-03-10 17:00:00,XIMB3,GAP,no row for this bar
+2026-03-11 11:15:00,XVAR3,GAP,no row for this bar
+2026-03-12 11:15:00,XELE3,GAP,no row for this bar
+2026-03-12 11:30:00,XBAN4,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-03-12 15:00:00,XSAU3,GAP,no row for this bar
+2026-03-13 11:30:00,XPAP3,GAP,no row for this bar
+2026-03-13 12:30:00,XBAN4,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-03-13 13:00:00,XMIN3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-03-16 10:15:00,XPAP3,DUPLICATE,repeated row discarded (file line 4206)
+2026-03-16 11:00:00,XELE3,GAP,no row for this bar
+2026-03-16 14:00:00,XSID3,DUPLICATE,repeated row discarded (file line 4425)
+2026-03-16 15:00:00,XTEL3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-03-16 15:15:00,XSAU3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-03-16 16:00:00,XPAP3,GAP,no row for this bar
+2026-03-16 16:45:00,XSID3,DUPLICATE,repeated row discarded (file line 4590)
+2026-03-17 12:15:00,XPET3,DUPLICATE,repeated row discarded (file line 4736)
+2026-03-17 13:15:00,XTEL3,DUPLICATE,repeated row discarded (file line 4806)
+2026-03-18 10:45:00,XSID3,GAP,no row for this bar
+2026-03-18 12:15:00,XSID3,GAP,no row for this bar
+2026-03-18 12:30:00,XELE3,GAP,no row for this bar
+2026-03-18 14:45:00,XSEG3,GAP,no row for this bar
+2026-03-19 10:45:00,XCON3,GAP,no row for this bar
+2026-03-19 12:30:00,XSID3,GAP,no row for this bar
+2026-03-19 14:45:00,XIMB3,GAP,no row for this bar
+2026-03-20 10:30:00,XSID3,GAP,no row for this bar
+2026-03-20 13:00:00,XBAN4,DUPLICATE,repeated row discarded (file line 6037)
+2026-03-20 16:45:00,XTEL3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-03-23 10:45:00,XTEL3,DUPLICATE,repeated row discarded (file line 6330)
+2026-03-23 11:00:00,XSID3,DUPLICATE,repeated row discarded (file line 6342)
+2026-03-23 12:30:00,XTEC3,DUPLICATE,repeated row discarded (file line 6436)
+2026-03-23 13:00:00,XSID3,DUPLICATE,repeated row discarded (file line 6464)
+2026-03-23 14:15:00,XIMB3,GAP,no row for this bar
+2026-03-23 14:45:00,XVAR3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-03-23 15:15:00,XSEG3,GAP,no row for this bar
+2026-03-24 12:15:00,XLOG3,GAP,no row for this bar
+2026-03-24 13:30:00,XLOG3,GAP,no row for this bar
+2026-03-24 14:15:00,XCON3,DUPLICATE,repeated row discarded (file line 6958)
+2026-03-24 14:15:00,XTEL3,GAP,no row for this bar
+2026-03-24 14:30:00,XTEC3,DUPLICATE,repeated row discarded (file line 6974)
+2026-03-25 10:15:00,XPET3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-03-25 10:45:00,XSID3,DUPLICATE,repeated row discarded (file line 7167)
+2026-03-25 10:45:00,XVAR3,DUPLICATE,repeated row discarded (file line 7169)
+2026-03-25 14:30:00,XSEG3,DUPLICATE,repeated row discarded (file line 7392)
+2026-03-25 15:45:00,XSID3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-03-26 10:45:00,XPET3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-03-26 13:15:00,XTEL3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-03-26 14:00:00,XVAR3,DUPLICATE,repeated row discarded (file line 7786)
+2026-03-26 14:15:00,XCON3,DUPLICATE,repeated row discarded (file line 7803)
+2026-03-26 14:45:00,XLOG3,GAP,no row for this bar
+2026-03-26 15:15:00,XSEG3,DUPLICATE,repeated row discarded (file line 7859)
+2026-03-27 12:15:00,XELE3,GAP,no row for this bar
+2026-03-27 13:15:00,XIMB3,DUPLICATE,repeated row discarded (file line 8169)
+2026-03-27 15:30:00,XSID3,GAP,no row for this bar
+2026-03-30 12:00:00,XSID3,GAP,no row for this bar
+2026-03-30 12:15:00,XELE3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-03-30 14:45:00,XSAU3,GAP,no row for this bar
+2026-03-30 17:00:00,XBAN4,DUPLICATE,repeated row discarded (file line 8801)
+2026-03-31 11:00:00,XSID3,GAP,no row for this bar
+2026-03-31 15:15:00,XIMB3,DUPLICATE,repeated row discarded (file line 9127)
+2026-03-31 16:15:00,XAGR3,DUPLICATE,repeated row discarded (file line 9185)
+2026-04-01 14:30:00,XTEC3,DUPLICATE,repeated row discarded (file line 9499)
+2026-04-01 15:45:00,XLOG3,GAP,no row for this bar
+2026-04-01 16:15:00,XBAN4,DUPLICATE,repeated row discarded (file line 9598)
+2026-04-01 17:00:00,XSID3,GAP,no row for this bar
+2026-04-02 12:45:00,XPAP3,GAP,no row for this bar
+2026-04-02 13:45:00,XPET3,DUPLICATE,repeated row discarded (file line 9865)
+2026-04-02 14:45:00,XSAU3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-04-02 16:00:00,XLOG3,DUPLICATE,repeated row discarded (file line 10015)
+2026-04-02 17:00:00,XBAN4,GAP,no row for this bar
+2026-04-06 10:15:00,XVAR3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-04-06 10:45:00,XPET3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-04-06 13:45:00,XPET3,DUPLICATE,repeated row discarded (file line 10286)
+2026-04-06 15:00:00,XBAN4,GAP,no row for this bar
+2026-04-06 16:30:00,XMIN3,GAP,no row for this bar
+2026-04-06 16:45:00,XPET3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-04-07 12:15:00,XTEL3,DUPLICATE,repeated row discarded (file line 10624)
+2026-04-07 15:45:00,XPET3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-04-08 13:15:00,XPAP3,GAP,no row for this bar
+2026-04-08 14:00:00,XTEC3,GAP,no row for this bar
+2026-04-08 15:00:00,XTEL3,GAP,no row for this bar
+2026-04-08 15:15:00,XPAP3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-04-08 16:30:00,XVAR3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-04-09 10:45:00,XIMB3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-04-09 13:00:00,XSEG3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-04-09 14:15:00,XELE3,GAP,no row for this bar
+2026-04-09 15:15:00,XBAN4,GAP,no row for this bar
+2026-04-09 16:00:00,XSAU3,GAP,no row for this bar
+2026-04-09 16:30:00,XBAN4,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-04-10 10:45:00,XSID3,GAP,no row for this bar
+2026-04-10 12:45:00,XTEC3,DUPLICATE,repeated row discarded (file line 11907)
+2026-04-10 13:45:00,XELE3,GAP,no row for this bar
+2026-04-10 15:45:00,XSID3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-04-10 16:00:00,XLOG3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-04-13 12:15:00,XSAU3,GAP,no row for this bar
+2026-04-13 14:00:00,XSAU3,GAP,no row for this bar
+2026-04-13 16:30:00,XPET3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-04-14 11:30:00,XTEL3,GAP,no row for this bar
+2026-04-14 15:00:00,XTEL3,GAP,no row for this bar
+2026-04-15 11:15:00,XSAU3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-04-15 13:30:00,XMIN3,DUPLICATE,repeated row discarded (file line 13204)
+2026-04-15 14:15:00,XBAN4,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-04-15 16:30:00,XVAR3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-04-16 14:45:00,XTEL3,GAP,no row for this bar
+2026-04-17 12:45:00,XMIN3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-04-17 12:45:00,XAGR3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-04-17 14:00:00,XLOG3,GAP,no row for this bar
+2026-04-17 14:45:00,XSAU3,GAP,no row for this bar
+2026-04-17 15:00:00,XTEL3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-04-20 15:00:00,XTEL3,GAP,no row for this bar
+2026-04-22 10:45:00,XSID3,DUPLICATE,repeated row discarded (file line 14717)
+2026-04-22 11:15:00,XMIN3,GAP,no row for this bar
+2026-04-22 13:30:00,XTEL3,DUPLICATE,repeated row discarded (file line 14886)
+2026-04-22 13:45:00,XPAP3,GAP,no row for this bar
+2026-04-22 14:00:00,XAGR3,GAP,no row for this bar
+2026-04-22 14:15:00,XIMB3,DUPLICATE,repeated row discarded (file line 14934)
+2026-04-22 16:45:00,XLOG3,GAP,no row for this bar
+2026-04-23 10:15:00,XLOG3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-04-23 14:00:00,XAGR3,GAP,no row for this bar
+2026-04-23 17:00:00,XBAN4,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-04-24 10:15:00,XVAR3,GAP,no row for this bar
+2026-04-24 10:45:00,XAGR3,DUPLICATE,repeated row discarded (file line 15559)
+2026-04-24 11:30:00,XSID3,DUPLICATE,repeated row discarded (file line 15600)
+2026-04-24 11:30:00,XPAP3,DUPLICATE,repeated row discarded (file line 15607)
+2026-04-24 13:00:00,XSID3,DUPLICATE,repeated row discarded (file line 15692)
+2026-04-24 15:45:00,XPAP3,GAP,no row for this bar
+2026-04-24 16:15:00,XBAN4,GAP,no row for this bar
+2026-04-27 10:45:00,XLOG3,GAP,no row for this bar
+2026-04-27 12:15:00,XTEL3,GAP,no row for this bar
+2026-04-27 13:15:00,XVAR3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-04-27 15:15:00,XLOG3,DUPLICATE,repeated row discarded (file line 16253)
+2026-04-27 16:45:00,XSID3,GAP,no row for this bar
+2026-04-28 11:00:00,XELE3,DUPLICATE,repeated row discarded (file line 16405)
+2026-04-28 13:45:00,XSAU3,GAP,no row for this bar
+2026-04-28 14:00:00,XSAU3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-04-28 14:00:00,XPAP3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-04-28 14:15:00,XELE3,GAP,no row for this bar
+2026-04-29 10:15:00,XTEC3,DUPLICATE,repeated row discarded (file line 16786)
+2026-04-29 11:30:00,XIMB3,DUPLICATE,repeated row discarded (file line 16867)
+2026-04-29 13:30:00,XBAN4,GAP,no row for this bar
+2026-04-29 15:15:00,XELE3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-04-29 16:45:00,XIMB3,GAP,no row for this bar
+2026-04-29 17:00:00,XPAP3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-04-30 12:15:00,XAGR3,GAP,no row for this bar
+2026-04-30 14:15:00,XBAN4,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-05-04 12:30:00,XAGR3,DUPLICATE,repeated row discarded (file line 17762)
+2026-05-04 13:00:00,XSID3,DUPLICATE,repeated row discarded (file line 17788)
+2026-05-04 13:30:00,XELE3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-05-04 14:30:00,XELE3,GAP,no row for this bar
+2026-05-04 14:30:00,XAGR3,GAP,no row for this bar
+2026-05-04 14:45:00,XBAN4,GAP,no row for this bar
+2026-05-04 16:45:00,XVAR3,GAP,no row for this bar
+2026-05-05 10:15:00,XELE3,GAP,no row for this bar
+2026-05-05 10:15:00,XBAN4,GAP,no row for this bar
+2026-05-05 11:15:00,XVAR3,DUPLICATE,repeated row discarded (file line 18099)
+2026-05-05 11:45:00,XSID3,GAP,no row for this bar
+2026-05-05 12:15:00,XELE3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-05-05 13:45:00,XVAR3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-05-06 11:30:00,XELE3,DUPLICATE,repeated row discarded (file line 18529)
+2026-05-06 12:00:00,XVAR3,GAP,no row for this bar
+2026-05-07 10:45:00,XPET3,GAP,no row for this bar
+2026-05-07 11:45:00,XPET3,GAP,no row for this bar
+2026-05-07 12:45:00,XIMB3,DUPLICATE,repeated row discarded (file line 19034)
+2026-05-07 14:15:00,XPET3,GAP,no row for this bar
+2026-05-08 10:45:00,XPET3,GAP,no row for this bar
+2026-05-08 11:15:00,XLOG3,GAP,no row for this bar
+2026-05-08 13:30:00,XMIN3,GAP,no row for this bar
+2026-05-08 14:15:00,XTEL3,GAP,no row for this bar
+2026-05-08 14:30:00,XSAU3,DELAY,"arrived 2 bars late, after the bar closed: discarded"
+2026-05-08 14:30:00,XSAU3,GAP,no row for this bar
+2026-05-08 14:45:00,XTEL3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-05-08 15:30:00,XAGR3,GAP,no row for this bar
+2026-05-11 11:00:00,XSAU3,GAP,no row for this bar
+2026-05-11 11:15:00,XELE3,DUPLICATE,repeated row discarded (file line 19766)
+2026-05-11 12:00:00,XTEL3,GAP,no row for this bar
+2026-05-11 15:00:00,XMIN3,DUPLICATE,repeated row discarded (file line 19994)
+2026-05-11 16:00:00,XLOG3,DUPLICATE,repeated row discarded (file line 20065)
+2026-05-12 10:45:00,XVAR3,DUPLICATE,repeated row discarded (file line 20163)
+2026-05-12 11:00:00,XTEL3,DUPLICATE,repeated row discarded (file line 20182)
+2026-05-12 12:30:00,XCON3,GAP,no row for this bar
+2026-05-12 14:00:00,XVAR3,DUPLICATE,repeated row discarded (file line 20359)
+2026-05-12 15:00:00,XSEG3,GAP,no row for this bar
+2026-05-12 16:00:00,XIMB3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-05-12 17:00:00,XCON3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-05-13 13:15:00,XSEG3,GAP,no row for this bar
+2026-05-13 13:30:00,XSEG3,DUPLICATE,repeated row discarded (file line 20745)
+2026-05-13 15:00:00,XTEC3,GAP,no row for this bar
+2026-05-14 10:15:00,XELE3,GAP,no row for this bar
+2026-05-14 13:00:00,XBAN4,GAP,no row for this bar
+2026-05-14 15:45:00,XPET3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-05-15 13:00:00,XMIN3,GAP,no row for this bar
+2026-05-15 15:00:00,XELE3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-05-18 11:45:00,XMIN3,DUPLICATE,repeated row discarded (file line 21898)
+2026-05-18 13:15:00,XTEC3,GAP,no row for this bar
+2026-05-18 14:00:00,XVAR3,DUPLICATE,repeated row discarded (file line 22035)
+2026-05-18 14:30:00,XSEG3,DUPLICATE,repeated row discarded (file line 22063)
+2026-05-18 16:15:00,XSID3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-05-18 16:15:00,XCON3,GAP,no row for this bar
+2026-05-18 16:15:00,XTEL3,GAP,no row for this bar
+2026-05-19 10:45:00,XTEL3,GAP,no row for this bar
+2026-05-19 11:15:00,XELE3,GAP,no row for this bar
+2026-05-19 11:45:00,XMIN3,GAP,no row for this bar
+2026-05-19 12:15:00,XSEG3,DUPLICATE,repeated row discarded (file line 22344)
+2026-05-19 12:15:00,XCON3,DUPLICATE,repeated row discarded (file line 22349)
+2026-05-19 12:45:00,XTEL3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-05-19 13:15:00,XPET3,GAP,no row for this bar
+2026-05-19 13:30:00,XELE3,GAP,no row for this bar
+2026-05-19 14:30:00,XSEG3,GAP,no row for this bar
+2026-05-19 17:00:00,XSEG3,GAP,no row for this bar
+2026-05-20 12:30:00,XAGR3,DUPLICATE,repeated row discarded (file line 22784)
+2026-05-20 13:15:00,XSEG3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-05-21 10:45:00,XELE3,DUPLICATE,repeated row discarded (file line 23091)
+2026-05-21 13:15:00,XVAR3,GAP,no row for this bar
+2026-05-22 13:30:00,XSID3,GAP,no row for this bar
+2026-05-22 14:00:00,XBAN4,GAP,no row for this bar
+2026-05-22 16:15:00,XLOG3,GAP,no row for this bar
+2026-05-25 10:30:00,XVAR3,GAP,no row for this bar
+2026-05-25 12:00:00,XELE3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-05-25 15:30:00,XBAN4,GAP,no row for this bar
+2026-05-26 16:45:00,XCON3,GAP,no row for this bar
+2026-05-27 10:15:00,XVAR3,DUPLICATE,repeated row discarded (file line 24740)
+2026-05-27 14:00:00,XLOG3,GAP,no row for this bar
+2026-05-27 14:45:00,XPET3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-05-28 11:00:00,XPET3,DUPLICATE,repeated row discarded (file line 25199)
+2026-05-28 12:45:00,XIMB3,GAP,no row for this bar
+2026-05-28 16:30:00,XPET3,GAP,no row for this bar
+2026-05-29 11:30:00,XSID3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-05-29 11:30:00,XMIN3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-05-29 11:30:00,XCON3,GAP,no row for this bar
+2026-05-29 12:15:00,XSEG3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-05-29 12:45:00,XPET3,GAP,no row for this bar
+2026-05-29 13:45:00,XBAN4,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-05-29 16:00:00,XBAN4,DUPLICATE,repeated row discarded (file line 25918)
+2026-06-01 11:00:00,XPET3,GAP,no row for this bar
+2026-06-01 11:15:00,XAGR3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-06-01 13:45:00,XTEC3,GAP,no row for this bar
+2026-06-01 14:15:00,XTEC3,DUPLICATE,repeated row discarded (file line 26238)
+2026-06-01 14:30:00,XPAP3,GAP,no row for this bar
+2026-06-02 15:15:00,XVAR3,GAP,no row for this bar
+2026-06-03 10:30:00,XVAR3,SUSPECT,"|z| = 6.7 above the limit: update winsorized, decided with the next bar"
+2026-06-03 10:30:00,XVAR3,SHOCK_KEPT,"move of -9.69% confirmed by the next bar (-11.44%): real shock, kept"
+2026-06-03 11:15:00,XBAN4,GAP,no row for this bar
+2026-06-03 16:00:00,XAGR3,GAP,no row for this bar
+2026-06-05 13:30:00,XVAR3,GAP,no row for this bar
+2026-06-05 14:15:00,XCON3,GAP,no row for this bar
+2026-06-05 15:00:00,XSID3,DUPLICATE,repeated row discarded (file line 27534)
+2026-06-05 15:00:00,XPET3,GAP,no row for this bar
+2026-06-05 16:30:00,XIMB3,DUPLICATE,repeated row discarded (file line 27633)
+2026-06-08 13:00:00,XSAU3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-06-09 10:45:00,XAGR3,DUPLICATE,repeated row discarded (file line 28126)
+2026-06-09 13:00:00,XVAR3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-06-09 14:45:00,XCON3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-06-09 15:30:00,XPET3,DUPLICATE,repeated row discarded (file line 28402)
+2026-06-09 16:45:00,XPET3,GAP,no row for this bar
+2026-06-10 12:15:00,XSAU3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-06-10 12:45:00,XMIN3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-06-10 13:30:00,XIMB3,GAP,no row for this bar
+2026-06-10 14:30:00,XVAR3,GAP,no row for this bar
+2026-06-11 12:00:00,XLOG3,DUPLICATE,repeated row discarded (file line 29044)
+2026-06-11 14:15:00,XLOG3,GAP,no row for this bar
+2026-06-12 15:45:00,XELE3,DUPLICATE,repeated row discarded (file line 29676)
+2026-06-12 16:00:00,XCON3,DUPLICATE,repeated row discarded (file line 29698)
+2026-06-15 10:30:00,XSEG3,GAP,no row for this bar
+2026-06-15 11:00:00,XPAP3,GAP,no row for this bar
+2026-06-15 11:45:00,XTEC3,GAP,no row for this bar
+2026-06-15 11:45:00,XPAP3,GAP,no row for this bar
+2026-06-16 14:00:00,XPAP3,GAP,no row for this bar
+2026-06-16 16:00:00,XSEG3,DUPLICATE,repeated row discarded (file line 30530)
+2026-06-17 11:45:00,XIMB3,DUPLICATE,repeated row discarded (file line 30706)
+2026-06-17 12:30:00,XMIN3,GAP,no row for this bar
+2026-06-17 12:45:00,XLOG3,GAP,no row for this bar
+2026-06-17 14:45:00,XSEG3,DUPLICATE,repeated row discarded (file line 30875)
+2026-06-17 15:15:00,XSEG3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-06-18 12:00:00,XLOG3,SUSPECT,"|z| = 7.4 above the limit: update winsorized, decided with the next bar"
+2026-06-18 12:00:00,XLOG3,SHOCK_KEPT,"move of -3.81% confirmed by the next bar (-2.08%): real shock, kept"
+2026-06-18 13:15:00,XMIN3,GAP,no row for this bar
+2026-06-18 16:45:00,XIMB3,GAP,no row for this bar
+2026-06-19 14:00:00,XPET3,GAP,no row for this bar
+2026-06-22 10:30:00,XMIN3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-06-22 12:15:00,XBAN4,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-06-22 15:45:00,XELE3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-06-22 16:15:00,XMIN3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-06-22 16:30:00,XTEL3,GAP,no row for this bar
+2026-06-23 10:45:00,XPAP3,DUPLICATE,repeated row discarded (file line 32320)
+2026-06-23 11:00:00,XBAN4,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-06-23 13:15:00,XTEL3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-06-23 13:15:00,XTEC3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-06-23 13:30:00,XSEG3,GAP,no row for this bar
+2026-06-24 13:30:00,XTEL3,DUPLICATE,repeated row discarded (file line 32903)
+2026-06-24 13:45:00,XLOG3,DUPLICATE,repeated row discarded (file line 32924)
+2026-06-24 14:15:00,XTEL3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-06-24 15:30:00,XPAP3,GAP,no row for this bar
+2026-06-25 11:45:00,XAGR3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-06-25 12:30:00,XSID3,GAP,no row for this bar
+2026-06-25 12:30:00,XTEC3,GAP,no row for this bar
+2026-06-25 13:30:00,XTEC3,GAP,no row for this bar
+2026-06-25 14:00:00,XTEL3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-06-25 14:15:00,XAGR3,DUPLICATE,repeated row discarded (file line 33367)
+2026-06-25 15:15:00,XMIN3,GAP,no row for this bar
+2026-06-26 14:30:00,XPAP3,GAP,no row for this bar
+2026-06-26 16:45:00,XTEL3,GAP,no row for this bar
+2026-06-29 10:15:00,XSEG3,DUPLICATE,repeated row discarded (file line 33958)
+2026-06-29 12:45:00,XVAR3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-06-29 14:45:00,XVAR3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-06-29 15:15:00,XTEL3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-06-29 15:45:00,XMIN3,GAP,no row for this bar
+2026-06-29 15:45:00,XTEC3,GAP,no row for this bar
+2026-06-29 16:45:00,XTEC3,GAP,no row for this bar
+2026-06-30 15:30:00,XTEC3,DUPLICATE,repeated row discarded (file line 34696)
+2026-07-01 11:00:00,XPAP3,GAP,no row for this bar
+2026-07-01 11:15:00,XIMB3,DUPLICATE,repeated row discarded (file line 34866)
+2026-07-01 13:45:00,XSEG3,GAP,no row for this bar
+2026-07-01 16:15:00,XIMB3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-07-02 13:45:00,XCON3,GAP,no row for this bar
+2026-07-02 16:45:00,XELE3,GAP,no row for this bar
+2026-07-03 10:15:00,XAGR3,GAP,no row for this bar
+2026-07-03 11:00:00,XSID3,GAP,no row for this bar
+2026-07-03 13:15:00,XTEL3,GAP,no row for this bar
+2026-07-03 13:30:00,XSID3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-07-03 14:15:00,XCON3,GAP,no row for this bar
+2026-07-03 17:00:00,XCON3,DUPLICATE,repeated row discarded (file line 36039)
+2026-07-06 12:15:00,XELE3,GAP,no row for this bar
+2026-07-06 12:30:00,XSAU3,GAP,no row for this bar
+2026-07-06 13:00:00,XAGR3,DUPLICATE,repeated row discarded (file line 36221)
+2026-07-06 13:00:00,XMIN3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-07-06 13:15:00,XPET3,GAP,no row for this bar
+2026-07-06 14:15:00,XTEC3,GAP,no row for this bar
+2026-07-06 14:45:00,XBAN4,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-07-06 15:45:00,XBAN4,GAP,no row for this bar
+2026-07-07 10:15:00,XPAP3,DUPLICATE,repeated row discarded (file line 36475)
+2026-07-07 12:45:00,XAGR3,GAP,no row for this bar
+2026-07-07 13:30:00,XSEG3,DUPLICATE,repeated row discarded (file line 36662)
+2026-07-08 10:15:00,XCON3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-07-08 11:30:00,XPAP3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-07-08 13:15:00,XSID3,GAP,no row for this bar
+2026-07-08 13:45:00,XPET3,SUSPECT,"|z| = 20.2 above the limit: update winsorized, decided with the next bar"
+2026-07-08 13:45:00,XPET3,SPIKE,bad tick: move of +6.44% reverted by the next bar (-0.42% left): price excluded
+2026-07-08 14:45:00,XSID3,DUPLICATE,repeated row discarded (file line 37159)
+2026-07-08 15:30:00,XELE3,GAP,no row for this bar
+2026-07-09 11:00:00,XTEL3,GAP,no row for this bar
+2026-07-09 11:00:00,XSAU3,GAP,no row for this bar
+2026-07-09 15:00:00,XSID3,DUPLICATE,repeated row discarded (file line 37592)
+2026-07-09 15:00:00,XLOG3,GAP,no row for this bar
+2026-07-10 10:45:00,XSID3,GAP,no row for this bar
+2026-07-10 11:30:00,XPAP3,GAP,no row for this bar
+2026-07-10 12:00:00,XTEL3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-07-10 12:00:00,XCON3,GAP,no row for this bar
+2026-07-10 15:15:00,XPAP3,GAP,no row for this bar
+2026-07-10 16:15:00,XELE3,GAP,no row for this bar
+2026-07-10 16:30:00,XAGR3,GAP,no row for this bar
+2026-07-10 17:00:00,XSAU3,GAP,no row for this bar
+2026-07-13 11:00:00,XPAP3,GAP,no row for this bar
+2026-07-13 12:15:00,XSEG3,GAP,no row for this bar
+2026-07-13 12:30:00,XCON3,GAP,no row for this bar
+2026-07-13 13:15:00,XTEC3,GAP,no row for this bar
+2026-07-13 15:15:00,XELE3,DUPLICATE,repeated row discarded (file line 38432)
+2026-07-13 15:45:00,XSAU3,GAP,no row for this bar
+2026-07-13 16:00:00,XCON3,DUPLICATE,repeated row discarded (file line 38483)
+2026-07-14 12:15:00,XMIN3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-07-14 12:30:00,XSAU3,GAP,no row for this bar
+2026-07-14 16:00:00,XSID3,DELAY,"arrived 2 bars late, after the bar closed: discarded"
+2026-07-14 16:00:00,XSID3,GAP,no row for this bar
+2026-07-14 16:15:00,XSEG3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-07-14 16:30:00,XLOG3,GAP,no row for this bar
+2026-07-15 17:00:00,XAGR3,GAP,no row for this bar
+2026-07-16 10:45:00,XMIN3,DUPLICATE,repeated row discarded (file line 39423)
+2026-07-16 12:15:00,XSAU3,DUPLICATE,repeated row discarded (file line 39521)
+2026-07-16 14:45:00,XPAP3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-07-16 15:15:00,XELE3,GAP,no row for this bar
+2026-07-16 15:30:00,XBAN4,GAP,no row for this bar
+2026-07-16 16:00:00,XBAN4,GAP,no row for this bar
+2026-07-16 16:00:00,XSEG3,GAP,no row for this bar
+2026-07-16 16:15:00,XTEL3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-07-16 16:15:00,XTEC3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-07-16 16:15:00,XAGR3,GAP,no row for this bar
+2026-07-17 10:15:00,XSAU3,SUSPECT,"|z| = 6.1 above the limit: update winsorized, decided with the next bar"
+2026-07-17 10:15:00,XSAU3,SHOCK_KEPT,"move of -3.11% confirmed by the next bar (-2.81%): real shock, kept"
+2026-07-17 12:45:00,XAGR3,GAP,no row for this bar
+2026-07-17 15:15:00,XSID3,GAP,no row for this bar
+2026-07-17 15:45:00,XAGR3,GAP,no row for this bar
+2026-07-20 11:00:00,XTEC3,DUPLICATE,repeated row discarded (file line 40246)
+2026-07-20 12:00:00,XTEC3,DUPLICATE,repeated row discarded (file line 40307)
+2026-07-20 15:15:00,XELE3,GAP,no row for this bar
+2026-07-21 15:30:00,XLOG3,GAP,no row for this bar
+2026-07-21 15:45:00,XTEL3,GAP,no row for this bar
+2026-07-22 13:00:00,XSEG3,GAP,no row for this bar
+2026-07-22 13:15:00,XSAU3,DUPLICATE,repeated row discarded (file line 41223)
+2026-07-22 14:45:00,XSID3,GAP,no row for this bar
+2026-07-22 15:30:00,XPET3,GAP,no row for this bar
+2026-07-24 14:30:00,XVAR3,DUPLICATE,repeated row discarded (file line 42131)
+2026-07-24 15:15:00,XSEG3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-07-24 16:00:00,XTEL3,GAP,no row for this bar
+2026-07-27 11:00:00,XTEL3,GAP,no row for this bar
+2026-07-27 11:45:00,XTEL3,DUPLICATE,repeated row discarded (file line 42387)
+2026-07-27 11:45:00,XELE3,GAP,no row for this bar
+2026-07-27 14:45:00,XVAR3,GAP,no row for this bar
+2026-07-27 15:45:00,XVAR3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-07-28 11:30:00,XBAN4,SUSPECT,"|z| = 13.3 above the limit: update winsorized, decided with the next bar"
+2026-07-28 11:30:00,XBAN4,SPIKE,bad tick: move of -7.07% reverted by the next bar (-0.24% left): price excluded
+2026-07-28 12:45:00,XPET3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-07-28 14:00:00,XCON3,GAP,no row for this bar
+2026-07-28 15:15:00,XPAP3,DUPLICATE,repeated row discarded (file line 43018)
+2026-07-28 15:30:00,XPAP3,DUPLICATE,repeated row discarded (file line 43034)
+2026-07-29 12:00:00,XSAU3,DUPLICATE,repeated row discarded (file line 43246)
+2026-07-30 10:15:00,XMIN3,DUPLICATE,repeated row discarded (file line 43554)
+2026-07-30 12:30:00,XAGR3,GAP,no row for this bar
+2026-07-31 11:45:00,XTEC3,GAP,no row for this bar
+2026-07-31 13:30:00,XAGR3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-07-31 14:45:00,XTEC3,DUPLICATE,repeated row discarded (file line 44247)
+2026-07-31 15:30:00,XBAN4,GAP,no row for this bar
+2026-07-31 15:30:00,XSEG3,GAP,no row for this bar
+2026-07-31 17:00:00,XTEL3,GAP,no row for this bar
+2026-08-03 12:30:00,XIMB3,GAP,no row for this bar
+2026-08-03 12:45:00,XTEL3,GAP,no row for this bar
+2026-08-03 13:30:00,XLOG3,GAP,no row for this bar
+2026-08-03 15:00:00,XVAR3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-08-04 11:15:00,XSAU3,DUPLICATE,repeated row discarded (file line 44876)
+2026-08-04 14:30:00,XLOG3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-08-05 12:15:00,XMIN3,DUPLICATE,repeated row discarded (file line 45349)
+2026-08-05 12:30:00,XPAP3,DUPLICATE,repeated row discarded (file line 45372)
+2026-08-05 14:15:00,XSID3,GAP,no row for this bar
+2026-08-05 14:30:00,XLOG3,GAP,no row for this bar
+2026-08-06 11:15:00,XPAP3,GAP,no row for this bar
+2026-08-06 12:45:00,XBAN4,DUPLICATE,repeated row discarded (file line 45796)
+2026-08-06 12:45:00,XAGR3,DUPLICATE,repeated row discarded (file line 45805)
+2026-08-06 14:15:00,XPAP3,GAP,no row for this bar
+2026-08-06 17:00:00,XTEL3,GAP,no row for this bar
+2026-08-07 11:15:00,XBAN4,GAP,no row for this bar
+2026-08-07 13:15:00,XTEC3,GAP,no row for this bar
+2026-08-07 15:45:00,XAGR3,GAP,no row for this bar
+2026-08-10 10:45:00,XCON3,DUPLICATE,repeated row discarded (file line 46518)
+2026-08-10 11:30:00,XVAR3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-08-10 11:30:00,XSID3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-08-10 11:30:00,XCON3,GAP,no row for this bar
+2026-08-10 15:45:00,XCON3,DUPLICATE,repeated row discarded (file line 46818)
+2026-08-10 17:00:00,XPET3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-08-11 10:30:00,XPAP3,GAP,no row for this bar
+2026-08-11 10:45:00,XMIN3,GAP,no row for this bar
+2026-08-11 15:00:00,XPAP3,GAP,no row for this bar
+2026-08-12 11:30:00,XTEL3,DUPLICATE,repeated row discarded (file line 47403)
+2026-08-12 11:30:00,XPAP3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-08-12 13:15:00,XPET3,DUPLICATE,repeated row discarded (file line 47500)
+2026-08-12 15:15:00,XELE3,GAP,no row for this bar
+2026-08-13 11:00:00,XBAN4,DUPLICATE,repeated row discarded (file line 47787)
+2026-08-13 11:45:00,XIMB3,GAP,no row for this bar
+2026-08-14 11:45:00,XPET3,GAP,no row for this bar
+2026-08-14 13:30:00,XVAR3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-08-17 11:00:00,XCON3,GAP,no row for this bar
+2026-08-17 15:45:00,XAGR3,DUPLICATE,repeated row discarded (file line 48918)
+2026-08-17 16:00:00,XBAN4,DUPLICATE,repeated row discarded (file line 48926)
+2026-08-18 10:45:00,XELE3,DUPLICATE,repeated row discarded (file line 49031)
+2026-08-18 11:15:00,XAGR3,DUPLICATE,repeated row discarded (file line 49071)
+2026-08-18 15:15:00,XPET3,GAP,no row for this bar
+2026-08-19 10:30:00,XMIN3,GAP,no row for this bar
+2026-08-19 10:30:00,XVAR3,GAP,no row for this bar
+2026-08-19 14:45:00,XMIN3,GAP,no row for this bar
+2026-08-19 14:45:00,XVAR3,GAP,no row for this bar
+2026-08-19 17:00:00,XSAU3,GAP,no row for this bar
+2026-08-20 11:00:00,XLOG3,GAP,no row for this bar
+2026-08-20 14:15:00,XVAR3,GAP,no row for this bar
+2026-08-21 13:15:00,XSAU3,DUPLICATE,repeated row discarded (file line 50446)
+2026-08-21 13:15:00,XVAR3,SUSPECT,"|z| = 28.5 above the limit: update winsorized, decided with the next bar"
+2026-08-21 13:15:00,XVAR3,SHOCK_KEPT,"move of -8.70% confirmed by the next bar (-9.88%): real shock, kept"
+2026-08-24 16:45:00,XSID3,GAP,no row for this bar
+2026-08-24 17:00:00,XTEL3,DUPLICATE,repeated row discarded (file line 51088)
+2026-08-25 14:45:00,XSEG3,DUPLICATE,repeated row discarded (file line 51368)
+2026-08-25 16:30:00,XELE3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-08-26 13:00:00,XSEG3,DUPLICATE,repeated row discarded (file line 51684)
+2026-08-27 10:45:00,XTEL3,GAP,no row for this bar
+2026-08-27 11:15:00,XCON3,GAP,no row for this bar
+2026-08-27 15:45:00,XAGR3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-08-28 11:15:00,XAGR3,DUPLICATE,repeated row discarded (file line 52425)
+2026-08-28 14:15:00,XAGR3,GAP,no row for this bar
+2026-08-28 14:45:00,XLOG3,DUPLICATE,repeated row discarded (file line 52639)
+2026-08-28 15:15:00,XVAR3,GAP,no row for this bar
+2026-08-28 16:30:00,XPET3,GAP,no row for this bar
+2026-08-31 13:45:00,XVAR3,DUPLICATE,repeated row discarded (file line 52990)
+2026-08-31 15:30:00,XBAN4,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-08-31 16:15:00,XIMB3,GAP,no row for this bar
+2026-09-01 10:30:00,XAGR3,GAP,no row for this bar
+2026-09-01 13:00:00,XSAU3,GAP,no row for this bar
+2026-09-01 14:30:00,XPAP3,DUPLICATE,repeated row discarded (file line 53458)
+2026-09-01 15:15:00,XSEG3,DUPLICATE,repeated row discarded (file line 53496)
+2026-09-01 16:45:00,XMIN3,DUPLICATE,repeated row discarded (file line 53588)
+2026-09-01 17:00:00,XLOG3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-09-02 10:45:00,XCON3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-09-02 13:30:00,XVAR3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-09-02 16:30:00,XSID3,DUPLICATE,repeated row discarded (file line 53995)
+2026-09-02 16:45:00,XBAN4,GAP,no row for this bar
+2026-09-03 12:15:00,XBAN4,DUPLICATE,repeated row discarded (file line 54157)
+2026-09-03 12:15:00,XTEL3,DELAY,"arrived 2 bars late, after the bar closed: discarded"
+2026-09-03 12:15:00,XTEL3,GAP,no row for this bar
+2026-09-03 12:30:00,XVAR3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-09-03 12:45:00,XSAU3,SUSPECT,"|z| = 6.7 above the limit: update winsorized, decided with the next bar"
+2026-09-03 12:45:00,XSAU3,SHOCK_KEPT,"move of +1.91% confirmed by the next bar (+2.53%): real shock, kept"
+2026-09-03 13:45:00,XSEG3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-09-03 16:45:00,XTEC3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-09-04 12:15:00,XCON3,STALE,frozen quote (flagged retroactively; already used)
+2026-09-04 12:30:00,XCON3,STALE,frozen quote (flagged retroactively; already used)
+2026-09-04 12:45:00,XCON3,STALE,close unchanged with volume 0 for 3 bars: price ignored
+2026-09-04 13:00:00,XCON3,STALE,close unchanged with volume 0 for 4 bars: price ignored
+2026-09-04 13:00:00,XAGR3,SUSPECT,"|z| = 6.2 above the limit: update winsorized, decided with the next bar"
+2026-09-04 13:00:00,XAGR3,SHOCK_KEPT,"move of +2.12% confirmed by the next bar (+1.86%): real shock, kept"
+2026-09-04 13:15:00,XCON3,STALE,close unchanged with volume 0 for 5 bars: price ignored
+2026-09-04 13:30:00,XCON3,STALE,close unchanged with volume 0 for 6 bars: price ignored
+2026-09-04 13:45:00,XCON3,STALE,close unchanged with volume 0 for 7 bars: price ignored
+2026-09-04 14:00:00,XCON3,STALE,close unchanged with volume 0 for 8 bars: price ignored
+2026-09-04 14:15:00,XCON3,STALE,close unchanged with volume 0 for 9 bars: price ignored
+2026-09-04 14:30:00,XCON3,STALE,close unchanged with volume 0 for 10 bars: price ignored
+2026-09-08 15:15:00,XTEC3,DUPLICATE,repeated row discarded (file line 55184)
+2026-09-08 15:30:00,XTEC3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-09-08 16:00:00,XELE3,GAP,no row for this bar
+2026-09-09 11:45:00,XVAR3,GAP,no row for this bar
+2026-09-09 14:15:00,XPET3,DUPLICATE,repeated row discarded (file line 55535)
+2026-09-09 16:30:00,XCON3,DUPLICATE,repeated row discarded (file line 55678)
+2026-09-10 11:15:00,XELE3,GAP,no row for this bar
+2026-09-10 11:30:00,XSID3,DUPLICATE,repeated row discarded (file line 55796)
+2026-09-10 11:30:00,XIMB3,GAP,no row for this bar
+2026-09-10 13:00:00,XVAR3,GAP,no row for this bar
+2026-09-10 16:00:00,XBAN4,GAP,no row for this bar
+2026-09-11 11:15:00,XPET3,DUPLICATE,repeated row discarded (file line 56194)
+2026-09-11 13:00:00,XPAP3,DUPLICATE,repeated row discarded (file line 56311)
+2026-09-11 13:45:00,XIMB3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-09-11 16:45:00,XTEL3,DUPLICATE,repeated row discarded (file line 56535)
+2026-09-14 12:15:00,XSID3,GAP,no row for this bar
+2026-09-14 13:30:00,XSID3,SUSPECT,"|z| = 6.1 above the limit: update winsorized, decided with the next bar"
+2026-09-14 13:30:00,XSID3,SHOCK_KEPT,"move of -2.33% confirmed by the next bar (-2.55%): real shock, kept"
+2026-09-14 14:30:00,XTEC3,GAP,no row for this bar
+2026-09-15 10:45:00,XPAP3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-09-15 12:30:00,XSEG3,DUPLICATE,repeated row discarded (file line 57113)
+2026-09-15 14:45:00,XPAP3,GAP,no row for this bar
+2026-09-16 11:15:00,XSID3,GAP,no row for this bar
+2026-09-16 11:45:00,XLOG3,DUPLICATE,repeated row discarded (file line 57498)
+2026-09-16 13:45:00,XBAN4,DUPLICATE,repeated row discarded (file line 57607)
+2026-09-16 15:45:00,XTEL3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-09-16 15:45:00,XTEC3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-09-16 16:00:00,XVAR3,GAP,no row for this bar
+2026-09-16 16:30:00,XVAR3,DUPLICATE,repeated row discarded (file line 57776)
+2026-09-17 10:30:00,XAGR3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-09-17 11:45:00,XPAP3,GAP,no row for this bar
+2026-09-17 12:15:00,XSEG3,DUPLICATE,repeated row discarded (file line 57938)
+2026-09-17 13:15:00,XVAR3,GAP,no row for this bar
+2026-09-18 15:30:00,XPAP3,DUPLICATE,repeated row discarded (file line 58561)
+2026-09-18 16:00:00,XCON3,DUPLICATE,repeated row discarded (file line 58588)
+2026-09-21 12:30:00,XPET3,GAP,no row for this bar
+2026-09-21 13:00:00,XTEC3,DUPLICATE,repeated row discarded (file line 58829)
+2026-09-21 15:15:00,XTEC3,SUSPECT,"|z| = 22.0 above the limit: update winsorized, decided with the next bar"
+2026-09-21 15:15:00,XTEC3,SPIKE,bad tick: move of +9.60% reverted by the next bar (-0.22% left): price excluded
+2026-09-22 13:45:00,XIMB3,DUPLICATE,repeated row discarded (file line 59300)
+2026-09-22 15:15:00,XSID3,DUPLICATE,repeated row discarded (file line 59383)
+2026-09-23 16:45:00,XSAU3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-09-24 10:30:00,XTEL3,GAP,no row for this bar
+2026-09-24 13:45:00,XTEC3,DUPLICATE,repeated row discarded (file line 60136)
+2026-09-24 16:45:00,XAGR3,DUPLICATE,repeated row discarded (file line 60319)
+2026-09-25 11:15:00,XAGR3,GAP,no row for this bar
+2026-09-25 13:15:00,XPET3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-09-25 14:15:00,XTEL3,GAP,no row for this bar
+2026-09-25 16:00:00,XCON3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-09-25 16:15:00,XTEC3,DUPLICATE,repeated row discarded (file line 60706)
+2026-09-25 17:00:00,XAGR3,GAP,no row for this bar
+2026-09-28 11:30:00,XBAN4,DUPLICATE,repeated row discarded (file line 60835)
+2026-09-28 11:45:00,XPAP3,DUPLICATE,repeated row discarded (file line 60860)
+2026-09-28 15:45:00,XTEL3,DUPLICATE,repeated row discarded (file line 61099)
+2026-09-28 16:00:00,XLOG3,GAP,no row for this bar
+2026-09-28 16:30:00,XBAN4,DUPLICATE,repeated row discarded (file line 61137)
+2026-09-29 10:15:00,XSID3,GAP,no row for this bar
+2026-09-29 11:45:00,XVAR3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-09-29 12:15:00,XSID3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-09-29 12:15:00,XELE3,GAP,no row for this bar
+2026-09-29 12:30:00,XSAU3,DUPLICATE,repeated row discarded (file line 61326)
+2026-09-29 16:45:00,XPET3,GAP,no row for this bar
+2026-09-30 12:15:00,XVAR3,DUPLICATE,repeated row discarded (file line 61725)
+2026-09-30 12:30:00,XSID3,DUPLICATE,repeated row discarded (file line 61740)
+2026-09-30 12:45:00,XPAP3,GAP,no row for this bar
+2026-09-30 16:45:00,XLOG3,DUPLICATE,repeated row discarded (file line 62004)
+2026-10-01 10:15:00,XLOG3,DUPLICATE,repeated row discarded (file line 62035)
+2026-10-01 10:45:00,XPET3,GAP,no row for this bar
+2026-10-01 11:00:00,XTEC3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-10-01 11:45:00,XSID3,GAP,no row for this bar
+2026-10-01 14:15:00,XPAP3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-10-01 16:15:00,XPAP3,GAP,no row for this bar
+2026-10-01 16:30:00,XBAN4,GAP,no row for this bar
+2026-10-02 10:45:00,XSAU3,DUPLICATE,repeated row discarded (file line 62480)
+2026-10-02 13:45:00,XCON3,GAP,no row for this bar
+2026-10-02 14:30:00,XTEC3,DUPLICATE,repeated row discarded (file line 62701)
+2026-10-02 16:45:00,XTEC3,SUSPECT,"|z| = 7.8 above the limit: update winsorized, decided with the next bar"
+2026-10-02 16:45:00,XTEC3,SHOCK_KEPT,"move of -4.55% confirmed by the next bar (-3.66%): real shock, kept"

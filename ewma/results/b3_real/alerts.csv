@@ -1,0 +1,6 @@
+time,severity,type,message
+2026-09-14 17:00:00,warning,BAD_TICK,GGBR4 price excluded (move of +1.39% reverted)
+2026-10-05 10:15:00,warning,MODE,NORMAL -> DEGRADED (dq_score 0.627)
+2026-10-05 11:00:00,info,MODE,DEGRADED -> NORMAL (dq_score 1.000)
+2026-10-05 11:30:00,warning,MODE,NORMAL -> DEGRADED (dq_score 0.878)
+2026-10-05 12:15:00,info,MODE,DEGRADED -> NORMAL (dq_score 1.000)
