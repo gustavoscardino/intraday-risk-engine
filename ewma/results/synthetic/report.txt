@@ -1,0 +1,177 @@
+EWMA intraday risk (EWMA-N (ref), EWMA-N, EWMA-t)
+dataset: data/synthetic
+prices:  data/synthetic/prices_15m.csv
+results: ewma/results/synthetic
+read 62970 rows x 15 assets (unparseable 0, unknown tickers 0); 21 fills, 4 options
+session: first bar closes 10:15, 15-minute bars, 28 bars/day; 150 sessions, window 60 days (automatic: half of the sessions, at most 60)
+models: lambda estimated daily, nu estimated daily, diurnal profile pooled, overnight on, data-quality layer ON
+2026-05-27  lambda 0.9456  nu   6.33  overnight lambda 0.9551 nu   5.02  refit 3.71 ms
+2026-05-28  lambda 0.9460  nu   6.18  overnight lambda 0.9509 nu   5.04  refit 3.78 ms
+2026-05-29  lambda 0.9458  nu   6.37  overnight lambda 0.9537 nu   5.33  refit 3.23 ms
+2026-06-01  lambda 0.9460  nu   6.47  overnight lambda 0.9572 nu   5.63  refit 3.33 ms
+2026-06-02  lambda 0.9460  nu   6.48  overnight lambda 0.9547 nu   5.72  refit 3.56 ms
+2026-06-03  lambda 0.9453  nu   6.74  overnight lambda 0.9548 nu   5.74  refit 3.51 ms
+2026-06-05  lambda 0.9442  nu   6.85  overnight lambda 0.9623 nu   5.98  refit 3.32 ms
+2026-06-08  lambda 0.9434  nu   7.36  overnight lambda 0.9592 nu   5.90  refit 3.86 ms
+2026-06-09  lambda 0.9439  nu   7.03  overnight lambda 0.9562 nu   5.77  refit 3.47 ms
+2026-06-10  lambda 0.9446  nu   6.90  overnight lambda 0.9500 nu   5.72  refit 3.52 ms
+2026-06-11  lambda 0.9441  nu   7.00  overnight lambda 0.9482 nu   5.70  refit 3.39 ms
+2026-06-12  lambda 0.9423  nu   6.65  overnight lambda 0.9536 nu   5.97  refit 3.32 ms
+2026-06-15  lambda 0.9411  nu   6.65  overnight lambda 0.9550 nu   6.09  refit 3.24 ms
+2026-06-16  lambda 0.9406  nu   6.74  overnight lambda 0.9526 nu   5.63  refit 3.49 ms
+2026-06-17  lambda 0.9490  nu   7.51  overnight lambda 0.9505 nu   5.49  refit 3.33 ms
+2026-06-18  lambda 0.9578  nu   7.37  overnight lambda 0.9625 nu   5.67  refit 3.69 ms
+2026-06-19  lambda 0.9576  nu   6.86  overnight lambda 0.9614 nu   5.49  refit 4.31 ms
+2026-06-22  lambda 0.9564  nu   6.75  overnight lambda 0.9596 nu   5.50  refit 3.63 ms
+2026-06-23  lambda 0.9529  nu   7.14  overnight lambda 0.9594 nu   5.44  refit 3.36 ms
+2026-06-24  lambda 0.9512  nu   7.36  overnight lambda 0.9579 nu   5.30  refit 4.62 ms
+2026-06-25  lambda 0.9492  nu   7.46  overnight lambda 0.9564 nu   5.18  refit 3.56 ms
+2026-06-26  lambda 0.9463  nu   6.80  overnight lambda 0.9590 nu   5.63  refit 3.49 ms
+2026-06-29  lambda 0.9459  nu   6.72  overnight lambda 0.9640 nu   5.93  refit 3.89 ms
+2026-06-30  lambda 0.9459  nu   6.85  overnight lambda 0.9626 nu   5.78  refit 3.38 ms
+2026-07-01  lambda 0.9470  nu   6.75  overnight lambda 0.9609 nu   5.70  refit 3.52 ms
+2026-07-02  lambda 0.9502  nu   6.50  overnight lambda 0.9600 nu   5.56  refit 3.45 ms
+2026-07-03  lambda 0.9543  nu   6.35  overnight lambda 0.9599 nu   5.40  refit 3.42 ms
+2026-07-06  lambda 0.9589  nu   6.40  overnight lambda 0.9593 nu   5.49  refit 3.64 ms
+2026-07-07  lambda 0.9605  nu   6.85  overnight lambda 0.9575 nu   5.34  refit 3.49 ms
+2026-07-08  lambda 0.9599  nu   6.92  overnight lambda 0.9577 nu   5.50  refit 3.96 ms
+2026-07-09  lambda 0.9612  nu   7.71  overnight lambda 0.9566 nu   5.41  refit 3.39 ms
+2026-07-10  lambda 0.9632  nu   7.26  overnight lambda 0.9548 nu   5.28  refit 3.48 ms
+2026-07-13  lambda 0.9623  nu   6.79  overnight lambda 0.9542 nu   5.21  refit 3.56 ms
+2026-07-14  lambda 0.9626  nu   7.20  overnight lambda 0.9520 nu   5.11  refit 3.55 ms
+2026-07-15  lambda 0.9620  nu   7.29  overnight lambda 0.9493 nu   5.13  refit 3.72 ms
+2026-07-16  lambda 0.9609  nu   7.10  overnight lambda 0.9555 nu   5.25  refit 3.56 ms
+2026-07-17  lambda 0.9640  nu   7.00  overnight lambda 0.9548 nu   5.73  refit 3.58 ms
+2026-07-20  lambda 0.9648  nu   7.13  overnight lambda 0.9554 nu   6.06  refit 3.99 ms
+2026-07-21  lambda 0.9655  nu   7.43  overnight lambda 0.9538 nu   6.02  refit 4.01 ms
+2026-07-22  lambda 0.9656  nu   7.46  overnight lambda 0.9576 nu   6.33  refit 3.88 ms
+2026-07-23  lambda 0.9650  nu   7.58  overnight lambda 0.9759 nu   5.64  refit 3.45 ms
+2026-07-24  lambda 0.9649  nu   7.29  overnight lambda 0.9764 nu   5.53  refit 3.58 ms
+2026-07-27  lambda 0.9656  nu   7.52  overnight lambda 0.9761 nu   5.50  refit 3.67 ms
+2026-07-28  lambda 0.9655  nu   7.44  overnight lambda 0.9761 nu   5.60  refit 3.79 ms
+2026-07-29  lambda 0.9640  nu   7.46  overnight lambda 0.9761 nu   5.49  refit 3.40 ms
+2026-07-30  lambda 0.9646  nu   7.47  overnight lambda 0.9757 nu   5.42  refit 3.53 ms
+2026-07-31  lambda 0.9651  nu   7.46  overnight lambda 0.9754 nu   5.30  refit 3.60 ms
+2026-08-03  lambda 0.9661  nu   7.59  overnight lambda 0.9752 nu   5.23  refit 3.65 ms
+2026-08-04  lambda 0.9658  nu   7.63  overnight lambda 0.9750 nu   5.25  refit 3.58 ms
+2026-08-05  lambda 0.9659  nu   7.37  overnight lambda 0.9744 nu   5.14  refit 3.74 ms
+2026-08-06  lambda 0.9693  nu   7.18  overnight lambda 0.9739 nu   5.09  refit 3.75 ms
+2026-08-07  lambda 0.9696  nu   7.27  overnight lambda 0.9756 nu   5.25  refit 3.64 ms
+2026-08-10  lambda 0.9690  nu   7.01  overnight lambda 0.9766 nu   5.47  refit 3.64 ms
+2026-08-11  lambda 0.9676  nu   7.21  overnight lambda 0.9763 nu   5.35  refit 3.91 ms
+2026-08-12  lambda 0.9664  nu   6.55  overnight lambda 0.9759 nu   5.28  refit 3.59 ms
+2026-08-13  lambda 0.9658  nu   6.66  overnight lambda 0.9759 nu   5.42  refit 3.66 ms
+2026-08-14  lambda 0.9656  nu   6.84  overnight lambda 0.9754 nu   5.30  refit 3.57 ms
+2026-08-17  lambda 0.9665  nu   6.55  overnight lambda 0.9751 nu   5.22  refit 3.75 ms
+2026-08-18  lambda 0.9651  nu   6.56  overnight lambda 0.9770 nu   5.38  refit 3.51 ms
+2026-08-19  lambda 0.9653  nu   6.36  overnight lambda 0.9772 nu   5.46  refit 3.43 ms
+2026-08-20  lambda 0.9634  nu   6.23  overnight lambda 0.9770 nu   5.36  refit 3.73 ms
+2026-08-21  lambda 0.9787  nu   5.92  overnight lambda 0.9770 nu   5.68  refit 3.58 ms
+2026-08-24  lambda 0.9775  nu   5.78  overnight lambda 0.9771 nu   5.73  refit 3.39 ms
+2026-08-25  lambda 0.9783  nu   5.79  overnight lambda 0.9771 nu   5.64  refit 3.67 ms
+2026-08-26  lambda 0.9785  nu   5.83  overnight lambda 0.9777 nu   5.82  refit 3.85 ms
+2026-08-27  lambda 0.9790  nu   5.65  overnight lambda 0.9774 nu   5.72  refit 3.77 ms
+2026-08-28  lambda 0.9786  nu   5.78  overnight lambda 0.9770 nu   5.71  refit 3.88 ms
+2026-08-31  lambda 0.9782  nu   5.72  overnight lambda 0.9767 nu   5.61  refit 3.86 ms
+2026-09-01  lambda 0.9781  nu   5.81  overnight lambda 0.9765 nu   5.66  refit 3.63 ms
+2026-09-02  lambda 0.9782  nu   5.90  overnight lambda 0.9764 nu   5.85  refit 3.64 ms
+2026-09-03  lambda 0.9780  nu   5.72  overnight lambda 0.9762 nu   5.76  refit 3.52 ms
+2026-09-04  lambda 0.9785  nu   5.75  overnight lambda 0.9759 nu   5.67  refit 5.09 ms
+2026-09-08  lambda 0.9788  nu   5.73  overnight lambda 0.9761 nu   5.85  refit 3.71 ms
+2026-09-09  lambda 0.9799  nu   5.61  overnight lambda 0.9758 nu   5.78  refit 4.01 ms
+2026-09-10  lambda 0.9808  nu   5.82  overnight lambda 0.9769 nu   5.93  refit 4.20 ms
+2026-09-11  lambda 0.9809  nu   5.91  overnight lambda 0.9773 nu   6.11  refit 3.69 ms
+2026-09-14  lambda 0.9806  nu   6.12  overnight lambda 0.9771 nu   6.04  refit 3.92 ms
+2026-09-15  lambda 0.9802  nu   6.42  overnight lambda 0.9768 nu   5.91  refit 3.54 ms
+2026-09-16  lambda 0.9800  nu   6.53  overnight lambda 0.9767 nu   6.01  refit 3.98 ms
+2026-09-17  lambda 0.9799  nu   7.08  overnight lambda 0.9765 nu   6.30  refit 3.66 ms
+2026-09-18  lambda 0.9783  nu   7.23  overnight lambda 0.9766 nu   6.21  refit 3.80 ms
+2026-09-21  lambda 0.9795  nu   8.18  overnight lambda 0.9763 nu   6.14  refit 3.54 ms
+2026-09-22  lambda 0.9791  nu   7.80  overnight lambda 0.9765 nu   6.01  refit 3.62 ms
+2026-09-23  lambda 0.9795  nu   7.55  overnight lambda 0.9764 nu   5.94  refit 3.48 ms
+2026-09-24  lambda 0.9800  nu   7.81  overnight lambda 0.9760 nu   5.84  refit 3.57 ms
+2026-09-25  lambda 0.9803  nu   7.91  overnight lambda 0.9758 nu   5.73  refit 3.67 ms
+2026-09-28  lambda 0.9804  nu   7.89  overnight lambda 0.9755 nu   5.69  refit 3.64 ms
+2026-09-29  lambda 0.9801  nu   7.66  overnight lambda 0.9755 nu   5.80  refit 3.62 ms
+2026-09-30  lambda 0.9801  nu   7.35  overnight lambda 0.9749 nu   5.40  refit 3.66 ms
+2026-10-01  lambda 0.9795  nu   7.28  overnight lambda 0.9745 nu   5.30  refit 3.73 ms
+2026-10-02  lambda 0.9793  nu   7.36  overnight lambda 0.9744 nu   5.25  refit 3.80 ms
+
+Backtest of the one-bar-ahead forecasts (2517 bars, overnight gap excluded)
+  model            conf   exc    rate            95% CI expected  Kupiec p     CC p  ES Z2 p    zone ES ratio
+  EWMA-N (ref)    0.950   118   4.69% [ 3.93%,  5.59%]    5.00%    0.4683   0.6215   0.1889   green    1.124
+  EWMA-N (ref)    0.975    62   2.46% [ 1.93%,  3.15%]    2.50%    0.9058   0.8986   0.0550   green    1.209
+  EWMA-N (ref)    0.990    34   1.35% [ 0.97%,  1.88%]    1.00%    0.0931   0.1533   0.0005  yellow    1.312
+  EWMA-N          0.950   117   4.65% [ 3.89%,  5.54%]    5.00%    0.4130   0.5699   0.3953   green    1.109
+  EWMA-N          0.975    63   2.50% [ 1.96%,  3.19%]    2.50%    0.9924   0.9464   0.1399   green    1.180
+  EWMA-N          0.990    38   1.51% [ 1.10%,  2.07%]    1.00%    0.0168   0.0503   0.0005  yellow    1.170
+  EWMA-t          0.950   129   5.13% [ 4.33%,  6.06%]    5.00%    0.7741   0.9479   0.3713   green    1.011
+  EWMA-t          0.975    56   2.22% [ 1.72%,  2.88%]    2.50%    0.3678   0.5443   0.6662   green    1.089
+  EWMA-t          0.990    30   1.19% [ 0.84%,  1.70%]    1.00%    0.3476   0.4313   0.1679   green    1.041
+  Berkowitz density test (whole distribution): EWMA-N (ref) p = 0.0018; EWMA-N p = 0.0954; EWMA-t p = 0.4500;
+
+Coverage by time of day (exception rate, Kupiec p in brackets)
+  model            conf        open (3 bars)               midday       close (3 bars)
+  EWMA-N (ref)    0.950      10.45% [0.0003]       3.74% [0.0072]       5.93% [0.4971]
+  EWMA-N (ref)    0.975       7.46% [0.0000]       1.92% [0.0852]       1.48% [0.2466]
+  EWMA-N (ref)    0.990       4.10% [0.0001]       1.11% [0.6238]       0.37% [0.2327]
+  EWMA-N          0.950       4.85% [0.9103]       5.00% [0.9959]       1.85% [0.0067]
+  EWMA-N          0.975       2.99% [0.6215]       2.73% [0.5207]       0.37% [0.0052]
+  EWMA-N          0.990       2.61% [0.0273]       1.52% [0.0321]       0.37% [0.2327]
+  EWMA-t          0.950       5.60% [0.6597]       5.36% [0.4720]       2.96% [0.0976]
+  EWMA-t          0.975       2.99% [0.6215]       2.37% [0.7194]       0.37% [0.0052]
+  EWMA-t          0.990       1.87% [0.2036]       1.21% [0.3574]       0.37% [0.2327]
+
+Other horizons / books
+  model                  conf     n   exc    rate            95% CI  Kupiec p     CC p    zone ES ratio
+  overnight EWMA-N      0.950    90     5   5.56% [ 2.40%, 12.35%]    0.8121   0.7218   green    1.347
+  overnight EWMA-N      0.975    90     3   3.33% [ 1.14%,  9.35%]    0.6297   0.8018   green    1.426
+  overnight EWMA-N      0.990    90     3   3.33% [ 1.14%,  9.35%]    0.0796   0.1937  yellow    1.250
+  overnight EWMA-t      0.950    90     5   5.56% [ 2.40%, 12.35%]    0.8121   0.7218   green    1.250
+  overnight EWMA-t      0.975    90     3   3.33% [ 1.14%,  9.35%]    0.6297   0.8018   green    1.243
+  overnight EWMA-t      0.990    90     2   2.22% [ 0.61%,  7.74%]    0.3155   0.5771   green    1.144
+  book delta-linear     0.950  2517   130   5.16% [ 4.37%,  6.10%]    0.7057   0.8092   green    1.002
+  book delta-linear     0.975  2517    54   2.15% [ 1.65%,  2.79%]    0.2431   0.3886   green    1.101
+  book delta-linear     0.990  2517    33   1.31% [ 0.94%,  1.84%]    0.1344   0.2464   green    1.009
+  overnight EWMA-N Berkowitz p = 0.4854 (90 sessions)
+  overnight EWMA-t Berkowitz p = 0.4667 (90 sessions)
+
+EWMA parameters (91 daily re-estimations; diurnal profile pooled)
+  lambda (EWMA-N / EWMA-t): last 0.9793, range 0.9406 to 0.9809 (median 0.9653); half-life 33.1 bars
+  nu (EWMA-t):              last 7.36, range 5.61 to 8.18 (median 6.86), fitted on 1260 standardized outcomes
+  overnight:                lambda 0.9744, nu 5.25
+  EWMA-N (ref):             lambda 0.94 fixed, raw returns, Normal
+
+Data-quality layer
+  feed rows: 62970 accepted, 0 duplicates discarded, 0 out of order (accepted), 0 delayed past the bar close (discarded), 0 off-grid
+  cells: 0 GAP, 0 STALE; jumps with |z| > 6: 6 SUSPECT decided by the next bar -> 0 bad ticks excluded (SPIKE), 6 real shocks kept, 0 undecided; 3 in market-wide moves (kept at once)
+  modes: NORMAL 4198 bars (100.00%), DEGRADED 0 (0.00%), FREEZE 0 (0.00%); 0 forecasts kept frozen
+  alerts: 0 (0 critical, 0 warning) -> alerts.csv; events -> dq_events.csv
+    2026-06-03 10:30:00 XVAR3  SHOCK_KEPT move of -9.69% confirmed by the next bar (-11.44%): real shock, kept
+    2026-06-18 12:00:00 XLOG3  SHOCK_KEPT move of -3.81% confirmed by the next bar (-2.08%): real shock, kept
+    2026-07-17 10:15:00 XBAN4  SHOCK_KEPT |z| = 6.1 with 3 assets jumping together: market move, kept
+    2026-07-17 10:15:00 XAGR3  SHOCK_KEPT |z| = 6.1 with 3 assets jumping together: market move, kept
+    2026-07-17 10:15:00 XSAU3  SHOCK_KEPT |z| = 6.1 with 3 assets jumping together: market move, kept
+    2026-08-21 13:15:00 XVAR3  SHOCK_KEPT move of -8.70% confirmed by the next bar (-9.88%): real shock, kept
+    2026-09-03 12:45:00 XSAU3  SHOCK_KEPT move of +1.91% confirmed by the next bar (+2.53%): real shock, kept
+    2026-09-04 13:00:00 XAGR3  SHOCK_KEPT move of +2.12% confirmed by the next bar (+1.86%): real shock, kept
+    2026-10-02 16:45:00 XTEC3  SHOCK_KEPT move of -4.55% confirmed by the next bar (-3.66%): real shock, kept
+
+Detection against the clean file (data/synthetic/prices_15m.csv)
+  flag           injected  detected   recall    other cells
+  GAP                   0         0        -              0
+  DUPLICATE             0         0        -              0
+  OUT_OF_ORDER          0         0        -              0
+  DELAY                 0         0        -              0
+  STALE                 0         0        -              0
+  SPIKE                 0         0        -              0
+  (other cells: flags where the clean file has no such fault, e.g. bars that never traded)
+
+Last forecast (2026-10-02 17:00:00 -> next bar): sigma ref 17890 / EWMA 30139; VaR99 ref 41619, N 70113, t 76070; ES99 ref 47681, N 80326, t 95125 (nu 7.36)
+
+Performance (15 assets)
+  per-bar update (fills + DQ + filters + VaR/ES of 3 models): p50 0.80 us, p95 1.30 us, p99 2.67 us, max 22.90 us
+  end-of-day refit (profile + lambda + nu + filters + overnight): p50 3.63 ms, p95 4.01 ms, max 5.09 ms
+  replay: 4198 bars, 2517 forecasts scored (1 unscored: target bar never printed; 0 overnight unscored), 21 fills applied (0 unknown), engine 0.340 s, wall 0.457 s
+
+outputs written to ewma/results/synthetic (report: report.txt)
