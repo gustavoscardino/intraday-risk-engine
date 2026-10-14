@@ -1,0 +1,21 @@
+// Windows application manifest (MinGW / windres): UTF-8 code page, so that folders with
+// accented names work in paths and arguments; long paths; asInvoker.
+1 24
+BEGIN
+  "<?xml version=""1.0"" encoding=""UTF-8"" standalone=""yes""?>\n"
+  "<assembly xmlns=""urn:schemas-microsoft-com:asm.v1"" manifestVersion=""1.0"" xmlns:asmv3=""urn:schemas-microsoft-com:asm.v3"">\n"
+  " <asmv3:application>\n"
+  "  <asmv3:windowsSettings>\n"
+  "   <longPathAware xmlns=""http://schemas.microsoft.com/SMI/2016/WindowsSettings"">true</longPathAware>\n"
+  "   <activeCodePage xmlns=""http://schemas.microsoft.com/SMI/2019/WindowsSettings"">UTF-8</activeCodePage>\n"
+  "  </asmv3:windowsSettings>\n"
+  " </asmv3:application>\n"
+  " <trustInfo xmlns=""urn:schemas-microsoft-com:asm.v2"">\n"
+  "  <security>\n"
+  "   <requestedPrivileges>\n"
+  "    <requestedExecutionLevel level=""asInvoker"" uiAccess=""false""/>\n"
+  "   </requestedPrivileges>\n"
+  "  </security>\n"
+  " </trustInfo>\n"
+  "</assembly>\n"
+END

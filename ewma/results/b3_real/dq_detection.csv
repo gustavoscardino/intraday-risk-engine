@@ -1,0 +1,7 @@
+flag,injected,detected,recall,flags_on_other_cells
+GAP,0,0,nan,7
+DUPLICATE,0,0,nan,0
+OUT_OF_ORDER,0,0,nan,0
+DELAY,0,0,nan,0
+STALE,0,0,nan,0
+SPIKE,0,0,nan,1
