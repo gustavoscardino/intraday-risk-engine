@@ -1,0 +1,58 @@
+dataset: data/b3_real
+results: garch_t/results/b3_real
+loaded 1669 bars x 15 assets from data/b3_real/prices_15m.csv in 0.14 s (rows 25028, duplicates 0, bad 0, unknown 0)
+  missing/invalid closes: 7 of 25035 cells
+session: first bar closes 10:15, 15-minute bars, 28 bars/day; 60 sessions, window 30 days (automatic: half of the sessions, at most 60)
+
+Backtest of the one-bar-ahead forecasts (840 bars, overnight gap excluded)
+  model            conf   exc    rate            95% CI expected  Kupiec p     CC p  ES Z2 p    zone ES ratio
+  GARCH-t/EVT     0.950    47   5.60% [ 4.23%,  7.36%]    5.00%    0.4369   0.6741   0.1464   green    1.050
+  GARCH-t/EVT     0.975    23   2.74% [ 1.83%,  4.08%]    2.50%    0.6633   0.4756   0.2204   green    1.079
+  GARCH-t/EVT     0.990     9   1.07% [ 0.56%,  2.02%]    1.00%    0.8370   0.8880   0.2129   green    1.183
+  EWMA-N (ref)    0.950    36   4.29% [ 3.11%,  5.88%]    5.00%    0.3307   0.1240   0.1579   green    1.297
+  EWMA-N (ref)    0.975    28   3.33% [ 2.32%,  4.78%]    2.50%    0.1407   0.1285   0.0010   green    1.246
+  EWMA-N (ref)    0.990    17   2.02% [ 1.27%,  3.22%]    1.00%    0.0088   0.0228   0.0005  yellow    1.306
+  Berkowitz density test (whole distribution): GARCH-t/EVT p = 0.0020 (rho 0.012, sd 1.092); EWMA-N p = 0.0075 (rho 0.004, sd 1.084)
+
+Coverage by time of day (exception rate, Kupiec p in brackets)
+  model            conf        open (3 bars)               midday       close (3 bars)
+  GARCH-t/EVT     0.950       6.67% [0.4890]       5.45% [0.5972]       5.56% [0.8121]
+  GARCH-t/EVT     0.975       5.56% [0.1088]       2.27% [0.7042]       3.33% [0.6297]
+  GARCH-t/EVT     0.990       1.11% [0.9171]       1.06% [0.8769]       1.11% [0.9171]
+  EWMA-N (ref)    0.950      18.89% [0.0000]       2.88% [0.0068]       0.00% [0.0024]
+  EWMA-N (ref)    0.975      17.78% [0.0000]       1.82% [0.2387]       0.00% [0.0328]
+  EWMA-N (ref)    0.990      12.22% [0.0000]       0.91% [0.8116]       0.00% [0.1786]
+
+Other horizons / books
+  model                  conf     n   exc    rate            95% CI  Kupiec p     CC p    zone ES ratio
+  overnight             0.950    30     1   3.33% [ 0.59%, 16.67%]    0.6565   0.8741   green    1.063
+  overnight             0.975    30     1   3.33% [ 0.59%, 16.67%]    0.7807   0.9282   green    0.930
+  overnight             0.990    30     0   0.00% [ 0.00%, 11.35%]    0.4374   0.7397   green      nan
+  overnight Berkowitz p = 0.1657 (30 sessions)
+
+GARCH(1,1)-t models at the last refit (deseasonalized returns); EWMA correlation, lambda = 0.9994
+  ticker  source       active    alpha     beta      a+b      nu half-life  daily vol
+  PETR4   fitted          yes   0.1137   0.5748   0.6884    5.18      1.9b      1.75%
+  PRIO3   fitted          yes   0.0213   0.9153   0.9366    6.01     10.6b      1.98%
+  VALE3   fitted          yes   0.0688   0.8752   0.9440    5.24     12.0b      1.57%
+  GGBR4   fitted          yes   0.0299   0.9519   0.9818    8.21     37.7b      2.02%
+  SUZB3   fitted          yes   0.0324   0.8834   0.9158    5.67      7.9b      1.54%
+  ITUB4   fitted          yes   0.1158   0.8156   0.9314    9.36      9.8b      1.69%
+  BBDC4   fitted          yes   0.1313   0.8247   0.9559   26.68     15.4b      1.83%
+  BBAS3   fitted          yes   0.1144   0.7323   0.8467    8.70      4.2b      2.24%
+  B3SA3   fitted          yes   0.0543   0.9170   0.9713    6.28     23.8b      2.10%
+  ABEV3   fitted          yes   0.0195   0.9576   0.9771    5.70     29.9b      1.50%
+  RADL3   fitted          yes   0.1120   0.7381   0.8501    5.02      4.3b      2.73%
+  RENT3   fitted          yes   0.0616   0.8991   0.9606    7.81     17.3b      2.67%
+  WEGE3   fitted          yes   0.0975   0.8126   0.9101    9.90      7.4b      1.74%
+  SBSP3   fitted          yes   0.0840   0.7587   0.8426    6.12      4.0b      1.75%
+  EQTL3   fitted          yes   0.0633   0.8915   0.9547    7.46     15.0b      1.78%
+
+Last forecast (2026-10-09 17:00:00 -> next bar): sigma 36886, VaR99 101757, ES99 129442, nu_p 8.90
+
+Performance (15 assets, 8 threads for refits)
+  per-bar update (fills + filters + correlations + VaR/ES): p50 1.90 us, p95 2.60 us, p99 14.90 us, max 17.00 us
+  end-of-day refit (GARCH fits + correlation dynamics + tails + overnight): p50 38.9 ms, p95 69.1 ms, max 77.7 ms
+  replay: 1669 bars, 840 forecasts scored (0 unscored: target bar never printed; 0 overnight unscored: late opening), 0 fills applied (0 unknown), 0 off-grid bars, engine 1.341 s, wall 1.345 s
+
+outputs written to garch_t/results/b3_real (report: report.txt)
