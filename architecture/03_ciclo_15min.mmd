@@ -1,0 +1,15 @@
+flowchart TD
+    A([Barra t fecha]) --> B["Decide os preços suspeitos da barra t−1<br/>reverteu → bad tick, preço excluído<br/>não reverteu → choque real, mantido"]
+    B --> C["Pontua a previsão anterior<br/>perda da barra t−1 vs VaR previsto"]
+    C --> D["Aplica as ordens executadas (fills)<br/>atualiza posições"]
+    D --> E["Calcula os retornos<br/>aplica a regra SPIKE"]
+    E --> F["Calcula dq_score e o modo"]
+    F --> G{FREEZE?}
+    G -- sim --> H["Não atualiza o EWMA<br/>mantém o último VaR/ES válido"]
+    G -- não --> I["Atualiza os 3 filtros EWMA"]
+    H --> J{Fim do dia?}
+    I --> J
+    J -- sim --> K["Re-estima perfil U, λ e ν na janela<br/>previsão overnight"]
+    J -- não --> L
+    K --> L["Prevê σ, VaR e ES da barra t+1<br/>EWMA-N (ref) · EWMA-N · EWMA-t"]
+    L --> A
