@@ -1,0 +1,10 @@
+day,timestamp,event
+60,2026-05-28 10:00:00,"option book set up (options.csv); expiry 2026-11-20"
+88,2026-07-08 13:45:00,"[degraded feed only] bad tick on XPET3 close"
+95,2026-07-17 10:15:00,"market crash: factor shock of -9 conditional std devs; elevated market volatility regime until day 104"
+95,2026-07-17 10:45:00,"circuit breaker: trading halted for two bars (no prints at 10:30 and 10:45)"
+102,2026-07-28 11:30:00,"[degraded feed only] bad tick on XBAN4 close"
+105,2026-07-31 10:00:00,"market volatility regime back to normal"
+120,2026-08-21 13:15:00,"XVAR3 earnings shock: -9% idiosyncratic move in one bar"
+130,2026-09-04 12:00:00,"[degraded feed only] XCON3 price frozen for bars 8-17"
+140,2026-09-21 15:15:00,"[degraded feed only] bad tick on XTEC3 close"
