@@ -1,0 +1,31 @@
+flowchart LR
+    subgraph Entrada["data/"]
+        P["prices_15m.csv<br/>(ordem de chegada)"]
+        A["assets.csv · portfolio_initial.csv<br/>fills.csv · options.csv"]
+    end
+
+    subgraph DQ["Camada de qualidade de dados"]
+        I["Ingestão<br/>DUPLICATE · OUT_OF_ORDER · DELAY"]
+        G["Painel de barras<br/>GAP · STALE"]
+        S["Regra SPIKE<br/>|z| > 6, confirmada na barra seguinte"]
+        M["dq_score e modo<br/>NORMAL · DEGRADED · FREEZE"]
+    end
+
+    subgraph Motor["Motor EWMA"]
+        R["Retornos<br/>1ª barra sem o gap · ÷√k"]
+        U["Perfil diurno (U)"]
+        E["Filtros EWMA<br/>ref λ = 0,94 · λ estimado"]
+        F["VaR / ES<br/>EWMA-N (ref) · EWMA-N · EWMA-t"]
+        O["Risco overnight"]
+    end
+
+    subgraph Saida["results/"]
+        B["Backtest<br/>Kupiec · Christoffersen · Berkowitz · ES Z2"]
+        C["report.txt e CSVs<br/>dq_events · alerts · dq_detection"]
+    end
+
+    P --> I --> G --> R --> S --> M --> E
+    A --> F
+    U --> E --> F --> B --> C
+    E --> O --> B
+    M -. alertas .-> C
