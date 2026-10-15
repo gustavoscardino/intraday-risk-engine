@@ -1,0 +1,26 @@
+flowchart LR
+    subgraph Dados["data/ (compartilhado pelos módulos)"]
+        direction TB
+        SY["synthetic/<br/>15 ações fictícias · 150 pregões<br/>carteira · fills · opções<br/>feed limpo e feed com falhas"]
+        B3["b3_real/<br/>15 ações da B3 · 60 pregões<br/>(Yahoo Finance)"]
+        SY ~~~ B3
+    end
+
+    subgraph Tecnicas["Técnicas de VaR (um módulo por técnica)"]
+        direction TB
+        GT["garch_t/ · C++17<br/>GARCH(1,1)-t por ação · carteira<br/>correlação dinâmica · cauda EVT<br/>opções por Monte Carlo"]
+        EW["ewma/ · C++17<br/>EWMA-N (ref) · EWMA-N · EWMA-t · carteira<br/>camada de qualidade de dados"]
+        RC["realized_caviar/ · C++20<br/>Realized-CAViaR · uma ação por execução<br/>quantil de 1% direto (VaR 99%)<br/>reutiliza math · risk · backtest · market_data do garch_t"]
+        GT ~~~ EW ~~~ RC
+    end
+
+    subgraph Resultados["results/ de cada módulo"]
+        direction TB
+        RS["garch_t · ewma<br/>risk_15m.csv · risk_overnight.csv<br/>backtest_summary.csv (mesmas colunas)"]
+        BS["realized_caviar<br/>forecasts.csv · report.txt<br/>Kupiec · Christoffersen · pinball"]
+        RS ~~~ BS
+    end
+
+    CMP["Comparação no TCC<br/>qualidade estatística × custo computacional"]
+
+    Dados --> Tecnicas --> Resultados --> CMP

@@ -1,0 +1,36 @@
+flowchart LR
+    subgraph Entrada["Entradas (um modo por execução)"]
+        direction TB
+        HF["Alta frequência<br/>preços a cada 5 s<br/>simulação interna ou --prices CSV"]
+        SH["Dados compartilhados<br/>data/synthetic · data/b3_real<br/>uma ação (--ticker), barras de 15 min"]
+        HF ~~~ SH
+    end
+
+    subgraph Lib["Biblioteca rcaviar"]
+        direction TB
+        DA["data<br/>leitura e simulação de preços<br/>janelas: R, RV e alvo futuro"]
+        SD["shared_data<br/>janelas de 1 h (4 barras) sobre data/<br/>sem atravessar o pernoite"]
+        FIT["model · fit (offline)<br/>minimiza a perda pinball<br/>Nelder-Mead com vários pontos iniciais"]
+        FL["model · Filter (online)<br/>q(t+1) = β0 + β1·q(t) + β2·|R(t)| + β3·√RV(t)<br/>4 coeficientes + 1 quantil"]
+        DA --> FIT
+        SD --> FIT
+        FIT --> FL
+    end
+
+    subgraph Reuso["Reutilizado do garch_t (compilado das fontes)"]
+        direction TB
+        GMD["market_data<br/>CSV · grade de barras · retornos"]
+        GBT["backtest<br/>Kupiec · Christoffersen"]
+        GMA["math · optimize · risk"]
+        GMD ~~~ GBT ~~~ GMA
+    end
+
+    subgraph Saida["results/"]
+        direction TB
+        VAR["VaR da posição comprada<br/>−E · expm1(q)"]
+        OUT["forecasts.csv · report.txt<br/>exceções · Kupiec · Christoffersen<br/>pinball · latência p50/p95/p99"]
+        VAR --> OUT
+    end
+
+    Entrada --> Lib --> Saida
+    Lib -. usa .-> Reuso
