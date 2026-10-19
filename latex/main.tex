@@ -1,0 +1,633 @@
+% abnTeX2 model adapted for PCS-EPUSP on 15 Mar 2023 by Cintia Borges Margi.
+\documentclass[
+	% Main options; keep variants commented if you want to test them later.
+	12pt,				% font size
+	openright,			% chapters begin on odd-numbered pages
+	twoside,			% duplex layout
+	a4paper,
+	%chapter=TITLE,
+	%section=TITLE,
+	%subsection=TITLE,
+	%subsubsection=TITLE,
+	brazil,
+	french,
+	spanish,
+	english				% primary document language
+	]{abntex2}
+
+% --------------------------------------------------------------------------
+% Packages
+% --------------------------------------------------------------------------
+\usepackage{lmodern}			% Latin Modern font
+\usepackage[T1]{fontenc}		% font encoding
+\usepackage[utf8]{inputenc}		% source file encoding
+\usepackage{indentfirst}		% indent the first paragraph of each section
+\usepackage{color}
+\usepackage{amsmath}
+\usepackage{graphicx}			% figures
+\usepackage{microtype} 			% improved justification
+
+\usepackage{lipsum}				% dummy text for optional examples
+
+\usepackage[english,hyperpageref]{backref}	% citation back-references
+\usepackage[alf]{abntex2cite}	% ABNT-style citations
+\usepackage[final]{pdfpages}	% PDF inclusion
+
+% --------------------------------------------------------------------------
+% Settings
+% --------------------------------------------------------------------------
+\renewcommand{\backrefpagesname}{Cited on page(s):~}
+\renewcommand{\backref}{}
+\renewcommand*{\backrefalt}[4]{
+	\ifcase #1 %
+		No citations in the text.%
+	\or
+		Cited on page #2.%
+	\else
+		Cited #1 times on pages #2.%
+	\fi}%
+
+% Cover and title page data.
+\titulo{Intraday Value at Risk in Financial Markets: A Low-Latency C++ Engine for Comparative Quantitative Modeling}
+\autor{Gabriel Corteletti Prezotti Palassi\\ Gustavo Hess Vaz de Lima\\ Gustavo Scardino}
+\local{São Paulo, SP}
+\data{2026}
+\orientador{Prof. Dr. Reginaldo Arakaki}
+\instituicao{%
+  University of São Paulo -- USP
+  \par
+  Polytechnic School
+  \par
+  Department of Computer Engineering and Digital Systems (PCS)}
+\tipotrabalho{Preliminary specification for the Final Year Project I}
+% The preamble should state the type of work, purpose, institution, and area.
+\preambulo{Preliminary specification submitted to PCS3850 -- Final Year Project I, offered by the Department of Computer Engineering and Digital Systems of the Polytechnic School at the University of São Paulo.}
+
+% PDF metadata.
+\definecolor{blue}{RGB}{41,5,195}
+
+\makeatletter
+\hypersetup{
+     	%pagebackref=true,
+		pdftitle={\@title},
+		pdfauthor={\@author},
+    	pdfsubject={\imprimirpreambulo},
+	    pdfcreator={LaTeX with abnTeX2},
+		pdfkeywords={intraday VaR}{Realized-CAViaR}{GARCH}{EWMA}{low latency}{C++},
+		colorlinks=true,
+    	linkcolor=blue,
+    	citecolor=blue,
+    	filecolor=magenta,
+		urlcolor=blue,
+		bookmarksdepth=4
+}
+\makeatother
+
+% Adjust float positioning on nearly empty pages.
+\makeatletter
+\setlength{\@fptop}{5pt}
+\makeatother
+
+% Enable "quadro" floats and list of quadros.
+\newcommand{\quadroname}{Frame}
+\newcommand{\listofquadrosname}{List of Frames}
+
+\newfloat[chapter]{quadro}{loq}{\quadroname}
+\newlistof{listofquadros}{loq}{\listofquadrosname}
+\newlistentry{quadro}{loq}{0}
+
+% Formatting adjustments to keep the float compatible with the template.
+\setfloatadjustment{quadro}{\centering}
+\counterwithout{quadro}{chapter}
+\renewcommand{\cftquadroname}{\quadroname\space}
+\renewcommand*{\cftquadroaftersnum}{\hfill--\hfill}
+\setfloatlocations{quadro}{hbtp}
+
+% Paragraph spacing.
+\setlength{\parindent}{1.3cm}
+\setlength{\parskip}{0.2cm}  % you may also try \onelineskip
+
+% Generate the index.
+\makeindex
+
+% --------------------------------------------------------------------------
+% Document
+% --------------------------------------------------------------------------
+\begin{document}
+
+\selectlanguage{english}
+\frenchspacing
+
+% --------------------------------------------------------------------------
+% Pre-textual elements
+% --------------------------------------------------------------------------
+\imprimircapa
+
+% The * indicates that a catalog sheet will be included.
+\imprimirfolhaderosto*
+
+% Catalog sheet.
+\begin{fichacatalografica}
+\sffamily
+\vspace*{\fill}
+\begin{center}
+\fbox{\begin{minipage}[c][8cm]{13.5cm}
+\small
+\imprimirautor
+
+\hspace{0.5cm} \imprimirtitulo / \imprimirautor. --
+\imprimirlocal, \imprimirdata.
+
+\hspace{0.5cm} \thelastpage p. : il. ; 30 cm.\\
+
+\hspace{0.5cm} \imprimirorientadorRotulo~\imprimirorientador\\
+
+\hspace{0.5cm}
+\parbox[t]{\textwidth}{\imprimirtipotrabalho~--~\imprimirinstituicao,
+\imprimirdata.}\\
+
+\hspace{0.5cm}
+1. Intraday Value at Risk.
+2. Realized-CAViaR.
+3. GARCH.
+4. EWMA.
+5. Low-latency computing.
+I. \imprimirorientador.
+II. University of São Paulo.
+III. Title.
+\end{minipage}}
+\end{center}
+\end{fichacatalografica}
+\cleardoublepage
+
+% Approval sheet example.
+% Replace this block with the signed PDF after the defense, if applicable.
+% \begin{folhadeaprovacao}
+% \includepdf{folhadeaprovacao_final.pdf}
+% \end{folhadeaprovacao}
+
+\begin{dedicatoria}
+   \vspace*{\fill}
+   \centering
+   \noindent
+   \textit{Dedicated to those who still believe that rigorous engineering can
+   make complex systems safer, clearer, and more trustworthy.} \vspace*{\fill}
+\end{dedicatoria}
+
+\begin{agradecimentos}
+We thank our advisor, Prof. Dr. Reginaldo Arakaki, for his guidance throughout
+the definition of this project, and we acknowledge the academic environment of
+PCS and the Polytechnic School of the University of São Paulo for supporting
+its development.
+\end{agradecimentos}
+
+% Optional epigraph example.
+% \begin{epigrafe}
+%     \vspace*{\fill}
+% 	\begin{flushright}
+% 		\textit{...}
+% 	\end{flushright}
+% \end{epigrafe}
+
+\setlength{\absparsep}{18pt} % paragraph spacing inside the abstract
+\begin{resumo}[Abstract]
+This document describes a proposed low-latency C++ engine for estimating intraday Value at Risk (VaR)\index{Value at Risk (VaR)}. We plan to implement and compare three methods: Exponentially Weighted Moving Average with Normal innovations (EWMA-Normal), Generalized Autoregressive Conditional Heteroskedasticity with Student-t innovations (GARCH-t), and Conditional Autoregressive Value at Risk with realized variance (Realized-CAViaR). The engine will produce a forecast every minute for the 1\% return quantile over the following five minutes. It will use five-second price observations to calculate realized variance. We will replay historical data, estimate model parameters offline, check the input data, and run the models under repeatable conditions. We will evaluate forecast quality using VaR exceptions, coverage and independence tests, and quantile loss. We will also measure model update time, total processing latency, throughput, and memory use. Our goal is to determine whether realized variance improves forecasts compared with the volatility-based models and whether any improvement is worth the additional computational cost. No results or model superiority are assumed in this proposal.
+
+\vspace{\onelineskip}
+
+\noindent
+\textbf{Keywords}: intraday Value at Risk. Realized-CAViaR. GARCH-t. EWMA-Normal. low-latency computing.
+\end{resumo}
+
+\pdfbookmark[0]{\listfigurename}{lof}
+\listoffigures*
+\cleardoublepage
+
+\pdfbookmark[0]{\listofquadrosname}{loq}
+\listofquadros*
+\cleardoublepage
+
+\pdfbookmark[0]{\listtablename}{lot}
+\listoftables*
+\cleardoublepage
+
+\begin{siglas}
+  \item[CAViaR] Conditional Autoregressive Value at Risk
+  \item[CPU] Central Processing Unit
+  \item[EWMA] Exponentially Weighted Moving Average
+  \item[GARCH] Generalized Autoregressive Conditional Heteroskedasticity
+  \item[RV] Realized Variance
+  \item[VaR] Value at Risk
+\end{siglas}
+
+\begin{simbolos}
+  \item[$\alpha$] VaR confidence level ($0.99$)
+  \item[$\tau$] lower-tail quantile level ($1-\alpha=0.01$)
+  \item[$H$] VaR forecast horizon, measured in minutes ($H=5$)
+  \item[$k$] index of one-minute forecast instants
+  \item[$P_k$] price sampled at minute $k$
+  \item[$y_k$] one-minute log return
+  \item[$Y_{k,H}$] future log return over the next $H$ minutes
+  \item[$R_k^{\mathrm{past}}$] observed trailing five-minute log return
+  \item[$r_{k,j}$] five-second log return within minute $k$
+  \item[$RV_k^{(5m)}$] realized variance over the last five minutes
+  \item[$q_{k,H}^{(\tau)}$] conditional lower-tail quantile forecast
+  \item[$E_k$] current monetary value of a fixed long exposure
+  \item[$\lambda$] EWMA decay coefficient
+  \item[$h$] one-minute conditional variance
+  \item[$\omega,a,b$] GARCH variance-dynamics parameters
+  \item[$\nu$] Student-t degrees of freedom
+  \item[$\beta_0,\ldots,\beta_3$] Realized-CAViaR parameters
+  \item[$\Phi^{-1}$] inverse standard Normal cumulative distribution function
+\end{simbolos}
+
+\pdfbookmark[0]{\contentsname}{toc}
+\tableofcontents*
+\cleardoublepage
+
+% --------------------------------------------------------------------------
+% Textual elements
+% --------------------------------------------------------------------------
+\textual
+
+% --------------------------------------------------------------------------
+% Introduction
+% --------------------------------------------------------------------------
+\chapter{Introduction} \label{cap:introducao}
+
+\section{Motivation}
+Financial risk can change during the trading day, so estimates based only on end-of-day prices may miss important changes. Price observations can also arrive late, be missing, or appear out of order. A useful risk engine must therefore produce forecasts efficiently and handle its input data carefully. Fast calculations alone are not enough: forecasts must use valid observations and a clearly defined time horizon.
+
+Value at Risk (VaR)\index{Value at Risk (VaR)} estimates a loss threshold for a chosen time horizon and confidence level. Some methods estimate volatility and use an assumed return distribution to calculate this threshold. Other methods, such as quantile regression, estimate the threshold directly \cite{longerstaey-morE-1996,engle-manganelli-2004}. By implementing both approaches in the same engine, we can compare their forecasts and computational costs under the same conditions.
+
+In this project, we will build a C++ engine to compare three methods for estimating intraday VaR: Exponentially Weighted Moving Average with Normal innovations (EWMA-Normal), Generalized Autoregressive Conditional Heteroskedasticity with Student-t innovations (GARCH-t), and Conditional Autoregressive Value at Risk with a realized measure (Realized-CAViaR). We will test all three using the same replay of historical market data and compare their forecasts, memory use, and computational speed.
+
+\section{Objectives}
+\subsection{General Objective}
+To build and evaluate a low-latency C++ engine that produces five-minute intraday VaR forecasts, and to compare EWMA-Normal, GARCH-t, and Realized-CAViaR using the same reproducible test procedure.
+
+\subsection{Specific Objectives}
+We will:
+\begin{itemize}
+    \item implement the three methods through a shared software interface;
+    \item ensure each five-minute forecast uses only data available when the forecast is made;
+    \item use high-frequency realized variance as an input to the direct quantile model;
+    \item estimate model parameters from historical training data, outside the real-time calculation path;
+    \item compare forecast errors and how often actual losses exceed the forecasts;
+    \item measure calculation time, total processing latency, throughput, and memory use;
+    \item check input data so that missing or invalid observations are not mistaken for real market movements.
+\end{itemize}
+
+Our main research question is: \textit{To what extent, if any, does Realized-CAViaR improve five-minute intraday VaR forecasts compared with EWMA-Normal and GARCH-t, and what additional computational cost does it require?}
+
+\section{Scope}
+\subsection{Included Scope}
+The initial prototype will use historical prices for one traded instrument or risk factor. Every minute, it will estimate the 1\% return quantile for the following five minutes. We may also report VaR in monetary terms for a fixed long position. The prototype will replay historical data, check the inputs, calculate returns and realized variance, run the three models, estimate their parameters offline, and evaluate forecast quality and computational performance.
+
+The first version will not estimate Expected Shortfall or portfolio covariance, connect to order-management systems, or use distributed processing, message brokers, production databases, web interfaces, or advanced alerting. Input checks will use clear rules; the prototype will not calculate an overall data-quality score or support multiple operating modes.
+
+\subsection{Operational Assumptions and Prototype Targets}
+We plan to begin with the following settings and review them in sensitivity tests:
+\begin{itemize}
+    \item \textbf{Confidence level}: 99\% (lower-tail probability $\tau=0.01$).
+    \item \textbf{Forecast horizon}: $H=5$ minutes.
+    \item \textbf{Forecast update interval}: one minute.
+    \item \textbf{Market-price sampling interval}: five seconds.
+    \item \textbf{Realized-variance lookback}: five minutes, or nominally 60 five-second returns.
+\end{itemize}
+We will select the instrument, exchange, historical period, and data provider based on the availability of suitable timestamped data. We will distinguish delays in the market data from time spent processing it. Instead of setting a performance target in advance, we will report the measured p50, p95, and p99 latencies and throughput under documented replay conditions.
+
+\section{Document Organization}
+Chapter \ref{cap:conceitos} introduces the VaR methods and software qualities relevant to this project. Chapter \ref{cap:metodo} explains the data timing, forecasting equations, parameter estimation, and evaluation. Chapter \ref{cap:especificacao} lists the system requirements. Chapter \ref{cap:desenvolvimento} describes the C++ design and testing plan. Chapter \ref{cap:consideracoes} summarizes the expected contribution and the next steps.
+
+% --------------------------------------------------------------------------
+% Conceptual Aspects
+% --------------------------------------------------------------------------
+\chapter{Conceptual Aspects} \label{cap:conceitos}
+
+\section{Intraday Risk Management}
+To interpret VaR, we must specify its confidence level, time horizon, and the position being considered. In this project, we issue a forecast every minute for the next five minutes. This is a five-minute VaR, not a one-minute VaR. Because each new forecast covers a period that overlaps with the previous one, this overlap must be considered when we evaluate the results.
+
+\section{Streaming Processing and Architectural Description}
+The engine will process observations in time order and update forecasts without recalculating the entire history each time. We will use one C++ process divided into modules, rather than a distributed system. This keeps the experiments reproducible and lets us measure model calculation time separately from the time taken by the full replay and output process. We will describe each module's role and how the modules interact \cite{iso42010-2022}.
+
+\section{Relevant Quality Attributes}
+We will focus on performance, reproducibility, correctness, maintainability, and input reliability, following the quality framework of ISO/IEC 25010:2023 \cite{iso25010-2023}. Correctness means using only information available when each forecast is made and applying the same five-minute horizon throughout. We will measure performance through latency, throughput, and memory use. A shared interface will also ensure that each model receives the same inputs.
+
+\section{Quantitative Basis for VaR}
+\subsection{Conditional Quantiles and Value at Risk}
+Let $P_k>0$ denote the sampled price at minute $k$. The log return over the next $H=5$ minutes is
+\begin{equation}
+Y_{k,H}=\log\left(\frac{P_{k+H}}{P_k}\right).
+\label{eq:future-horizon}
+\end{equation}
+For the information set $\mathcal{F}_k$ available at time $k$, define the conditional lower-tail quantile as
+\begin{equation}
+q_{k,H}^{(\tau)}=\inf\left\{x:\Pr(Y_{k,H}\leq x\mid\mathcal{F}_k)\geq\tau\right\},
+\quad \tau=1-\alpha=0.01.
+\label{eq:conditional-quantile}
+\end{equation}
+The lower-tail return quantile is expected to be negative when it represents a loss. For a fixed long position worth $E_k>0$ when the forecast is made, the corresponding monetary VaR is
+\begin{equation}
+\mathrm{VaR}_{k,H}^{(\alpha)}=E_k\left(1-e^{q_{k,H}^{(\tau)}}\right),
+\label{eq:monetary-var}
+\end{equation}
+For small returns, this is approximately $-E_k q_{k,H}^{(\tau)}$. This calculation assumes that the position does not change during the five-minute horizon and does not include fees or market impact. We will mainly compare the return quantiles, which do not depend on position size.
+
+\subsection{EWMA-Normal}
+EWMA\index{EWMA} updates its variance estimate using past squared returns, giving more weight to recent returns. With one-minute returns and a decay coefficient $0<\lambda<1$, each update uses a fixed amount of memory and calculation time. EWMA-Normal then uses a Normal distribution to convert the variance estimate into a lower-tail quantile. We use it as a simple baseline \cite{longerstaey-morE-1996}.
+
+\subsection{GARCH with Student-t Innovations}
+GARCH models changing variance using past squared returns and past variance estimates \cite{bollerslev-1986}. Its Student-t innovations allow for heavier-tailed returns than a Normal distribution \cite{bollerslev-1987}. However, a five-minute return is not generally Student-t just because each one-minute innovation is Student-t. We therefore need a separate method to estimate the five-minute quantile rather than directly using a one-minute Student-t quantile.
+
+\subsection{CAViaR and Realized Measures}
+Conditional Autoregressive Value at Risk (CAViaR) models how a return quantile changes over time. Its parameters are commonly estimated using quantile regression \cite{engle-manganelli-2004}. Unlike the volatility-based methods, it does not require us to specify a full probability distribution for returns.
+
+Realized variance\index{realized variance} is calculated by adding the squared returns observed at shorter intervals. It captures price variation that may be hidden in a single close-to-close return \cite{barndorff-nielsen-shephard-2002}. Previous work has also used realized measures to help predict conditional quantiles \cite{wang-gerlach-chen-2018}. In this document, \emph{Realized-CAViaR} refers to the specific, simple version we plan to implement; we do not claim that its equation is new or standard in all applications.
+
+% --------------------------------------------------------------------------
+% Work Method
+% --------------------------------------------------------------------------
+\chapter{Work Method} \label{cap:metodo}
+
+This chapter explains how we will align the data with each forecast, estimate model parameters, and evaluate the results. Each forecast will use only information available at the time it is made. Replaying historical data lets us test all three models using the same observations.
+
+\section{Prototype Development Strategy}
+We will first build a repeatable replay of the historical prices and calculate a shared set of returns. We will implement each model, check its calculations against reference results, and connect the models through a common interface. We will estimate and select parameters before running the C++ engine. Finally, we will evaluate the forecasts and measure performance on data that was not used to fit the models.
+
+\section{Data, Sampling, and Forecast Timing}
+We use $k$ to indicate the end of a minute and $P_k$ for the latest valid price sampled at that time. The one-minute log return is
+\begin{equation}
+y_k=\log\left(\frac{P_k}{P_{k-1}}\right).
+\label{eq:minute-return}
+\end{equation}
+Within minute $k$, the five-second prices $p_{k,0},\ldots,p_{k,12}$ give returns $r_{k,j}=\log(p_{k,j}/p_{k,j-1})$. If the five-second samples are complete, realized variance for the five minutes ending at $k$ is
+\begin{equation}
+RV_k^{(5m)}=\sum_{i=k-4}^{k}\sum_{j=1}^{12}r_{i,j}^{2}.
+\label{eq:realized-variance}
+\end{equation}
+This calculation uses 60 five-second returns when all five minutes have complete data. We will not form a single five-minute window across a break in the trading session. Realized volatility is the square root of realized variance, $\sqrt{RV_k^{(5m)}}$.
+
+The return over the previous five minutes, which is known at minute $k$, is
+\begin{equation}
+R_{k}^{\mathrm{past}}=\log\left(\frac{P_k}{P_{k-5}}\right).
+\label{eq:past-return}
+\end{equation}
+At minute $k$, the model forecasts the 1\% quantile $q_{k,5}^{(0.01)}$ of the return over the next five minutes, $Y_{k,5}=\log(P_{k+5}/P_k)$. We can observe that return only five minutes later. Since forecasts are made each minute, their five-minute periods overlap. We will account for this when testing the forecasts.
+
+Before selecting the dataset, we will specify the data source, whether prices come from quotes or transactions, the trading-session calendar, and how old a price can be before it is considered stale. We will record the sampling and rejection rules so the experiment can be repeated.
+
+\section{EWMA-Normal VaR}
+After observing return $y_k$, EWMA calculates the variance forecast $h_{k+1\mid k}^{E}$ for the next one-minute return as follows:
+\begin{equation}
+h_{k+1\mid k}^{E}=\lambda h_{k\mid k-1}^{E}+(1-\lambda)y_k^2,
+\qquad 0<\lambda<1.
+\label{eq:ewma-update}
+\end{equation}
+For the five-minute forecast, we assume zero conditional mean, Normal one-minute returns, and the same expected variance in each of the next five minutes. The total variance forecast is then
+\begin{equation}
+S_{k,5}^{E}=5h_{k+1\mid k}^{E},\qquad
+q_{k,5}^{E}=\Phi^{-1}(0.01)\sqrt{S_{k,5}^{E}},
+\label{eq:ewma-five}
+\end{equation}
+Here, $\Phi^{-1}$ is the standard Normal quantile function. This calculation provides a simple baseline; it is not an exact five-minute distribution for every market condition. We will set the EWMA decay coefficient using data from before the test period.
+
+\section{GARCH(1,1)-t VaR}
+For one-minute returns, we use the following GARCH-t model:
+\begin{align}
+y_k&=\sqrt{h_{k\mid k-1}^{G}}\,z_k, \label{eq:garch-return}\\
+h_{k+1\mid k}^{G}&=\omega+a y_k^2+b h_{k\mid k-1}^{G}, \label{eq:garch-update}
+\end{align}
+The parameters satisfy $\omega>0$, $a\geq0$, $b\geq0$, and $a+b<1$. The innovations $z_k$ follow a standardized Student-t distribution with $\nu>2$ degrees of freedom, giving them mean zero and variance one. We obtain the standardized innovation from a conventional Student-t variable $T_{\nu}$ using $z_k=\sqrt{(\nu-2)/\nu}\,T_{\nu}$.
+
+Let $\bar h=\omega/(1-a-b)$ be the model's long-run variance. The variance forecasts for the next five one-minute periods are
+\begin{equation}
+h_{k+j\mid k}^{G}=\bar h+(a+b)^{j-1}\left(h_{k+1\mid k}^{G}-\bar h\right),
+\quad j=1,\ldots,5,
+\label{eq:garch-variance-forecast}
+\end{equation}
+We add these forecasts to obtain the total variance for the five-minute return:
+\begin{equation}
+S_{k,5}^{G}=\sum_{j=1}^{5}h_{k+j\mid k}^{G}.
+\label{eq:garch-horizon-var}
+\end{equation}
+
+The five-minute return is not necessarily Student-t, even though each one-minute innovation is. For this reason, we will estimate a five-minute tail multiplier using a separate validation sample, before the test period. We calculate standardized returns as $u_{k,5}=Y_{k,5}/\sqrt{S_{k,5}^{G}}$ and take their empirical 1\% quantile, denoted by $c_{0.01}^{G}$. The resulting forecast is
+\begin{equation}
+q_{k,5}^{G}=c_{0.01}^{G}\sqrt{S_{k,5}^{G}}.
+\label{eq:garch-five}
+\end{equation}
+In this approach, GARCH-t models one-minute variance, while the empirical multiplier adjusts the forecast to the five-minute horizon. This calibration does not guarantee correct coverage. We will test it on a separate test period and report it as a limitation when comparing the models.
+
+\section{Realized-CAViaR VaR}
+Realized-CAViaR directly forecasts the lower-tail quantile for the next five minutes. We propose the following simple specification, which uses the absolute value of the past return and realized volatility:
+\begin{equation}
+\boxed{q_{k,5}^{C}=\beta_0+\beta_1q_{k-1,5}^{C}
++\beta_2\left|R_k^{\mathrm{past}}\right|
++\beta_3\sqrt{RV_k^{(5m)}}.}
+\label{eq:realized-caviar}
+\end{equation}
+Here, $q_{k,5}^{C}$ is the forecast made at minute $k$, and $q_{k-1,5}^{C}$ is the previous forecast. $R_k^{\mathrm{past}}$ is the return over the previous five minutes, and $RV_k^{(5m)}$ is the realized variance over that period. The $\beta$ values are model parameters. All inputs to the equation are available when the forecast is made. During parameter estimation, we may apply restrictions to avoid implausible positive forecasts; we will document any restrictions before testing.
+
+We will estimate the parameters by minimizing quantile loss, also called \emph{pinball loss}, over the training period. For $\tau=0.01$, the loss and parameter estimate are
+\begin{align}
+\rho_{\tau}(u)&=u\left(\tau-\mathbf{1}\{u<0\}\right), \label{eq:pinball}\\
+\widehat{\boldsymbol\beta}&=\arg\min_{\boldsymbol\beta}\sum_{k\in\mathcal T_{\mathrm{train}}}
+\rho_{\tau}\left(Y_{k,5}-q_{k,5}^{C}(\boldsymbol\beta)\right).
+\label{eq:caviar-estimation}
+\end{align}
+The model also needs an initial quantile and a warm-up period. Since each forecast depends on the previous one, we will use the same initialization and parameter restrictions when fitting and testing the model. Our equation is simpler than other realized-quantile approaches, which may include additional measurement equations or joint tail-risk models \cite{engle-manganelli-2004,wang-gerlach-chen-2018}.
+
+\section{Offline Calibration and Experimental Splits}
+We will divide the data in time order into training, validation, and test periods. We will use the training period to select initial EWMA settings, estimate GARCH-t parameters $(\omega,a,b,\nu)$, and estimate the CAViaR coefficients. The validation period may be used to select other settings and to estimate the GARCH five-minute tail multiplier in Equation \eqref{eq:garch-five}. We will not use the test period until the final evaluation.
+
+To prevent information from one period leaking into another, we will omit or carefully assign forecasts whose five-minute targets cross a boundary between periods. The training targets in Equation \eqref{eq:caviar-estimation} overlap; we will account for this dependence when interpreting statistical tests. Parameter fitting and tail recalibration will take place offline, not while the engine processes incoming observations.
+
+\section{Validation Procedure}
+\subsection{Statistical Evaluation}
+We will compare each model's forecast $q_{k,5}$ with the same observed five-minute return $Y_{k,5}$. We count an exception when
+\begin{equation}
+I_k=\mathbf{1}\{Y_{k,5}<q_{k,5}\}.
+\label{eq:exception}
+\end{equation}
+If the forecasts are well calibrated, the expected exception rate is $\tau=0.01$. We will report the observed exception rate and use Kupiec's unconditional-coverage test \cite{kupiec-1995}, along with Christoffersen's independence and conditional-coverage tests \cite{christoffersen-1998}. We will also compare quantile loss, defined in Equation \eqref{eq:pinball}, because it remains useful when few exceptions occur. If the dataset is large enough, we may also use the Dynamic Quantile test \citeonline{engle-manganelli-2004}.
+
+Because the forecasts are made every minute for five-minute periods, their outcomes overlap and their exceptions may not be independent. Our main coverage and independence tests will therefore use forecasts spaced five minutes apart. We may also report the other possible five-minute sequences as a robustness check. We can use the full set of one-minute forecasts for quantile loss and exception plots, but we will not treat overlapping observations as independent when interpreting standard independence-test p-values. We will report the number of forecasts and exceptions, since a 1\% event requires a long history to evaluate reliably.
+
+\subsection{Computational Evaluation}
+We will measure how long each model takes to update, excluding data parsing and replay overhead. We will also measure the time from accepting a replay event to producing a forecast. The results will include per-update time, p50/p95/p99 latency, events processed per second, CPU use, and memory or state size for each model. We will record the dataset, hardware, compiler, optimization settings, warm-up period, and replay rate. We do not assume any performance result in advance.
+
+% --------------------------------------------------------------------------
+% Requirements Specification
+% --------------------------------------------------------------------------
+\chapter{Requirements Specification} \label{cap:especificacao}
+
+\section{System Overview}
+The first version will be a single C++ program with separate modules for replaying historical data, checking and sampling prices, calculating model inputs, running the models, and saving results. It is intended to compare the three VaR methods under the same data and timing conditions, not to replace a financial institution's order-management system.
+
+\section{Inputs and Outputs}
+Each input record will include an instrument identifier, the time of the market event, and its price. If available, it will also include an identifier that can help detect duplicates. The replay module will preserve event times and reproduce the chosen event order. We will use one instrument in the initial experiment.
+
+For each forecast, the engine will record its timestamp, five-minute horizon, 99\% confidence level, instrument, model, predicted 1\% return quantile, and input-quality status. It may also record realized variance, the previous five-minute return, model version, and calculation time. Monetary VaR for a fixed long position is optional; the return quantile is required.
+
+\section{Functional Requirements}
+\begin{itemize}
+    \item \textbf{FR01}: replay historical prices in a documented, repeatable order;
+    \item \textbf{FR02}: reject invalid prices and timestamps, detect duplicates where possible, and report missing or out-of-order observations;
+    \item \textbf{FR03}: sample prices on a repeatable five-second grid and calculate returns without filling invalid gaps silently;
+    \item \textbf{FR04}: calculate one-minute returns, past five-minute returns, and realized variance;
+    \item \textbf{FR05}: load estimated model parameters and initialize each model;
+    \item \textbf{FR06}: produce five-minute 99\% VaR forecasts every minute using EWMA-Normal, GARCH-t, and Realized-CAViaR;
+    \item \textbf{FR07}: save timestamped forecasts and input checks for repeatable backtesting;
+    \item \textbf{FR08}: test VaR forecasts and measure computational performance over comparable test periods.
+\end{itemize}
+
+\section{Non-Functional Requirements}
+\begin{itemize}
+    \item \textbf{NFR01}: report model-update and full-process latency separately, including p50, p95, and p99;
+    \item \textbf{NFR02}: measure throughput and model state size under documented replay conditions;
+    \item \textbf{NFR03}: use no data from after the forecast timestamp to calculate a forecast;
+    \item \textbf{NFR04}: make sampling, model initialization, and forecast output repeatable;
+    \item \textbf{NFR05}: provide a shared interface for the three models and do not fit parameters while processing data;
+    \item \textbf{NFR06}: report missing or invalid input instead of presenting a forecast based on incomplete data as valid.
+\end{itemize}
+
+\section{Minimal Data Quality Rules}
+The replay and preprocessing modules will check that timestamps can be read, prices are finite and positive, and available message identifiers do not show a duplicate. They will record out-of-order events and missing scheduled samples. If the data source requires a rule for late observations, we will define it before implementation and document its effect on sampling and forecasts. If fresh prices are not available, the engine will not label a new forecast as current.
+
+An unusually large return is not necessarily bad data. We will retain genuine market moves for risk estimation and reject or flag records that are invalid for structural reasons. The first version will not calculate a combined data-quality score or include NORMAL, DEGRADED, or FREEZE operating modes.
+
+% --------------------------------------------------------------------------
+% Work Development
+% --------------------------------------------------------------------------
+\chapter{Work Development} \label{cap:desenvolvimento}
+
+\section{Technologies}
+We plan to write the engine in \textbf{C++20} and use \textbf{CMake} to build it. The code will rely mainly on the C++ standard library and small reusable modules. Possible supporting tools include Boost.Math for probability distributions, NLopt or a similar optimizer for offline parameter estimation, GoogleTest for unit tests, and Google Benchmark for timing. These tools are candidates, not confirmed dependencies. We may use Python for exploratory analysis and charts, but the event-processing engine and forecasting models will be written in C++.
+
+The first version does not require a message broker, distributed processing, database server, API, or graphical interface. Input and output files will suffice for the planned experiments.
+
+\section{Design and Implementation}
+\subsection{Functional Pipeline Flow}
+Figure \ref{fig:arquitetura-modulos} shows the planned data flow. The same timestamped observations and calculated inputs will be provided to all three models. Parameter estimation will happen offline, separately from the models' updates during replay.
+
+\begin{figure}[htbp]
+\centering
+\fbox{\begin{minipage}{0.87\textwidth}
+\centering\small
+\textbf{Historical market data and deterministic replay}\\[5pt]
+$\downarrow$\\[5pt]
+\textbf{Input validation and five-second sampling}\\[5pt]
+$\downarrow$\\[5pt]
+\textbf{Minute returns and realized variance}\\[5pt]
+$\downarrow$\\[6pt]
+\begin{tabular}{|c|c|c|}\hline
+EWMA-Normal & GARCH-t & Realized-CAViaR\\\hline
+\end{tabular}\\[6pt]
+$\downarrow$\\[5pt]
+\textbf{Timestamped quantile forecasts}\\[5pt]
+$\downarrow$\\[5pt]
+\textbf{Backtesting and performance analysis}
+\end{minipage}}
+\caption{Proposed minimal architecture of the intraday VaR engine.}
+\legend{Source: prepared by the project team.}
+\label{fig:arquitetura-modulos}
+\end{figure}
+
+The engine will have the following main modules:
+\begin{itemize}
+    \item \textbf{replay and validation}: read the dataset, check timestamps and prices, and pass valid observations to the next module;
+    \item \textbf{feature builder}: create the five-second grid, calculate minute and five-minute returns, and update realized variance;
+    \item \textbf{model layer}: update each model and calculate its return-quantile forecast;
+    \item \textbf{forecast writer}: save forecasts and timestamps for later analysis;
+    \item \textbf{evaluation tools}: estimate parameters, test forecasts, and measure computational performance.
+\end{itemize}
+
+\subsection{Model Interfaces and State}
+All three models will use the same interface to initialize, update, and produce forecasts. EWMA-Normal will store its variance estimate. GARCH-t will store its variance estimate and calibrated parameters. Realized-CAViaR will store its previous quantile estimate and coefficients. The feature builder will keep only the latest five minutes of five-second returns to calculate $RV_k^{(5m)}$ and the past five-minute return. As a result, updating a model will not require processing the full history again.
+
+Parameter estimation will produce saved model settings and initialization rules for the engine. The engine will not run quantile regression or maximum-likelihood estimation for every new observation. This separation lets us measure forecast calculation time without including model-fitting time.
+
+\subsection{Execution and Measurement Boundaries}
+We will measure each model after an observation has been accepted and the data for a new forecast is available. These model-specific measurements will exclude file parsing and replay scheduling. The end-to-end measurement will include replay, input processing, feature calculations, and writing the forecast. Reporting both measurements will show the difference between model calculation time and total processing time.
+
+\section{Testing and Evaluation}
+\subsection{Functional and Numerical Tests}
+Unit tests will check return calculations, rolling realized variance, model updates, Student-t standardization, five-minute variance forecasts, quantile loss, and conversion to monetary VaR. We will also test synthetic data containing duplicate, out-of-order, missing, and invalid observations. We will compare the results with independent calculations before replaying the main dataset.
+
+\subsection{Statistical and Computational Comparisons}
+Each model will be tested on the same forecast times and observed returns. We will report coverage statistics, quantile loss, and the performance measurements described in Chapter \ref{cap:metodo}. The comparisons will show model update time separately from total processing time and will explain the offline five-minute tail calibration used by GARCH-t.
+
+\subsection{Experiment Reproducibility}
+We will record the settings, instrument, historical period, data-cleaning rules, model parameters, calibration periods, replay speed, code version, compiler, optimization settings, and hardware. This information will make it possible to repeat the experiments and see exactly how the data and models were handled.
+
+% --------------------------------------------------------------------------
+% Final Considerations
+% --------------------------------------------------------------------------
+\phantompart
+\chapter{Final Considerations} \label{cap:consideracoes}
+
+\section{Summary of the Proposal}
+This document proposes a C++ engine that will estimate 99\% intraday VaR for five-minute periods and update the forecast every minute. We will compare EWMA-Normal, GARCH-t, and Realized-CAViaR using the same data and evaluation procedure. The evaluation will consider both forecast quality and computational performance.
+
+\section{Expected Contributions}
+This project will provide a direct comparison of three risk models in one C++ engine. In particular, Realized-CAViaR will let us test whether five-second price data and realized variance improve forecasts compared with the volatility-based models. We will also measure the additional time and memory this information requires. We will not assume that one model performs better before testing it on unseen data.
+
+\section{Next Steps}
+Next, we will select an instrument and a suitable high-frequency dataset, confirm that it covers a sufficiently long period, and finalize the rules for validating and replaying the data. We will then implement parameter estimation and the C++ models, and run the statistical and performance tests. Later sensitivity tests may examine other sampling intervals or realized-variance windows while keeping the same three models.
+
+% --------------------------------------------------------------------------
+% Post-textual elements
+% --------------------------------------------------------------------------
+\postextual
+
+\bibliography{abntex2-modelo-references}
+
+% Consult the abnTeX2 manual if you want to include a glossary.
+%\glossary
+
+% --------------------------------------------------------------------------
+% Appendix example
+% --------------------------------------------------------------------------
+% \begin{apendicesenv}
+
+% \partapendices
+
+% \chapter{Quisque libero justo}
+
+% \lipsum[50]
+
+% \chapter{Nullam elementum urna vel imperdiet sodales elit ipsum pharetra ligula
+% ac pretium ante justo a nulla curabitur tristique arcu eu metus}
+% \lipsum[55-57]
+
+% \end{apendicesenv}
+
+% --------------------------------------------------------------------------
+% Annex example
+% --------------------------------------------------------------------------
+% \begin{anexosenv}
+
+% \partanexos
+
+% \chapter{Morbi ultrices rutrum lorem.}
+% \lipsum[30]
+
+% \chapter{Cras non urna sed feugiat cum sociis natoque penatibus et magnis dis
+% parturient montes nascetur ridiculus mus}
+
+% \lipsum[31]
+
+% \chapter{Fusce facilisis lacinia dui}
+
+% \lipsum[32]
+
+% \end{anexosenv}
+
+% --------------------------------------------------------------------------
+% Index
+% --------------------------------------------------------------------------
+\phantompart
+\printindex
+
+\end{document}
