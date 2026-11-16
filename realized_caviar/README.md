@@ -38,6 +38,10 @@ ctest --test-dir realized_caviar/build --output-on-failure
   --out realized_caviar/results/short_XPET3
 ```
 
+On Windows, `realized_caviar\build.bat` builds and tests with WinLibs GCC (put first in the PATH
+when installed: `winget install --id BrechtSanders.WinLibs.POSIX.UCRT -e`). The programs carry a
+UTF-8 manifest, so project folders with accents in their names work, as in `ewma` and `garch_t`.
+
 `./realized_caviar/build.sh` builds and tests. `run.sh` additionally runs the
 seeded high-frequency example; `run_shared.sh` runs synthetic XPET3 and B3 PETR4.
 Equivalent `.bat` scripts are supplied for Windows. Shared-run scripts forward
@@ -52,7 +56,8 @@ additional CLI arguments to both runs.
 | `--refit once\|daily` | common calibration schedule for all models | daily shared; once high frequency |
 | `--exposure E` | signed monetary exposure, negative for shorts | 100000 |
 | `--confidence C` | confidence in (.5, 1) | .99 |
-| `--lambda L` | fixed EWMA decay in (0, 1) | .94 |
+| `--lambda L` | fixes the EWMA decay in (0, 1) | estimated at each calibration |
+| `--diurnal on\|off` | shared mode: baselines on returns divided by the U profile | on |
 | `--caviar-only` | disable the matched baselines | all three models |
 | `--reset-on-gap` | explicit restart of 5s features after missing samples/session gaps | reject gaps |
 
@@ -84,10 +89,34 @@ but only the selected instrument is modeled. No target crosses the session
 close. Incomplete feature windows are skipped; a missing future target does
 not suppress an observed feature update. Baselines process every available
 bar, including session warmup, and missing grid slots advance GARCH by its
-conditional expectation. Neither baseline uses diurnal normalization or EVT.
-EWMA uses the fixed RiskMetrics-style lambda; GARCH uses zero-mean standardized
-t innovations. These are single-instrument baselines, not the enriched
-portfolio outputs of the other executables.
+conditional expectation. GARCH uses zero-mean standardized t innovations; no
+EVT. These are single-instrument baselines, not the enriched portfolio outputs
+of the other executables.
+
+**Diurnal profile (shared mode, default on).** Intraday volatility is U-shaped:
+the first bars of a session are several times more volatile than midday. At each
+calibration the baselines estimate the U factor `s_k` of each slot on the
+training window (winsorized mean absolute return, normalized to mean `s^2 = 1`,
+the `ewma` module's estimator), run their filters on `r / s_k` and scale the
+forecast by the factor of the target bar. This is how `ewma` and `garch_t` treat
+intraday returns. Without it, a GARCH-t fitted on raw returns absorbs the U shape
+into fat tails (nu about 5 instead of 7) and its midday VaR is too wide: on the
+15 synthetic stocks it had 0.57% exceptions at 99% (Kupiec rejected for 9 of 15),
+against 0.98% (0 of 15) with the profile. The profile is written to
+`diurnal_profile.csv` (last calibration). `--diurnal off` restores raw returns.
+
+**EWMA lambda.** Estimated at each calibration by Gaussian predictive
+quasi-likelihood on the training window (first quarter as burn-in, Brent on
+[0.80, 0.999]), as in the `ewma` module; `--lambda L` fixes it. Names follow the
+repository's definitions: **EWMA-N (ref)** is RiskMetrics (`--diurnal off
+--lambda .94`: fixed lambda, raw returns); **EWMA-N** has the estimated lambda
+and/or the U profile.
+
+**Opening hour.** CAViaR needs one hour of returns of the same session, so the
+first targets of each session start at 11:00 (the 10:00-10:45 bars are never
+targets). All models are scored on the same targets, so the comparison is fair,
+but it does not cover the opening hour. `report.txt` states the evaluated range
+and `backtest_by_hour.csv` breaks the coverage down by hour.
 
 Daily mode fits at the first forecast of each new session, using only labels
 whose targets ended before that session. The training window rolls by N
@@ -143,8 +172,10 @@ exposure as a statistical experiment.
 | `forecasts.csv` | one row per model and forecast, original-direction log quantile, features, signed exposure, monetary VaR/P&L, target, exception and evaluation flag |
 | `risk_15m.csv` / `risk_5m.csv` | normalized risk rows for the selected horizon; one confidence per run |
 | `backtest_summary.csv` | per-model exception rate, Kupiec, Christoffersen independence/CC and mean signed-return pinball |
-| `params_daily.csv` | calibration effective time, training bounds, model/phase, status, fit time and coefficients; includes once-only fits too |
-| `benchmark.csv` | mean/p50/p95/p99 ns, inverse mean latency throughput and persistent model-state bytes |
+| `backtest_by_hour.csv` | per model and hour of the target start: n, exceptions, rate, Kupiec p |
+| `diurnal_profile.csv` | U factor per slot of the last calibration (shared mode with `--diurnal on`) |
+| `params_daily.csv` | calibration effective time, training bounds, model/phase, status, fit time and coefficients (EWMA `lambda` included); includes once-only fits too |
+| `benchmark.csv` | mean/p50/p95/p99 ns per forecast, inverse mean latency throughput, persistent model-state bytes, timed updates and batch size |
 | `report.txt` | configuration, comparison conventions, metrics and measurement boundaries |
 
 Pending forecasts are emitted with NaN target/P&L, blank exception and
@@ -160,11 +191,18 @@ all the portfolio-specific columns of the other modules. Timestamps remain
 integer seconds: synthetic relative time or exchange-local wall-clock epoch
 seconds in shared mode, not necessarily UTC instants.
 
-Latency measures model updates + cached return quantile + monetary VaR. It
-excludes common prepared-feature construction, CSV, scoring, fitting and history
-allocation, and includes clock overhead. The baselines consume all intervening
-observations of their timeline. State bytes include filters, their numeric
-buffers and cached quantiles, excluding allocator overhead and replay history.
+Latency measures, per forecast, the model update(s) + return quantile +
+monetary VaR, timed **in batches of 1000 forecasts** over the out-of-sample
+sequence (repeated to at least 2 million per model). A single update takes
+10-20 ns, below the 100 ns resolution of the Windows clock, so timing each call
+measured the clock: all models reported about 56 ns. Batches spread the clock
+overhead to about 0.1 ns per update. The mean is total time / updates; p50/p95/p99
+are percentiles of the batch means. Inputs are prepared beforehand, so common
+feature construction, lookups, CSV, scoring and fitting are excluded. The
+baselines consume all intervening observations of their timeline (including
+the division by the U factor). State bytes count the persistent numeric state:
+CAViaR coefficients and quantile; EWMA variance and lambda per phase; GARCH
+filter and tail factor per phase; the U profile shared by the baselines.
 This is model-stage latency, not end-to-end feed latency or a scaling benchmark
 of the existing portfolio engines. Fit durations are recorded separately.
 

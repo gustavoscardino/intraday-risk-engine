@@ -18,7 +18,7 @@ int positive_integer(const std::string& value) {
 }
 int main(int argc,char** argv) {
     try {
-        std::string prices,dataset,ticker,output="results/synthetic",refit;
+        std::string prices,dataset,ticker,output="results/synthetic",refit,diurnal;
         int window_days=0; bool reset_on_gap=false, caviar_only=false;
         rcaviar::ReplayConfig cfg;
         for (int i=1;i<argc;++i) {
@@ -30,7 +30,9 @@ int main(int argc,char** argv) {
                     << "  --refit once|daily       default: daily for shared data, once for 5s data\n"
                     << "  --exposure E             signed monetary exposure (default 100000)\n"
                     << "  --confidence C           VaR confidence in (.5,1), default .99\n"
-                    << "  --lambda L               fixed EWMA lambda in (0,1), default .94\n"
+                    << "  --lambda L               fixed EWMA lambda in (0,1); default: estimated at each calibration\n"
+                    << "  --diurnal on|off         shared mode: baselines on r / U-profile factor (default on)\n"
+                    << "                           EWMA is named EWMA-N (ref) with --diurnal off --lambda .94 (RiskMetrics)\n"
                     << "  --caviar-only            disable matched EWMA/GARCH comparison\n"
                     << "  --reset-on-gap           5s mode: restart features after gaps, carry quantile\n"
                     << "  --prices FILE            shared mode: alternate 15m CSV; otherwise strict 5s CSV\n"
@@ -40,7 +42,7 @@ int main(int argc,char** argv) {
             if (arg=="--reset-on-gap") { reset_on_gap=true; continue; }
             if (arg=="--caviar-only") { caviar_only=true; continue; }
             if (arg!="--prices" && arg!="--data" && arg!="--ticker" && arg!="--window-days" && arg!="--out"
-                && arg!="--refit" && arg!="--exposure" && arg!="--confidence" && arg!="--lambda")
+                && arg!="--refit" && arg!="--exposure" && arg!="--confidence" && arg!="--lambda" && arg!="--diurnal")
                 throw std::invalid_argument("unknown option: "+arg);
             if (i+1>=argc) throw std::invalid_argument("incomplete option: "+arg);
             const std::string value=argv[++i];
@@ -52,12 +54,16 @@ int main(int argc,char** argv) {
             else if (arg=="--refit") refit=value;
             else if (arg=="--exposure") cfg.exposure=number(value);
             else if (arg=="--confidence") cfg.confidence=number(value);
-            else cfg.ewma_lambda=number(value);
+            else if (arg=="--diurnal") diurnal=value;
+            else { cfg.ewma_lambda=number(value); cfg.estimate_lambda=false; }
         }
         const bool shared=!dataset.empty();
         if ((shared && (ticker.empty() || reset_on_gap)) || (!shared && (!ticker.empty() || window_days!=0)))
             throw std::invalid_argument("--data requires --ticker; --window-days requires --data; --reset-on-gap is for 5s data");
         if (!refit.empty() && refit!="daily" && refit!="once") throw std::invalid_argument("--refit must be once or daily");
+        if (!diurnal.empty() && diurnal!="on" && diurnal!="off") throw std::invalid_argument("--diurnal must be on or off");
+        if (!shared && diurnal=="on") throw std::invalid_argument("--diurnal applies to shared-data sessions only");
+        cfg.diurnal=diurnal!="off";
         cfg.refit=(refit=="daily" || (refit.empty() && shared))?rcaviar::RefitSchedule::Daily:rcaviar::RefitSchedule::Once;
         cfg.compare=!caviar_only;
         auto input=shared?rcaviar::shared_input(rcaviar::read_shared_data(dataset,ticker,window_days,prices))

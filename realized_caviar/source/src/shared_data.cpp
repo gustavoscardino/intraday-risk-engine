@@ -62,20 +62,23 @@ SharedData read_shared_data(const std::string& folder, const std::string& ticker
     for (std::size_t i=0;i<panel.num_bars();++i) if (panel.date[i]==dates[days-1]) cutoff=panel.time_key[i]/1000;
     auto windows=make_bar_windows(panel,asset);
     if (windows.empty()) throw std::invalid_argument("no complete intraday windows for ticker");
-    SharedData result{std::move(windows),cutoff,dates.size(),days,panel.bad_rows,panel.duplicates,{},{},{}};
+    SharedData result{std::move(windows),cutoff,dates.size(),days,panel.bad_rows,panel.duplicates,{},{},{},{},0};
     std::vector<double> returns; std::vector<int> slots;
-    garcht::bar_returns(panel,garcht::detect_session(panel),returns,slots);
+    const auto session=garcht::detect_session(panel);
+    result.bars_per_day=session.bars_per_day;
+    garcht::bar_returns(panel,session,returns,slots);
     for (std::size_t i=0;i<panel.num_bars();++i) {
         const auto time=panel.time_key[i]/1000;
         if (i==0 || panel.date[i]!=panel.date[i-1]) result.session_starts.push_back(time);
         else for (auto missing=panel.time_key[i-1]/1000+900;missing<time;missing+=900) {
             result.return_times.push_back(missing); result.returns.push_back(std::nan(""));
+            result.return_slots.push_back(slots[i-1]<0?-1:slots[i-1]+static_cast<int>((missing-panel.time_key[i-1]/1000)/900));
         }
         double r=returns[i*panel.num_assets()+asset];
         // A return spanning an absent close is not a single-bar observation.
         if (slots[i]<0 || (slots[i]>0 && (i==0 || panel.date[i-1]!=panel.date[i] || slots[i-1]+1!=slots[i]
             || !std::isfinite(panel.at(panel.close,i-1,asset))))) r=std::nan("");
-        result.return_times.push_back(time); result.returns.push_back(r);
+        result.return_times.push_back(time); result.returns.push_back(r); result.return_slots.push_back(slots[i]);
     }
     return result;
 }

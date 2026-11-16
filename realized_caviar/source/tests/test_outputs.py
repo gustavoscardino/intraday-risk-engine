@@ -45,7 +45,10 @@ def fixture(folder):
     return history
 
 
-def verify_output(out, exposure, confidence):
+MODELS = {'Realized-CAViaR', 'EWMA-N', 'GARCH-t'}
+
+
+def verify_output(out, exposure, confidence, models=MODELS):
     forecasts = rows(out / 'forecasts.csv')
     groups = defaultdict(list)
     for row in forecasts:
@@ -53,7 +56,7 @@ def verify_output(out, exposure, confidence):
         q, target = float(row['quantile']), float(row['target_return'])
         assert math.isclose(float(row['var']), -exposure * math.expm1(q), rel_tol=1e-12)
         assert math.isclose(float(row['realized_pnl']), exposure * math.expm1(target), rel_tol=1e-12, abs_tol=1e-12)
-    assert set(groups) == {'Realized-CAViaR', 'EWMA-N', 'GARCH-t'}
+    assert set(groups) == models
     target_sets = [{r['target_time'] for r in group if r['evaluated'] == '1'} for group in groups.values()]
     assert target_sets[0] == target_sets[1] == target_sets[2]
     assert len(target_sets[0]) == 4*24
@@ -70,6 +73,14 @@ def verify_output(out, exposure, confidence):
     for row in rows(out / 'benchmark.csv'):
         assert 0 <= float(row['p50_ns']) <= float(row['p95_ns']) <= float(row['p99_ns'])
         assert int(row['state_bytes']) > 0
+        assert int(row['timed_updates']) >= int(row['batch_size']) > 0
+    # The hourly breakdown partitions exactly the evaluated targets of each model.
+    hourly = defaultdict(lambda: [0, 0])
+    for row in rows(out / 'backtest_by_hour.csv'):
+        hourly[row['model']][0] += int(row['n'])
+        hourly[row['model']][1] += int(row['exceptions'])
+    for summary in rows(out / 'backtest_summary.csv'):
+        assert hourly[summary['model']] == [int(summary['n']), int(summary['exceptions'])]
     assert len(rows(out / 'risk_15m.csv')) == len(forecasts)
     return forecasts
 
@@ -128,6 +139,8 @@ def high_frequency(exe, root):
     parameters = rows(out / 'params_daily.csv')
     assert len(parameters) == 11  # CAViaR + 5 EWMA + 5 GARCH phases
     variances = {int(r['phase']): float(r['ewma_variance']) for r in parameters if r['model'] == 'EWMA-N'}
+    lambdas = {int(r['phase']): float(r['lambda']) for r in parameters if r['model'] == 'EWMA-N'}
+    assert all(.8 <= lam <= .999 for lam in lambdas.values())  # estimated per phase
     cutoff = prices[len(prices)//2][0]
     tail = NormalDist().inv_cdf(1-.99)
     selected = []
@@ -150,7 +163,7 @@ def high_frequency(exe, root):
             phase = (time-200)//60 % 5
             if time > cutoff:
                 r = float(row['aggregate_return'])
-                variances[phase] = .94*variances[phase]+.06*r*r
+                variances[phase] = lambdas[phase]*variances[phase]+(1-lambdas[phase])*r*r
             expected = tail * math.sqrt(variances[phase])
             assert math.isclose(float(row['quantile']), expected, rel_tol=1e-12)
     assert all(a[1] <= b[0] for a, b in zip(selected, selected[1:]))
@@ -185,8 +198,14 @@ def main():
         assert len(calendars['Realized-CAViaR']) == 4
         assert calendars['Realized-CAViaR'] == calendars['EWMA-N'] == calendars['GARCH-t']
         assert len({r[1] for r in calendars['Realized-CAViaR']}) == 4
+        assert len(rows(root / 'daily' / 'diurnal_profile.csv')) == 28
         run(exe, data, root / 'once', '--refit', 'once')
         assert len(rows(root / 'once' / 'params_daily.csv')) == 3
+        # RiskMetrics reference: fixed lambda .94, raw returns -> named EWMA-N (ref).
+        run(exe, data, root / 'reference', '--refit', 'once', '--diurnal', 'off', '--lambda', '.94')
+        verify_output(root / 'reference', 100000, .99, {'Realized-CAViaR', 'EWMA-N (ref)', 'GARCH-t'})
+        assert not (root / 'reference' / 'diurnal_profile.csv').exists()
+        assert {float(r['lambda']) for r in rows(root / 'reference' / 'params_daily.csv') if r['model'] == 'EWMA-N (ref)'} == {.94}
         run(exe, data, root / 'short', '--refit', 'once', '--exposure', '-200000', '--confidence', '.95')
         verify_output(root / 'short', -200000, .95)
         # Changing strictly future data cannot change the first prediction or calibration.
@@ -204,7 +223,7 @@ def main():
         for before, after in zip(daily[:3], changed[:3]):
             assert before['model'] == after['model']
             assert before['quantile'] == after['quantile']
-        for args in [('--confidence', '1'), ('--lambda', '0'), ('--refit', 'weekly'),
+        for args in [('--confidence', '1'), ('--lambda', '0'), ('--refit', 'weekly'), ('--diurnal', 'maybe'),
                      ('--exposure', 'nan'), ('--window-days', '4x'), ('--unknown', '1')]:
             proc = subprocess.run([str(exe), *args], capture_output=True)
             assert proc.returncode != 0, args
