@@ -1,0 +1,13 @@
+Environment of the ATAM evidence
+  generated: 2026-11-15
+  engines and data: commit dc9300e 2026-11-15 (uncommitted changes: no)
+  machine: Intel(R) Core(TM) i7-8565U CPU @ 1.80GHz, 8 hardware threads, Windows 11 (build 26200)
+  python: 3.10.11
+
+  engine binaries (the ready-to-run programs versioned in each module's bin/)
+    ewma/bin/ewma_risk.exe  sha256 32fbf3aa49fdf0e7  3.62 MB
+    ewma/bin/benchmark.exe  sha256 87f4b978b31469f8  3.06 MB
+    garch_t/bin/intraday_risk.exe  sha256 07a34411252d9d78  3.83 MB
+    garch_t/bin/benchmark.exe  sha256 21d9022b1d2a6b64  0.89 MB
+    realized_caviar/build/realized_caviar.exe  sha256 c927b20fbaea28d4  3.46 MB
+    realized_caviar/build/realized_caviar.exe  sha256 c927b20fbaea28d4  3.46 MB

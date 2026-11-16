@@ -1,0 +1,27 @@
+P1 - per-bar latency (replay, 15 assets, intraday bars; from the scored forecasts of risk_15m.csv), P3 - daily refit (replay)
+  EWMA (DQ on)   p50   1.30 us  p95   2.60 us  p99    5.20 us  max     22.3 us   refit p50    5.14 ms, max    8.44 ms   (p99 across runs 3.48-5.25 us)
+                 slowest bars (run 1): 20 us, 20 us, 16 us, 16 us, 15 us
+                 without fill bars: max 22.3 us (median of runs)
+  GARCH-t        p50   4.20 us  p95   8.20 us  p99   10.00 us  max   1332.5 us   refit p50   27.74 ms, max  122.15 ms   (p99 across runs 8.20-22.80 us)
+                 slowest bars (run 1): 1332 us (fill), 1300 us (fill), 953 us (fill), 915 us (fill), 76 us
+                 without fill bars: max 75.8 us (median of runs)
+                 option book revalued by Monte Carlo at every bar, outside update_us: median 7.05 ms per bar
+  EWMA (DQ off)  p50   1.20 us  p99    3.80 us  (median of 3 runs; data-quality layer switched off (plain loader))
+  GARCH-t (clip 6 sd) p50   5.20 us  p99   26.15 us  (median of 3 runs; stateless clipping of standardized shocks at 6 sd)
+
+P2 - scalability (each engine's benchmark program, median of three runs)
+  EWMA       15 assets: median per bar     0.90 us, p99     1.70 us; refit     8.95 ms
+  EWMA       50 assets: median per bar     8.50 us, p99    14.30 us; refit    24.94 ms
+  EWMA      200 assets: median per bar   165.80 us, p99   414.70 us; refit   207.51 ms
+  GARCH-t    15 assets: median per bar     1.50 us, p99 not reported; refit    53.30 ms
+  GARCH-t    50 assets: median per bar    13.10 us, p99 not reported; refit   133.00 ms
+  GARCH-t   200 assets: median per bar   236.70 us, p99 not reported; refit   877.90 ms
+  figure: atam/results/figures/p1_p2_latency.png
+
+P1/P3/P4 - single-instrument engines: model-stage cost of each model under one measurement boundary (update + quantile + monetary VaR, timed in batches of 1000; median of three runs)
+  Realized-CAViaR  mean   27.9 ns  p50   26.8 ns  p95   29.1 ns  p99   47.1 ns   35.9 M updates/s  state 40 bytes
+  EWMA-N           mean   45.3 ns  p50   44.9 ns  p95   45.3 ns  p99   55.2 ns   22.1 M updates/s  state 240 bytes
+  GARCH-t          mean   40.0 ns  p50   39.7 ns  p95   42.3 ns  p99   57.0 ns   25.0 M updates/s  state 280 bytes
+  daily calibration of the three models (sum of fit times): p50 42.5 ms, max 76.2 ms (90 calibrations, XPET3)
+  percentiles are of batch means (1000 updates per batch), which average away the per-update tail: they compare the models with each other, not with the per-bar p99 of the portfolio engines
+  figure: atam/results/figures/p1_p4_model_stage.png

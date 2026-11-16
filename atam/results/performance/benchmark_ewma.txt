@@ -1,0 +1,5 @@
+EWMA engine benchmark: 120 sessions of 28 bars, window 60 sessions, 3 models (ref, N, t)
+  assets   bar p50 (us)   bar p95 (us)   bar p99 (us) refit p50 (ms) refit max (ms)
+      15           0.90           1.40           1.70           8.95          15.00
+      50           8.30          11.60          13.10          24.20          39.53
+     200         165.80         273.50         414.70         203.36         413.57

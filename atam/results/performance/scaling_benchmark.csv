@@ -1,0 +1,7 @@
+assets,engine,bar_p50_us,bar_p95_us,bar_p99_us,refit_1thread_ms,refit_ms
+15,ewma,0.9,1.6,1.7,,8.95
+50,ewma,8.5,12.4,14.3,,24.94
+200,ewma,165.8,273.5,414.7,,207.51
+15,garch_t,1.5,,,155.1,53.3
+50,garch_t,13.1,,,426.2,133
+200,garch_t,236.7,,,1803.2,877.9

@@ -1,0 +1,13 @@
+scenario,variant,metric,value,unit,detail
+M1,ewma,m1_files_outside_model,5,files,"no common model interface; files naming a specific model: ewma_risk.cpp, engine.hpp, replay.hpp, engine.cpp, replay.cpp"
+M1,ewma,common_model_interface,0,yes/no,
+M2,ewma,m2_config_only,0,yes/no,"bar length is set in whole minutes (--session HH:MM,BAR_MIN,BARS): 5-second sampling needs code [ewma/source/apps/ewma_risk.cpp:10]; the forecast horizon is one bar ahead (next_slot = slot + 1): a 5-minute horizon issued every minute needs code (overlapping horizons) [ewma/source/src/replay.cpp:365]"
+M1,ewma,reused_sibling_sources,0,files,builds from its own sources only
+M1,garch_t,m1_files_outside_model,5,files,"no common model interface; files naming a specific model: intraday_risk.cpp, portfolio.hpp, replay.hpp, portfolio.cpp, replay.cpp"
+M1,garch_t,common_model_interface,0,yes/no,
+M2,garch_t,m2_config_only,0,yes/no,"bar length is set in whole minutes (--session HH:MM,BAR_MIN,BARS): 5-second sampling needs code [garch_t/source/apps/intraday_risk.cpp:10]; the forecast horizon is one bar ahead (next_slot = slot + 1): a 5-minute horizon issued every minute needs code (overlapping horizons) [garch_t/source/src/replay.cpp:284]"
+M1,garch_t,reused_sibling_sources,0,files,builds from its own sources only
+M1,realized_caviar,m1_files_outside_model,2,files,"no common model interface; files naming a specific model: replay.hpp, replay.cpp"
+M1,realized_caviar,common_model_interface,0,yes/no,
+M2,realized_caviar,m2_config_only,1,yes/no,high-frequency mode (--prices) takes 5-second prices [realized_caviar/source/src/replay.cpp:137]; forecasts every minute in five 1-minute phases of a 5-minute horizon [realized_caviar/source/src/replay.cpp:37]; the shared-data mode accepts 15-minute bars only [realized_caviar/source/src/shared_data.cpp:13]
+M1,realized_caviar,reused_sibling_sources,9,files,"ewma/source/src/ewma.cpp, ewma/source/src/math.cpp, ewma/source/src/seasonality.cpp, garch_t/source/src/backtest.cpp, garch_t/source/src/garch.cpp, garch_t/source/src/market_data.cpp, garch_t/source/src/math.cpp, garch_t/source/src/optimize.cpp, garch_t/source/src/risk.cpp"

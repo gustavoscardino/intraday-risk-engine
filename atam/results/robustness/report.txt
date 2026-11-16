@@ -1,0 +1,16 @@
+R1 - faulty feed (prices_15m_degraded.csv) vs clean feed, main-model VaR 99% forecast by forecast
+  EWMA (DQ on)             0.04% of 2517 portfolio forecasts off by >5% (>1%:  9.10%), max     7.86% at 2026-07-28 11:30:00; 0 issued from one feed only (counted as off)
+  EWMA (DQ off)            8.34% of 2517 portfolio forecasts off by >5% (>1%: 40.44%), max    50.25% at 2026-07-28 11:45:00; 0 issued from one feed only (counted as off)
+  GARCH-t                 26.42% of 2517 portfolio forecasts off by >5% (>1%: 65.95%), max   108.57% at 2026-07-28 11:45:00; 0 issued from one feed only (counted as off)
+  GARCH-t (clip 6 sd)     13.63% of 2517 portfolio forecasts off by >5% (>1%: 64.56%), max    59.43% at 2026-07-28 11:45:00; 0 issued from one feed only (counted as off)
+  Realized-CAViaR         24.68% of 32340 single-stock forecasts of 15 stocks off by >5% (>1%: 59.80%), max   532.31% at 2026-07-08 14:45:00 (XPET3); 685 issued from one feed only (counted as off)
+  feed faults: 2026-07-08 13:45:00 bad tick on XPET3 close; 2026-07-28 11:30:00 bad tick on XBAN4 close; 2026-09-04 12:00:00 XCON3 price frozen for bars 8-17; 2026-09-21 15:15:00 bad tick on XTEC3 close
+
+R2 - genuine shocks on the clean feed: VaR issued at the shock bar vs the same engine unprotected
+  EWMA (DQ on)           market crash (portfolio): ratio 1.000; XVAR3 earnings shock (portfolio): ratio 1.021; clean-feed forecasts more than 5% below unprotected: 0 (reference: EWMA (DQ off))
+  EWMA (DQ off)          market crash (portfolio): ratio 1.000; XVAR3 earnings shock (portfolio): ratio 1.000; clean-feed forecasts more than 5% below unprotected: 0 (no protection to switch off; the filters take every printed bar, so the shock enters at once)
+  GARCH-t                market crash (portfolio): ratio 1.000; XVAR3 earnings shock (portfolio): ratio 1.000; clean-feed forecasts more than 5% below unprotected: 0 (no protection to switch off; the filters take every printed bar, so the shock enters at once)
+  GARCH-t (clip 6 sd)    market crash (portfolio): ratio 1.000; XVAR3 earnings shock (portfolio): ratio 0.962; clean-feed forecasts more than 5% below unprotected: 0 (reference: GARCH-t)
+  Realized-CAViaR        market crash (XPET3): ratio 1.000, NEVER in the features (first forecast of the session 12:00), VaR exception; XVAR3 earnings shock (XVAR3): ratio 1.000, in the features 0 bar(s) later; clean-feed forecasts more than 5% below unprotected: 0 (no protection to switch off; checked instead whether the shock enters the CAViaR features)
+  shocks: 2026-07-17 10:15:00 market crash: factor shock of -9 conditional std devs; elevated market volatility regime until day 104; 2026-08-21 13:15:00 XVAR3 earnings shock: -9% idiosyncratic move in one bar
+  figures: atam/results/figures/r1_degraded_feed.png, atam/results/figures/r2_genuine_shocks.png

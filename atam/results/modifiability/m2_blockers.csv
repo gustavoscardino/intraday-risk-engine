@@ -1,0 +1,5 @@
+engine,where,blocker
+ewma,ewma/source/apps/ewma_risk.cpp:10,"bar length is set in whole minutes (--session HH:MM,BAR_MIN,BARS): 5-second sampling needs code"
+ewma,ewma/source/src/replay.cpp:365,the forecast horizon is one bar ahead (next_slot = slot + 1): a 5-minute horizon issued every minute needs code (overlapping horizons)
+garch_t,garch_t/source/apps/intraday_risk.cpp:10,"bar length is set in whole minutes (--session HH:MM,BAR_MIN,BARS): 5-second sampling needs code"
+garch_t,garch_t/source/src/replay.cpp:284,the forecast horizon is one bar ahead (next_slot = slot + 1): a 5-minute horizon issued every minute needs code (overlapping horizons)
