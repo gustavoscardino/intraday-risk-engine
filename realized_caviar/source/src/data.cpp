@@ -1,4 +1,5 @@
 #include "rcaviar/data.hpp"
+#include <algorithm>
 #include <cmath>
 #include <fstream>
 #include <limits>
@@ -41,25 +42,42 @@ std::vector<Price> synthetic_prices(std::size_t samples, unsigned seed) {
     }
     return prices;
 }
-std::vector<Window> make_windows(const std::vector<Price>& prices) {
-    if (prices.size()<121) throw std::invalid_argument("need at least 121 prices");
-    std::vector<double> returns(prices.size(),0);
-    for (std::size_t i=0; i<prices.size(); ++i) {
-        const auto& p = prices[i];
-        if (p.timestamp<0 || p.timestamp>std::numeric_limits<std::int64_t>::max()-300 || !std::isfinite(p.price) || p.price<=0)
-            throw std::invalid_argument("invalid timestamp or price at sample " + std::to_string(i));
-        if (i) {
-            if (p.timestamp<=prices[i-1].timestamp) throw std::invalid_argument("duplicate or out-of-order timestamp");
-            if (p.timestamp-prices[i-1].timestamp!=5) throw std::invalid_argument("missing/stale sample: expected 5-second spacing (split sessions into separate files)");
-            returns[i] = std::log(p.price)-std::log(prices[i-1].price);
-        }
-    }
+void StreamingWindows::begin_session() {
+    previous_.reset(); count_=cursor_=0; aggregate_=rv_=0; returns_.fill(0);
+}
+std::optional<Window> StreamingWindows::push(Price p) {
+    if (p.timestamp<0 || p.timestamp>std::numeric_limits<std::int64_t>::max()-300 || !std::isfinite(p.price) || p.price<=0)
+        throw std::invalid_argument("invalid timestamp or price");
+    if (!previous_) { previous_=p; return std::nullopt; }
+    if (p.timestamp<=previous_->timestamp) throw std::invalid_argument("duplicate or out-of-order timestamp");
+    if (p.timestamp-previous_->timestamp!=5) throw std::invalid_argument("missing/stale sample: expected 5-second spacing");
+    const double r=std::log(p.price)-std::log(previous_->price);
+    const double old=returns_[cursor_];
+    aggregate_+=r-old; rv_+=r*r-old*old;
+    returns_[cursor_]=r; cursor_=(cursor_+1)%returns_.size(); ++count_; previous_=p;
+    if (count_<60 || (count_-60)%12!=0) return std::nullopt;
+    return Window{p.timestamp,p.timestamp+300,{aggregate_,std::max(0.0,rv_),std::nan("")}};
+}
+std::vector<Window> make_windows(const std::vector<Price>& prices, bool reset_on_gap) {
+    if (prices.size()<61) throw std::invalid_argument("need at least 61 prices");
+    StreamingWindows stream;
     std::vector<Window> windows;
-    for (std::size_t i=60; i+60<prices.size(); i+=12) {
-        double r=0,rv=0,target=0;
-        for (std::size_t j=i-59; j<=i; ++j) { r+=returns[j]; rv+=returns[j]*returns[j]; }
-        for (std::size_t j=i+1; j<=i+60; ++j) target+=returns[j];
-        windows.push_back({prices[i].timestamp,prices[i+60].timestamp,{r,rv,target}});
+    std::vector<std::size_t> sessions(prices.size());
+    for (std::size_t i=0;i<prices.size();++i) {
+        if (i) {
+            if (prices[i].timestamp<=prices[i-1].timestamp) throw std::invalid_argument("duplicate or out-of-order timestamp");
+            sessions[i]=sessions[i-1];
+            if (reset_on_gap && prices[i].timestamp-prices[i-1].timestamp!=5) {
+                stream.begin_session(); ++sessions[i];
+            }
+        }
+        if (auto window=stream.push(prices[i])) windows.push_back(*window);
+    }
+    for (auto& w:windows) {
+        auto before=std::lower_bound(prices.begin(),prices.end(),w.forecast_time,[](Price p,std::int64_t t){return p.timestamp<t;});
+        auto after=std::lower_bound(before,prices.end(),w.target_time,[](Price p,std::int64_t t){return p.timestamp<t;});
+        if (after!=prices.end() && after->timestamp==w.target_time && sessions[static_cast<std::size_t>(after-prices.begin())]==sessions[static_cast<std::size_t>(before-prices.begin())])
+            w.observation.target_return=std::log(after->price)-std::log(before->price);
     }
     return windows;
 }

@@ -1,5 +1,6 @@
 #include "rcaviar/data.hpp"
 #include "rcaviar/shared_data.hpp"
+#include "rcaviar/replay.hpp"
 #include <cmath>
 #include <iostream>
 #include <limits>
@@ -26,7 +27,23 @@ int main() {
         std::vector<rcaviar::Price> prices;
         for (int i=0;i<=240;++i) prices.push_back({5*i,100*std::exp(.0001*i)});
         const auto windows=rcaviar::make_windows(prices);
-        require(windows.size()==11,"window count");
+        require(windows.size()==16,"pending forecasts must be emitted without future prices");
+        require(std::isnan(windows.back().observation.target_return),"pending forecast must have no target");
+        rcaviar::StreamingWindows streaming;
+        std::size_t emitted=0;
+        for (const auto& price:prices) if (const auto w=streaming.push(price)) {
+            close(w->observation.aggregate_return,windows[emitted].observation.aggregate_return);
+            close(w->observation.realized_variance,windows[emitted].observation.realized_variance);
+            require(w->forecast_time==windows[emitted++].forecast_time,"stream/replay cadence differs");
+            require(std::isnan(w->observation.target_return),"stream sees future labels");
+        }
+        require(emitted==windows.size(),"stream/replay count differs");
+        auto gapped=prices;
+        for (std::size_t i=120;i<gapped.size();++i) gapped[i].timestamp+=3600;
+        rejects([&]{rcaviar::make_windows(gapped);});
+        const auto reset=rcaviar::make_windows(gapped,true);
+        require(reset.size()==11,"session gap must restart feature warmup");
+        require(std::isnan(reset.front().observation.target_return),"target must not cross session gap");
         close(windows[0].observation.aggregate_return,.006);
         close(windows[0].observation.realized_variance,60e-8);
         close(windows[0].observation.target_return,.006);
@@ -112,6 +129,59 @@ int main() {
         const auto isolated=rcaviar::coverage_with_boundaries({0,1},{false,false},.01);
         require(std::isnan(isolated.p_ind),"undefined independence must be NaN");
         rejects([]{rcaviar::coverage_with_boundaries({0},{},.01);});
+        close(rcaviar::position_var(-100000,-.01),100000*std::expm1(.01));
+        close(rcaviar::position_var(100000,-.01),rcaviar::long_var(100000,-.01));
+        close(rcaviar::position_var(0,-.01),0);
+        rejects([]{rcaviar::position_var(1,.01);});
+        // End-to-end causal replay, aligned daily calibration, and short direction.
+        rcaviar::ReplayInput input;
+        input.shared=true; input.horizon_seconds=900; input.training_sessions=5;
+        for (int day=0;day<8;++day) {
+            const std::int64_t base=day*86400;
+            input.session_starts.push_back(base);
+            for (int slot=0;slot<28;++slot) {
+                const auto time=base+(slot+1)*900;
+                const double r=.002*std::sin(day*28+slot)+.001*std::cos(.37*(day*28+slot));
+                input.return_times.push_back(time); input.returns.push_back(r);
+                if (slot>=3 && slot<27) {
+                    double aggregate=0,rv=0;
+                    for (int j=0;j<4;++j) { const double x=input.returns[input.returns.size()-1-static_cast<std::size_t>(j)]; aggregate+=x; rv+=x*x; }
+                    const double target=.002*std::sin(day*28+slot+1)+.001*std::cos(.37*(day*28+slot+1));
+                    input.windows.push_back({time,time+900,{aggregate,rv,target}});
+                }
+            }
+        }
+        input.cutoff=input.return_times[5*28-1];
+        rcaviar::ReplayConfig config; config.compare=true; config.refit=rcaviar::RefitSchedule::Daily;
+        config.fit_options.starts=2; config.fit_options.max_iterations=120;
+        const auto matched=rcaviar::run_replay(input,config);
+        require(matched.calibrations.size()==3,"missing daily refits");
+        require(matched.summaries.size()==3,"missing baseline models");
+        for (const auto& s:matched.summaries) require(s.coverage.n==72,"models must use identical target sets");
+        for (const auto& c:matched.calibrations) require(c.training_end<c.effective_time,"calibration sees forecast future");
+        require(matched.calibrations[1].training_start==input.session_starts[1],"window must roll by session");
+        auto perturbed=input;
+        const auto first_time=matched.forecasts.front().forecast_time;
+        for (std::size_t j=0;j<perturbed.returns.size();++j) if (perturbed.return_times[j]>first_time) perturbed.returns[j]*=2;
+        for (auto& w:perturbed.windows) if (w.target_time>first_time) w.observation.target_return*=2;
+        const auto causal=rcaviar::run_replay(perturbed,config);
+        for (std::size_t m=0;m<3;++m) close(causal.forecasts.front().quantile[m],matched.forecasts.front().quantile[m]);
+        config.refit=rcaviar::RefitSchedule::Once;
+        const auto once=rcaviar::run_replay(input,config);
+        require(once.calibrations.size()==1,"once must not refit daily");
+        auto sparse=input;
+        for (auto& w:sparse.windows) if (w.forecast_time>=5*86400 && w.forecast_time<6*86400) w.observation.target_return=std::nan("");
+        config.refit=rcaviar::RefitSchedule::Daily;
+        const auto fallback=rcaviar::run_replay(sparse,config);
+        require(fallback.calibrations[1].status[0]=="previous_fit","failed rolling fit must preserve previous model");
+        for (const auto& s:fallback.summaries) require(s.coverage.n==48,"missing targets must not change model sample alignment");
+        config.refit=rcaviar::RefitSchedule::Once;
+        config.exposure=-200000;
+        const auto short_run=rcaviar::run_replay(input,config);
+        for (const auto& f:short_run.forecasts) for (std::size_t m=0;m<3;++m)
+            close(f.var[m],200000*std::expm1(-f.quantile[m]),1e-10);
+        auto wrong=input; wrong.horizon_seconds=60; rejects([&]{rcaviar::run_replay(wrong,config);});
+        config.confidence=1; rejects([&]{rcaviar::run_replay(input,config);});
         std::cout << checks << " checks passed\n";
         return 0;
     } catch (const std::exception& e) { std::cerr<<e.what()<<'\n'; return 1; }
