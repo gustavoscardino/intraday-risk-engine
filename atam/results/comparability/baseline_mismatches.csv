@@ -1,0 +1,466 @@
+dataset,pair,forecast_time,fields,baseline_var99_a,baseline_var99_b,rel_diff_pct,cause
+synthetic,ewma vs garch_t,2026-06-03 10:30:00,baseline_var99 baseline_sigma net_exposure,63588.98,62947.86,1.0185,data-quality layer
+synthetic,ewma vs garch_t,2026-06-18 12:00:00,baseline_var99 baseline_sigma net_exposure,68458.44,68764.49,-0.4451,data-quality layer
+synthetic,ewma vs garch_t,2026-08-21 13:15:00,baseline_var99 baseline_sigma net_exposure,48969.5,47416.37,3.2755,data-quality layer
+synthetic,ewma vs garch_t,2026-09-03 12:45:00,baseline_var99 baseline_sigma net_exposure,71704.33,72694.97,-1.3627,data-quality layer
+synthetic,ewma vs garch_t,2026-09-04 13:00:00,baseline_var99 baseline_sigma net_exposure,63434.55,63641.81,-0.3257,data-quality layer
+synthetic,ewma vs garch_t,2026-10-02 16:45:00,baseline_var99 baseline_sigma net_exposure,37938.67,37894.56,0.1164,data-quality layer
+b3_real,ewma vs garch_t,2026-09-10 12:00:00,baseline_var99 baseline_sigma net_exposure,47882.47,47678.97,0.4268,data-quality layer
+b3_real,ewma vs garch_t,2026-09-14 16:45:00,realized_pnl,27683.45,27683.45,0,data-quality layer
+b3_real,ewma vs garch_t,2026-09-14 17:00:00,baseline_var99 baseline_sigma net_exposure,27304.55,27392.54,-0.3212,data-quality layer
+b3_real,ewma vs garch_t,2026-09-15 10:15:00,baseline_var99 baseline_sigma,27579.96,27629.08,-0.1778,data-quality layer
+b3_real,ewma vs garch_t,2026-09-15 10:30:00,baseline_var99 baseline_sigma,43314,43343.52,-0.0681,data-quality layer
+b3_real,ewma vs garch_t,2026-09-15 10:45:00,baseline_var99 baseline_sigma,53296.11,53319.83,-0.0445,data-quality layer
+b3_real,ewma vs garch_t,2026-09-15 11:00:00,baseline_var99 baseline_sigma,51872.98,51895.94,-0.0442,data-quality layer
+b3_real,ewma vs garch_t,2026-09-15 11:15:00,baseline_var99 baseline_sigma,51055.48,51077.52,-0.0432,data-quality layer
+b3_real,ewma vs garch_t,2026-09-15 11:30:00,baseline_var99 baseline_sigma,49879.96,49901.1,-0.0424,data-quality layer
+b3_real,ewma vs garch_t,2026-09-15 11:45:00,baseline_var99 baseline_sigma,48462.08,48482.37,-0.0419,data-quality layer
+b3_real,ewma vs garch_t,2026-09-15 12:00:00,baseline_var99 baseline_sigma,47870.96,47890.45,-0.0407,data-quality layer
+b3_real,ewma vs garch_t,2026-09-15 12:15:00,baseline_var99 baseline_sigma,48149.76,48168.01,-0.0379,data-quality layer
+b3_real,ewma vs garch_t,2026-09-15 12:30:00,baseline_var99 baseline_sigma,53486.62,53502.16,-0.029,data-quality layer
+b3_real,ewma vs garch_t,2026-09-15 12:45:00,baseline_var99 baseline_sigma,52138.78,52153.69,-0.0286,data-quality layer
+b3_real,ewma vs garch_t,2026-09-15 13:00:00,baseline_var99 baseline_sigma,54147.41,54160.78,-0.0247,data-quality layer
+b3_real,ewma vs garch_t,2026-09-15 13:15:00,baseline_var99 baseline_sigma,52636.08,52649.01,-0.0246,data-quality layer
+b3_real,ewma vs garch_t,2026-09-15 13:30:00,baseline_var99 baseline_sigma,52091.09,52103.46,-0.0237,data-quality layer
+b3_real,ewma vs garch_t,2026-09-15 13:45:00,baseline_var99 baseline_sigma,51673.35,51685.14,-0.0228,data-quality layer
+b3_real,ewma vs garch_t,2026-09-15 14:00:00,baseline_var99 baseline_sigma,52538.97,52549.95,-0.0209,data-quality layer
+b3_real,ewma vs garch_t,2026-09-15 14:15:00,baseline_var99 baseline_sigma,51801.08,51811.6,-0.0203,data-quality layer
+b3_real,ewma vs garch_t,2026-09-15 14:30:00,baseline_var99 baseline_sigma,50919.17,50929.2,-0.0197,data-quality layer
+b3_real,ewma vs garch_t,2026-09-15 14:45:00,baseline_var99 baseline_sigma,49395.91,49405.63,-0.0197,data-quality layer
+b3_real,ewma vs garch_t,2026-09-15 15:00:00,baseline_var99 baseline_sigma,48061.32,48070.72,-0.0196,data-quality layer
+b3_real,ewma vs garch_t,2026-09-15 15:15:00,baseline_var99 baseline_sigma,47043.8,47052.82,-0.0192,data-quality layer
+b3_real,ewma vs garch_t,2026-09-15 15:30:00,baseline_var99 baseline_sigma,46037.3,46045.95,-0.0188,data-quality layer
+b3_real,ewma vs garch_t,2026-09-15 15:45:00,baseline_var99 baseline_sigma,45556.01,45564.2,-0.018,data-quality layer
+b3_real,ewma vs garch_t,2026-09-15 16:00:00,baseline_var99 baseline_sigma,44234.14,44242.1,-0.018,data-quality layer
+b3_real,ewma vs garch_t,2026-09-15 16:15:00,baseline_var99 baseline_sigma,43008.63,43016.34,-0.0179,data-quality layer
+b3_real,ewma vs garch_t,2026-09-15 16:30:00,baseline_var99 baseline_sigma,41714.86,41722.35,-0.018,data-quality layer
+b3_real,ewma vs garch_t,2026-09-15 16:45:00,baseline_var99 baseline_sigma,40706.36,40713.58,-0.0177,data-quality layer
+b3_real,ewma vs garch_t,2026-09-15 17:00:00,baseline_var99 baseline_sigma,39406.06,39468.53,-0.1583,data-quality layer
+b3_real,ewma vs garch_t,2026-09-16 10:15:00,baseline_var99 baseline_sigma,38606.06,38665.54,-0.1538,data-quality layer
+b3_real,ewma vs garch_t,2026-09-16 10:30:00,baseline_var99 baseline_sigma,42860.55,42911.15,-0.1179,data-quality layer
+b3_real,ewma vs garch_t,2026-09-16 10:45:00,baseline_var99 baseline_sigma,41974.26,42022.58,-0.115,data-quality layer
+b3_real,ewma vs garch_t,2026-09-16 11:00:00,baseline_var99 baseline_sigma,42232.38,42277.44,-0.1066,data-quality layer
+b3_real,ewma vs garch_t,2026-09-16 11:15:00,baseline_var99 baseline_sigma,45672.06,45711.76,-0.0868,data-quality layer
+b3_real,ewma vs garch_t,2026-09-16 11:30:00,baseline_var99 baseline_sigma,44641.1,44679.09,-0.085,data-quality layer
+b3_real,ewma vs garch_t,2026-09-16 11:45:00,baseline_var99 baseline_sigma,44020.74,44057.04,-0.0824,data-quality layer
+b3_real,ewma vs garch_t,2026-09-16 12:00:00,baseline_var99 baseline_sigma,42765.99,42800.95,-0.0817,data-quality layer
+b3_real,ewma vs garch_t,2026-09-16 12:15:00,baseline_var99 baseline_sigma,41778.69,41812.23,-0.0802,data-quality layer
+b3_real,ewma vs garch_t,2026-09-16 12:30:00,baseline_var99 baseline_sigma,40613.64,40646.24,-0.0802,data-quality layer
+b3_real,ewma vs garch_t,2026-09-16 12:45:00,baseline_var99 baseline_sigma,43545.92,43574.58,-0.0658,data-quality layer
+b3_real,ewma vs garch_t,2026-09-16 13:00:00,baseline_var99 baseline_sigma,42300.22,42327.9,-0.0654,data-quality layer
+b3_real,ewma vs garch_t,2026-09-16 13:15:00,baseline_var99 baseline_sigma,41020.76,41047.62,-0.0654,data-quality layer
+b3_real,ewma vs garch_t,2026-09-16 13:30:00,baseline_var99 baseline_sigma,39862.86,39888.66,-0.0647,data-quality layer
+b3_real,ewma vs garch_t,2026-09-16 13:45:00,baseline_var99 baseline_sigma,38996.11,39020.48,-0.0625,data-quality layer
+b3_real,ewma vs garch_t,2026-09-16 14:00:00,baseline_var99 baseline_sigma,38858.99,38881.99,-0.0592,data-quality layer
+b3_real,ewma vs garch_t,2026-09-16 14:15:00,baseline_var99 baseline_sigma,37675.17,37697.4,-0.059,data-quality layer
+b3_real,ewma vs garch_t,2026-09-16 14:30:00,baseline_var99 baseline_sigma,36624.58,36646.3,-0.0593,data-quality layer
+b3_real,ewma vs garch_t,2026-09-16 14:45:00,baseline_var99 baseline_sigma,35904.89,35925.79,-0.0582,data-quality layer
+b3_real,ewma vs garch_t,2026-09-16 15:00:00,baseline_var99 baseline_sigma,36716.29,36735.6,-0.0526,data-quality layer
+b3_real,ewma vs garch_t,2026-09-16 15:15:00,baseline_var99 baseline_sigma,35827.84,35846.12,-0.051,data-quality layer
+b3_real,ewma vs garch_t,2026-09-16 15:30:00,baseline_var99 baseline_sigma,34813.4,34831.08,-0.0508,data-quality layer
+b3_real,ewma vs garch_t,2026-09-16 15:45:00,baseline_var99 baseline_sigma,34672.18,34688.88,-0.0481,data-quality layer
+b3_real,ewma vs garch_t,2026-09-16 16:00:00,baseline_var99 baseline_sigma,43448,43460.32,-0.0283,data-quality layer
+b3_real,ewma vs garch_t,2026-09-16 16:15:00,baseline_var99 baseline_sigma,42246.5,42258.3,-0.0279,data-quality layer
+b3_real,ewma vs garch_t,2026-09-16 16:30:00,baseline_var99 baseline_sigma,41310.4,41321.74,-0.0274,data-quality layer
+b3_real,ewma vs garch_t,2026-09-16 16:45:00,baseline_var99 baseline_sigma,40256.19,40267.2,-0.0273,data-quality layer
+b3_real,ewma vs garch_t,2026-09-16 17:00:00,baseline_var99 baseline_sigma,39052.53,39063.27,-0.0275,data-quality layer
+b3_real,ewma vs garch_t,2026-09-17 10:15:00,baseline_var99 baseline_sigma,38112.94,38123.47,-0.0276,data-quality layer
+b3_real,ewma vs garch_t,2026-09-17 10:30:00,baseline_var99 baseline_sigma,36960.28,36970.51,-0.0277,data-quality layer
+b3_real,ewma vs garch_t,2026-09-17 10:45:00,baseline_var99 baseline_sigma,80729.62,80733.9,-0.0053,data-quality layer
+b3_real,ewma vs garch_t,2026-09-17 11:00:00,baseline_var99 baseline_sigma,84514.88,84518.81,-0.0046,data-quality layer
+b3_real,ewma vs garch_t,2026-09-17 11:15:00,baseline_var99 baseline_sigma,84115.23,84119,-0.0045,data-quality layer
+b3_real,ewma vs garch_t,2026-09-17 11:30:00,baseline_var99 baseline_sigma,81592.34,81595.94,-0.0044,data-quality layer
+b3_real,ewma vs garch_t,2026-09-17 11:45:00,baseline_var99 baseline_sigma,83406.42,83409.76,-0.004,data-quality layer
+b3_real,ewma vs garch_t,2026-09-17 12:00:00,baseline_var99 baseline_sigma,81034.13,81037.37,-0.004,data-quality layer
+b3_real,ewma vs garch_t,2026-09-17 12:15:00,baseline_var99 baseline_sigma,79029.61,79032.76,-0.004,data-quality layer
+b3_real,ewma vs garch_t,2026-09-17 12:30:00,baseline_var99 baseline_sigma,77988.96,77991.99,-0.0039,data-quality layer
+b3_real,ewma vs garch_t,2026-09-17 12:45:00,baseline_var99 baseline_sigma,76370,76372.92,-0.0038,data-quality layer
+b3_real,ewma vs garch_t,2026-09-17 13:00:00,baseline_var99 baseline_sigma,74073.39,74076.26,-0.0039,data-quality layer
+b3_real,ewma vs garch_t,2026-09-17 13:15:00,baseline_var99 baseline_sigma,71768.09,71770.86,-0.0039,data-quality layer
+b3_real,ewma vs garch_t,2026-09-17 13:30:00,baseline_var99 baseline_sigma,71326.4,71329.04,-0.0037,data-quality layer
+b3_real,ewma vs garch_t,2026-09-17 13:45:00,baseline_var99 baseline_sigma,69090.85,69093.4,-0.0037,data-quality layer
+b3_real,ewma vs garch_t,2026-09-17 14:00:00,baseline_var99 baseline_sigma,67210.24,67212.72,-0.0037,data-quality layer
+b3_real,ewma vs garch_t,2026-09-17 14:15:00,baseline_var99 baseline_sigma,65181.58,65183.99,-0.0037,data-quality layer
+b3_real,ewma vs garch_t,2026-09-17 14:30:00,baseline_var99 baseline_sigma,63391.71,63394.05,-0.0037,data-quality layer
+b3_real,ewma vs garch_t,2026-09-17 14:45:00,baseline_var99 baseline_sigma,61683.03,61685.28,-0.0036,data-quality layer
+b3_real,ewma vs garch_t,2026-09-17 15:00:00,baseline_var99 baseline_sigma,60936.02,60938.16,-0.0035,data-quality layer
+b3_real,ewma vs garch_t,2026-09-17 15:15:00,baseline_var99 baseline_sigma,60236.57,60238.61,-0.0034,data-quality layer
+b3_real,ewma vs garch_t,2026-09-17 15:30:00,baseline_var99 baseline_sigma,58460.78,58462.75,-0.0034,data-quality layer
+b3_real,ewma vs garch_t,2026-09-17 15:45:00,baseline_var99 baseline_sigma,56699.05,56700.97,-0.0034,data-quality layer
+b3_real,ewma vs garch_t,2026-09-17 16:00:00,baseline_var99 baseline_sigma,55501.42,55503.25,-0.0033,data-quality layer
+b3_real,ewma vs garch_t,2026-09-17 16:15:00,baseline_var99 baseline_sigma,54625.48,54627.23,-0.0032,data-quality layer
+b3_real,ewma vs garch_t,2026-09-17 16:30:00,baseline_var99 baseline_sigma,53305.07,53306.75,-0.0032,data-quality layer
+b3_real,ewma vs garch_t,2026-09-17 16:45:00,baseline_var99 baseline_sigma,51693.67,51695.3,-0.0032,data-quality layer
+b3_real,ewma vs garch_t,2026-09-17 17:00:00,baseline_var99 baseline_sigma,51325.24,51326.78,-0.003,data-quality layer
+b3_real,ewma vs garch_t,2026-09-18 10:15:00,baseline_var99 baseline_sigma,49637.03,49638.49,-0.0029,data-quality layer
+b3_real,ewma vs garch_t,2026-09-18 10:30:00,baseline_var99 baseline_sigma,48996.04,48997.44,-0.0029,data-quality layer
+b3_real,ewma vs garch_t,2026-09-18 10:45:00,baseline_var99 baseline_sigma,47989.95,47991.24,-0.0027,data-quality layer
+b3_real,ewma vs garch_t,2026-09-18 11:00:00,baseline_var99 baseline_sigma,47807.19,47808.41,-0.0026,data-quality layer
+b3_real,ewma vs garch_t,2026-09-18 11:15:00,baseline_var99 baseline_sigma,46528.93,46530.1,-0.0025,data-quality layer
+b3_real,ewma vs garch_t,2026-09-18 11:30:00,baseline_var99 baseline_sigma,45115.51,45116.64,-0.0025,data-quality layer
+b3_real,ewma vs garch_t,2026-09-18 11:45:00,baseline_var99 baseline_sigma,44078.61,44079.69,-0.0025,data-quality layer
+b3_real,ewma vs garch_t,2026-09-18 12:00:00,baseline_var99 baseline_sigma,43712.37,43713.39,-0.0023,data-quality layer
+b3_real,ewma vs garch_t,2026-09-18 12:15:00,baseline_var99 baseline_sigma,42473.49,42474.48,-0.0023,data-quality layer
+b3_real,ewma vs garch_t,2026-09-18 12:30:00,baseline_var99 baseline_sigma,41173.78,41174.74,-0.0023,data-quality layer
+b3_real,ewma vs garch_t,2026-09-18 12:45:00,baseline_var99 baseline_sigma,39951.51,39952.44,-0.0023,data-quality layer
+b3_real,ewma vs garch_t,2026-09-18 13:00:00,baseline_var99 baseline_sigma,40333.58,40334.44,-0.0021,data-quality layer
+b3_real,ewma vs garch_t,2026-09-18 13:15:00,baseline_var99 baseline_sigma,39122.72,39123.57,-0.0022,data-quality layer
+b3_real,ewma vs garch_t,2026-09-18 13:30:00,baseline_var99 baseline_sigma,37948,37948.82,-0.0022,data-quality layer
+b3_real,ewma vs garch_t,2026-09-18 13:45:00,baseline_var99 baseline_sigma,37086.79,37087.57,-0.0021,data-quality layer
+b3_real,ewma vs garch_t,2026-09-18 14:00:00,baseline_var99 baseline_sigma,36332.88,36333.63,-0.0021,data-quality layer
+b3_real,ewma vs garch_t,2026-09-18 14:15:00,baseline_var99 baseline_sigma,35242.69,35243.42,-0.0021,data-quality layer
+b3_real,ewma vs garch_t,2026-09-18 14:30:00,baseline_var99 baseline_sigma,35606.51,35607.18,-0.0019,data-quality layer
+b3_real,ewma vs garch_t,2026-09-18 14:45:00,baseline_var99 baseline_sigma,34544.44,34545.1,-0.0019,data-quality layer
+b3_real,ewma vs garch_t,2026-09-18 15:00:00,baseline_var99 baseline_sigma,35204.03,35204.64,-0.0017,data-quality layer
+b3_real,ewma vs garch_t,2026-09-18 15:15:00,baseline_var99 baseline_sigma,34333.57,34334.16,-0.0017,data-quality layer
+b3_real,ewma vs garch_t,2026-09-18 15:30:00,baseline_var99 baseline_sigma,33608.57,33609.13,-0.0017,data-quality layer
+b3_real,ewma vs garch_t,2026-09-18 15:45:00,baseline_var99 baseline_sigma,32594.55,32595.1,-0.0017,data-quality layer
+b3_real,ewma vs garch_t,2026-09-18 16:00:00,baseline_var99 baseline_sigma,32339.73,32340.25,-0.0016,data-quality layer
+b3_real,ewma vs garch_t,2026-09-18 16:15:00,baseline_var99 baseline_sigma,31386.21,31386.71,-0.0016,data-quality layer
+b3_real,ewma vs garch_t,2026-09-18 16:30:00,baseline_var99 baseline_sigma,30465.63,30466.11,-0.0016,data-quality layer
+b3_real,ewma vs garch_t,2026-09-18 16:45:00,baseline_var99 baseline_sigma,30082.88,30083.34,-0.0015,data-quality layer
+b3_real,ewma vs garch_t,2026-09-18 17:00:00,baseline_var99 baseline_sigma,29163.2,29163.65,-0.0015,data-quality layer
+b3_real,ewma vs garch_t,2026-09-21 10:15:00,baseline_var99 baseline_sigma,30685.25,30685.66,-0.0013,data-quality layer
+b3_real,ewma vs garch_t,2026-09-21 10:30:00,baseline_var99 baseline_sigma,30667.9,30668.29,-0.0013,data-quality layer
+b3_real,ewma vs garch_t,2026-09-21 10:45:00,baseline_var99 baseline_sigma,31532.51,31532.86,-0.0011,data-quality layer
+b3_real,ewma vs garch_t,2026-09-21 11:00:00,baseline_var99 baseline_sigma,34210,34210.3,-0.0009,data-quality layer
+b3_real,ewma vs garch_t,2026-09-21 11:15:00,baseline_var99 baseline_sigma,33250.61,33250.9,-0.0009,data-quality layer
+b3_real,ewma vs garch_t,2026-09-21 11:30:00,baseline_var99 baseline_sigma,32283.5,32283.78,-0.0009,data-quality layer
+b3_real,ewma vs garch_t,2026-09-21 11:45:00,baseline_var99 baseline_sigma,31430.14,31430.41,-0.0009,data-quality layer
+b3_real,ewma vs garch_t,2026-09-21 12:00:00,baseline_var99 baseline_sigma,30594.79,30595.05,-0.0008,data-quality layer
+b3_real,ewma vs garch_t,2026-09-21 12:15:00,baseline_var99 baseline_sigma,30905.63,30905.87,-0.0008,data-quality layer
+b3_real,ewma vs garch_t,2026-09-21 12:30:00,baseline_var99 baseline_sigma,30272.25,30272.49,-0.0008,data-quality layer
+b3_real,ewma vs garch_t,2026-09-21 12:45:00,baseline_var99 baseline_sigma,29597,29597.22,-0.0007,data-quality layer
+b3_real,ewma vs garch_t,2026-09-21 13:00:00,baseline_var99 baseline_sigma,29793.67,29793.88,-0.0007,data-quality layer
+b3_real,ewma vs garch_t,2026-09-21 13:15:00,baseline_var99 baseline_sigma,31539.8,31539.99,-0.0006,data-quality layer
+b3_real,ewma vs garch_t,2026-09-21 13:30:00,baseline_var99 baseline_sigma,32525.54,32525.71,-0.0005,data-quality layer
+b3_real,ewma vs garch_t,2026-09-21 13:45:00,baseline_var99 baseline_sigma,31543.1,31543.27,-0.0005,data-quality layer
+b3_real,ewma vs garch_t,2026-09-21 14:00:00,baseline_var99 baseline_sigma,31116.08,31116.24,-0.0005,data-quality layer
+b3_real,ewma vs garch_t,2026-09-21 14:15:00,baseline_var99 baseline_sigma,33917.62,33917.76,-0.0004,data-quality layer
+b3_real,ewma vs garch_t,2026-09-21 14:30:00,baseline_var99 baseline_sigma,32929.1,32929.23,-0.0004,data-quality layer
+b3_real,ewma vs garch_t,2026-09-21 14:45:00,baseline_var99 baseline_sigma,35960.78,35960.9,-0.0003,data-quality layer
+b3_real,ewma vs garch_t,2026-09-21 15:00:00,baseline_var99 baseline_sigma,35903.24,35903.34,-0.0003,data-quality layer
+b3_real,ewma vs garch_t,2026-09-21 15:15:00,baseline_var99 baseline_sigma,35508.47,35508.57,-0.0003,data-quality layer
+b3_real,ewma vs garch_t,2026-09-21 15:30:00,baseline_var99 baseline_sigma,34519.65,34519.75,-0.0003,data-quality layer
+b3_real,ewma vs garch_t,2026-09-21 15:45:00,baseline_var99 baseline_sigma,33980.52,33980.61,-0.0003,data-quality layer
+b3_real,ewma vs garch_t,2026-09-21 16:00:00,baseline_var99 baseline_sigma,33139.48,33139.58,-0.0003,data-quality layer
+b3_real,ewma vs garch_t,2026-09-21 16:15:00,baseline_var99 baseline_sigma,32620.58,32620.66,-0.0002,data-quality layer
+b3_real,ewma vs garch_t,2026-09-21 16:30:00,baseline_var99 baseline_sigma,31732.84,31732.92,-0.0003,data-quality layer
+b3_real,ewma vs garch_t,2026-09-21 16:45:00,baseline_var99 baseline_sigma,30773.74,30773.82,-0.0003,data-quality layer
+b3_real,ewma vs garch_t,2026-09-21 17:00:00,baseline_var99 baseline_sigma,30248.07,30248.15,-0.0003,data-quality layer
+b3_real,ewma vs garch_t,2026-09-22 10:15:00,baseline_var99 baseline_sigma,29056.35,29056.42,-0.0002,data-quality layer
+b3_real,ewma vs garch_t,2026-09-22 10:30:00,baseline_var99 baseline_sigma,28373.85,28373.92,-0.0002,data-quality layer
+b3_real,ewma vs garch_t,2026-09-22 10:45:00,baseline_var99 baseline_sigma,30951.08,30951.14,-0.0002,data-quality layer
+b3_real,ewma vs garch_t,2026-09-22 11:00:00,baseline_var99 baseline_sigma,30847,30847.06,-0.0002,data-quality layer
+b3_real,ewma vs garch_t,2026-09-22 11:15:00,baseline_var99 baseline_sigma,29946.54,29946.6,-0.0002,data-quality layer
+b3_real,ewma vs garch_t,2026-09-22 11:30:00,baseline_var99 baseline_sigma,30915.32,30915.37,-0.0002,data-quality layer
+b3_real,ewma vs garch_t,2026-09-22 11:45:00,baseline_var99 baseline_sigma,31576.06,31576.11,-0.0002,data-quality layer
+b3_real,ewma vs garch_t,2026-09-22 12:00:00,baseline_var99 baseline_sigma,30676.34,30676.39,-0.0002,data-quality layer
+b3_real,ewma vs garch_t,2026-09-22 12:15:00,baseline_var99 baseline_sigma,30235.97,30236.02,-0.0002,data-quality layer
+b3_real,ewma vs garch_t,2026-09-22 12:30:00,baseline_var99 baseline_sigma,29821.35,29821.39,-0.0001,data-quality layer
+b3_real,ewma vs garch_t,2026-09-22 12:45:00,baseline_var99 baseline_sigma,28988.12,28988.16,-0.0001,data-quality layer
+b3_real,ewma vs garch_t,2026-09-22 13:00:00,baseline_var99 baseline_sigma,28409.33,28409.37,-0.0001,data-quality layer
+b3_real,ewma vs garch_t,2026-09-22 13:15:00,baseline_var99 baseline_sigma,28204.07,28204.11,-0.0001,data-quality layer
+b3_real,ewma vs garch_t,2026-09-22 13:30:00,baseline_var99 baseline_sigma,27415.11,27415.15,-0.0001,data-quality layer
+b3_real,ewma vs garch_t,2026-09-22 13:45:00,baseline_var99 baseline_sigma,27020.91,27020.94,-0.0001,data-quality layer
+b3_real,ewma vs garch_t,2026-09-22 14:00:00,baseline_var99 baseline_sigma,26219.97,26220,-0.0001,data-quality layer
+b3_real,ewma vs garch_t,2026-09-22 14:15:00,baseline_var99 baseline_sigma,25518.77,25518.8,-0.0001,data-quality layer
+b3_real,ewma vs garch_t,2026-09-22 14:30:00,baseline_var99 baseline_sigma,25404.11,25404.14,-0.0001,data-quality layer
+b3_real,ewma vs garch_t,2026-09-22 14:45:00,baseline_var99 baseline_sigma,24683.82,24683.85,-0.0001,data-quality layer
+b3_real,ewma vs garch_t,2026-09-22 15:00:00,baseline_var99 baseline_sigma,28267.45,28267.47,-0.0001,data-quality layer
+b3_real,ewma vs garch_t,2026-09-22 15:15:00,baseline_var99 baseline_sigma,29245.01,29245.03,-0.0001,data-quality layer
+b3_real,ewma vs garch_t,2026-09-22 15:30:00,baseline_var99 baseline_sigma,28621.15,28621.17,-0.0001,data-quality layer
+b3_real,ewma vs garch_t,2026-09-22 15:45:00,baseline_var99 baseline_sigma,27975.35,27975.37,-0.0001,data-quality layer
+b3_real,ewma vs garch_t,2026-09-22 16:00:00,baseline_var99 baseline_sigma,28023.5,28023.52,-0.0001,data-quality layer
+b3_real,ewma vs garch_t,2026-09-22 16:15:00,baseline_var99 baseline_sigma,27228.2,27228.22,-0.0001,data-quality layer
+b3_real,ewma vs garch_t,2026-09-22 16:30:00,baseline_var99 baseline_sigma,26984.75,26984.77,-0.0001,data-quality layer
+b3_real,ewma vs garch_t,2026-09-22 16:45:00,baseline_var99 baseline_sigma,27263.39,27263.41,-0.0001,data-quality layer
+b3_real,ewma vs garch_t,2026-09-22 17:00:00,baseline_var99 baseline_sigma,28021.27,28021.28,-0,data-quality layer
+b3_real,ewma vs garch_t,2026-09-23 10:15:00,baseline_var99,37601.5,37601.51,-0,data-quality layer
+b3_real,ewma vs garch_t,2026-09-23 10:30:00,baseline_var99,63086.37,63086.38,-0,data-quality layer
+b3_real,ewma vs garch_t,2026-09-23 11:45:00,baseline_var99,59990.77,59990.78,-0,data-quality layer
+b3_real,ewma vs garch_t,2026-09-23 12:45:00,baseline_var99,56333.5,56333.51,-0,data-quality layer
+b3_real,ewma vs garch_t,2026-09-23 13:00:00,baseline_var99,54675.34,54675.35,-0,data-quality layer
+b3_real,ewma vs garch_t,2026-09-23 13:45:00,baseline_var99,51597.58,51597.59,-0,data-quality layer
+b3_real,ewma vs garch_t,2026-09-23 15:00:00,baseline_var99,47491.49,47491.5,-0,data-quality layer
+b3_real,ewma vs garch_t,2026-09-24 12:00:00,baseline_var99,35101.7,35101.71,-0,data-quality layer
+b3_real,ewma vs garch_t,2026-09-24 15:45:00,baseline_var99 baseline_sigma net_exposure,42541.99,47808.87,-11.0165,data-quality layer
+b3_real,ewma vs garch_t,2026-10-02 17:00:00,baseline_var99 baseline_sigma net_exposure,56442.97,56470.61,-0.0489,data-quality layer
+b3_real,ewma vs garch_t,2026-10-05 10:15:00,baseline_var99 baseline_sigma,71781.75,82273.67,-12.7525,missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing)
+b3_real,ewma vs garch_t,2026-10-05 10:30:00,baseline_var99 baseline_sigma,71249.25,81703.32,-12.7952,missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing)
+b3_real,ewma vs garch_t,2026-10-05 10:45:00,baseline_var99 baseline_sigma,98352.87,105858.41,-7.0902,missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing)
+b3_real,ewma vs garch_t,2026-10-05 11:00:00,baseline_var99 baseline_sigma,100534.64,107400.49,-6.3928,missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing)
+b3_real,ewma vs garch_t,2026-10-05 11:15:00,baseline_var99 baseline_sigma,110050.7,116118.33,-5.2254,missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing)
+b3_real,ewma vs garch_t,2026-10-05 11:30:00,baseline_var99 baseline_sigma net_exposure,139287.9,144869.16,-3.8526,missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing)
+b3_real,ewma vs garch_t,2026-10-05 11:45:00,baseline_var99 baseline_sigma,136549.6,140800.58,-3.0191,missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing)
+b3_real,ewma vs garch_t,2026-10-05 12:00:00,baseline_var99 baseline_sigma,138553.46,142565.65,-2.8143,missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing)
+b3_real,ewma vs garch_t,2026-10-05 12:15:00,baseline_var99 baseline_sigma,135411.19,139276.89,-2.7756,missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing)
+b3_real,ewma vs garch_t,2026-10-05 12:30:00,baseline_var99 baseline_sigma,131356.19,135088.98,-2.7632,missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing)
+b3_real,ewma vs garch_t,2026-10-05 12:45:00,baseline_var99 baseline_sigma,127230.66,130845.6,-2.7628,missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing)
+b3_real,ewma vs garch_t,2026-10-05 13:00:00,baseline_var99 baseline_sigma,124529.82,128022.61,-2.7283,missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing)
+b3_real,ewma vs garch_t,2026-10-05 13:15:00,baseline_var99 baseline_sigma,120872.36,124274.23,-2.7374,missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing)
+b3_real,ewma vs garch_t,2026-10-05 13:30:00,baseline_var99 baseline_sigma,118060.84,121308.75,-2.6774,missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing)
+b3_real,ewma vs garch_t,2026-10-05 13:45:00,baseline_var99 baseline_sigma,114419.51,117551.08,-2.664,missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing)
+b3_real,ewma vs garch_t,2026-10-05 14:00:00,baseline_var99 baseline_sigma,110970.51,113994.74,-2.653,missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing)
+b3_real,ewma vs garch_t,2026-10-05 14:15:00,baseline_var99 baseline_sigma,109625.81,112518.64,-2.571,missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing)
+b3_real,ewma vs garch_t,2026-10-05 14:30:00,baseline_var99 baseline_sigma,106634.97,109428.83,-2.5531,missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing)
+b3_real,ewma vs garch_t,2026-10-05 14:45:00,baseline_var99 baseline_sigma,104538.21,107227.83,-2.5083,missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing)
+b3_real,ewma vs garch_t,2026-10-05 15:00:00,baseline_var99 baseline_sigma,101615.78,104220.84,-2.4996,missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing)
+b3_real,ewma vs garch_t,2026-10-05 15:15:00,baseline_var99 baseline_sigma,98551.94,101067.23,-2.4887,missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing)
+b3_real,ewma vs garch_t,2026-10-05 15:30:00,baseline_var99 baseline_sigma,95700.74,98140.03,-2.4855,missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing)
+b3_real,ewma vs garch_t,2026-10-05 15:45:00,baseline_var99 baseline_sigma,93055.59,95410.4,-2.4681,missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing)
+b3_real,ewma vs garch_t,2026-10-05 16:00:00,baseline_var99 baseline_sigma,91262.2,93519.92,-2.4142,missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing)
+b3_real,ewma vs garch_t,2026-10-05 16:15:00,baseline_var99 baseline_sigma,88491.14,90685.73,-2.42,missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing)
+b3_real,ewma vs garch_t,2026-10-05 16:30:00,baseline_var99 baseline_sigma,91284.14,93262.52,-2.1213,missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing)
+b3_real,ewma vs garch_t,2026-10-05 16:45:00,baseline_var99 baseline_sigma,88508.22,90421.98,-2.1165,missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing)
+b3_real,ewma vs garch_t,2026-10-05 17:00:00,baseline_var99 baseline_sigma,86870.62,88667.98,-2.0271,missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing)
+b3_real,ewma vs garch_t,2026-10-06 10:15:00,baseline_var99 baseline_sigma,89195.87,90834.54,-1.804,missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing)
+b3_real,ewma vs garch_t,2026-10-06 10:30:00,baseline_var99 baseline_sigma,88468.93,90003.79,-1.7053,missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing)
+b3_real,ewma vs garch_t,2026-10-06 10:45:00,baseline_var99 baseline_sigma,87599.26,89050.04,-1.6292,missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing)
+b3_real,ewma vs garch_t,2026-10-06 11:00:00,baseline_var99 baseline_sigma,94965.51,96208.49,-1.292,missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing)
+b3_real,ewma vs garch_t,2026-10-06 11:15:00,baseline_var99 baseline_sigma,92559.6,93764.67,-1.2852,missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing)
+b3_real,ewma vs garch_t,2026-10-06 11:30:00,baseline_var99 baseline_sigma,92613.2,93738.69,-1.2007,missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing)
+b3_real,ewma vs garch_t,2026-10-06 11:45:00,baseline_var99 baseline_sigma,90285.26,91361.13,-1.1776,missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing)
+b3_real,ewma vs garch_t,2026-10-06 12:00:00,baseline_var99 baseline_sigma,87598.65,88638.85,-1.1735,missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing)
+b3_real,ewma vs garch_t,2026-10-06 12:15:00,baseline_var99 baseline_sigma,86861.69,87848.38,-1.1232,missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing)
+b3_real,ewma vs garch_t,2026-10-06 12:30:00,baseline_var99 baseline_sigma,84533.8,85487.81,-1.116,missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing)
+b3_real,ewma vs garch_t,2026-10-06 12:45:00,baseline_var99 baseline_sigma,82206.56,83129.91,-1.1107,missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing)
+b3_real,ewma vs garch_t,2026-10-06 13:00:00,baseline_var99 baseline_sigma,80658.78,81544.83,-1.0866,missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing)
+b3_real,ewma vs garch_t,2026-10-06 13:15:00,baseline_var99 baseline_sigma,78465.91,79320.17,-1.077,missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing)
+b3_real,ewma vs garch_t,2026-10-06 13:30:00,baseline_var99 baseline_sigma,76056.95,76886.94,-1.0795,missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing)
+b3_real,ewma vs garch_t,2026-10-06 13:45:00,baseline_var99 baseline_sigma,74197.97,74999.71,-1.069,missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing)
+b3_real,ewma vs garch_t,2026-10-06 14:00:00,baseline_var99 baseline_sigma,72192.15,72962.75,-1.0562,missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing)
+b3_real,ewma vs garch_t,2026-10-06 14:15:00,baseline_var99 baseline_sigma,70311.7,71058.23,-1.0506,missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing)
+b3_real,ewma vs garch_t,2026-10-06 14:30:00,baseline_var99 baseline_sigma,68587.22,69309.41,-1.042,missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing)
+b3_real,ewma vs garch_t,2026-10-06 14:45:00,baseline_var99 baseline_sigma,67842.86,68531.86,-1.0054,missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing)
+b3_real,ewma vs garch_t,2026-10-06 15:00:00,baseline_var99 baseline_sigma,66290.03,66954.74,-0.9928,missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing)
+b3_real,ewma vs garch_t,2026-10-06 15:15:00,baseline_var99 baseline_sigma,64302.79,64941.67,-0.9838,missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing)
+b3_real,ewma vs garch_t,2026-10-06 15:30:00,baseline_var99 baseline_sigma,62647.42,63261.61,-0.9709,missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing)
+b3_real,ewma vs garch_t,2026-10-06 15:45:00,baseline_var99 baseline_sigma,61357.19,61947.7,-0.9532,missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing)
+b3_real,ewma vs garch_t,2026-10-06 16:00:00,baseline_var99 baseline_sigma,59757.69,60326.7,-0.9432,missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing)
+b3_real,ewma vs garch_t,2026-10-06 16:15:00,baseline_var99 baseline_sigma,60132.97,60661.14,-0.8707,missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing)
+b3_real,ewma vs garch_t,2026-10-06 16:30:00,baseline_var99 baseline_sigma,58289.97,58800.62,-0.8684,missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing)
+b3_real,ewma vs garch_t,2026-10-06 16:45:00,baseline_var99 baseline_sigma,56851.83,57343.2,-0.8569,missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing)
+b3_real,ewma vs garch_t,2026-10-06 17:00:00,baseline_var99 baseline_sigma,55507.03,55977.06,-0.8397,missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing)
+b3_real,ewma vs garch_t,2026-10-07 10:15:00,baseline_var99 baseline_sigma,53973.77,54434.92,-0.8472,missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing)
+b3_real,ewma vs garch_t,2026-10-07 10:30:00,baseline_var99 baseline_sigma,52683.17,53126.11,-0.8338,missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing)
+b3_real,ewma vs garch_t,2026-10-07 10:45:00,baseline_var99 baseline_sigma,56991.07,57374.75,-0.6687,missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing)
+b3_real,ewma vs garch_t,2026-10-07 11:00:00,baseline_var99 baseline_sigma,56834.59,57196.9,-0.6334,missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing)
+b3_real,ewma vs garch_t,2026-10-07 11:15:00,baseline_var99 baseline_sigma,60782.59,61101,-0.5211,missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing)
+b3_real,ewma vs garch_t,2026-10-07 11:30:00,baseline_var99 baseline_sigma,63234.23,64177.81,-1.4703,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma vs garch_t,2026-10-07 11:45:00,baseline_var99 baseline_sigma,62945.2,63827.8,-1.3828,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma vs garch_t,2026-10-07 12:00:00,baseline_var99 baseline_sigma,61485.99,62334.58,-1.3613,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma vs garch_t,2026-10-07 12:15:00,baseline_var99 baseline_sigma,59606.96,60427.27,-1.3575,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma vs garch_t,2026-10-07 12:30:00,baseline_var99 baseline_sigma,59861.22,60630.78,-1.2693,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma vs garch_t,2026-10-07 12:45:00,baseline_var99 baseline_sigma,60123.05,60847.25,-1.1902,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma vs garch_t,2026-10-07 13:00:00,baseline_var99 baseline_sigma,58837.73,59534.42,-1.1702,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma vs garch_t,2026-10-07 13:15:00,baseline_var99 baseline_sigma,57099.49,57775.12,-1.1694,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma vs garch_t,2026-10-07 13:30:00,baseline_var99 baseline_sigma,55714,56365.62,-1.1561,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma vs garch_t,2026-10-07 13:45:00,baseline_var99 baseline_sigma,58027.33,58611.15,-0.9961,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma vs garch_t,2026-10-07 14:00:00,baseline_var99 baseline_sigma,58711.31,59257.89,-0.9224,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma vs garch_t,2026-10-07 14:15:00,baseline_var99 baseline_sigma,60494.95,60997.55,-0.824,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma vs garch_t,2026-10-07 14:30:00,baseline_var99 baseline_sigma,58732.87,59221.06,-0.8244,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma vs garch_t,2026-10-07 14:45:00,baseline_var99 baseline_sigma,56966.42,57438.49,-0.8219,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma vs garch_t,2026-10-07 15:00:00,baseline_var99 baseline_sigma,55394.12,55850.03,-0.8163,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma vs garch_t,2026-10-07 15:15:00,baseline_var99 baseline_sigma,53724.15,54165.1,-0.8141,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma vs garch_t,2026-10-07 15:30:00,baseline_var99 baseline_sigma,52334.44,52758.78,-0.8043,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma vs garch_t,2026-10-07 15:45:00,baseline_var99 baseline_sigma,50771.05,51182.17,-0.8032,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma vs garch_t,2026-10-07 16:00:00,baseline_var99 baseline_sigma,49246.12,49644.52,-0.8025,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma vs garch_t,2026-10-07 16:15:00,baseline_var99 baseline_sigma,47794.92,48183.25,-0.8059,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma vs garch_t,2026-10-07 16:30:00,baseline_var99 baseline_sigma,47998.66,48360.16,-0.7475,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma vs garch_t,2026-10-07 16:45:00,baseline_var99 baseline_sigma,47853.52,48193.34,-0.7051,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma vs garch_t,2026-10-07 17:00:00,baseline_var99 baseline_sigma,46578.76,46906.74,-0.6992,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma vs garch_t,2026-10-08 10:15:00,baseline_var99 baseline_sigma,45234.57,45559.01,-0.7121,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma vs garch_t,2026-10-08 10:30:00,baseline_var99 baseline_sigma,44306.24,44616.98,-0.6965,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma vs garch_t,2026-10-08 10:45:00,baseline_var99 baseline_sigma,55087.79,55324.97,-0.4287,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma vs garch_t,2026-10-08 11:00:00,baseline_var99 baseline_sigma,53795.56,54024.12,-0.4231,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma vs garch_t,2026-10-08 11:15:00,baseline_var99 baseline_sigma,59304.34,59501.07,-0.3306,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma vs garch_t,2026-10-08 11:30:00,baseline_var99 baseline_sigma,57724.5,57914.18,-0.3275,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma vs garch_t,2026-10-08 11:45:00,baseline_var99 baseline_sigma,66097.93,66256.22,-0.2389,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma vs garch_t,2026-10-08 12:00:00,baseline_var99 baseline_sigma,65624,65773.54,-0.2274,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma vs garch_t,2026-10-08 12:15:00,baseline_var99 baseline_sigma,72886.67,73011.86,-0.1715,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma vs garch_t,2026-10-08 12:30:00,baseline_var99 baseline_sigma,71330.9,71451.53,-0.1688,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma vs garch_t,2026-10-08 12:45:00,baseline_var99 baseline_sigma,69533.39,69649.46,-0.1666,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma vs garch_t,2026-10-08 13:00:00,baseline_var99 baseline_sigma,70074.17,70181.88,-0.1535,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma vs garch_t,2026-10-08 13:15:00,baseline_var99 baseline_sigma,69852.8,69954.84,-0.1459,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma vs garch_t,2026-10-08 13:30:00,baseline_var99 baseline_sigma,68428.41,68525.16,-0.1412,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma vs garch_t,2026-10-08 13:45:00,baseline_var99 baseline_sigma,66376.12,66469.16,-0.14,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma vs garch_t,2026-10-08 14:00:00,baseline_var99 baseline_sigma,69490.56,69574.57,-0.1207,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma vs garch_t,2026-10-08 14:15:00,baseline_var99 baseline_sigma,71769.26,71846.33,-0.1073,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma vs garch_t,2026-10-08 14:30:00,baseline_var99 baseline_sigma,69963.31,70037.71,-0.1062,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma vs garch_t,2026-10-08 14:45:00,baseline_var99 baseline_sigma,67822.51,67894.69,-0.1063,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma vs garch_t,2026-10-08 15:00:00,baseline_var99 baseline_sigma,66075.33,66144.81,-0.105,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma vs garch_t,2026-10-08 15:15:00,baseline_var99 baseline_sigma,65129.91,65195.81,-0.1011,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma vs garch_t,2026-10-08 15:30:00,baseline_var99 baseline_sigma,63151.63,63215.59,-0.1012,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma vs garch_t,2026-10-08 15:45:00,baseline_var99 baseline_sigma,61235.8,61297.85,-0.1012,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma vs garch_t,2026-10-08 16:00:00,baseline_var99 baseline_sigma,59539.03,59598.88,-0.1004,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma vs garch_t,2026-10-08 16:15:00,baseline_var99 baseline_sigma,58060.24,58117.74,-0.0989,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma vs garch_t,2026-10-08 16:30:00,baseline_var99 baseline_sigma,56370.69,56426.44,-0.0988,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma vs garch_t,2026-10-08 16:45:00,baseline_var99 baseline_sigma,55138.69,55192.08,-0.0967,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma vs garch_t,2026-10-08 17:00:00,baseline_var99 baseline_sigma,53476.28,53527.99,-0.0966,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma vs garch_t,2026-10-09 10:15:00,baseline_var99 baseline_sigma,65349.98,65390.25,-0.0616,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma vs garch_t,2026-10-09 10:30:00,baseline_var99 baseline_sigma,63461.81,63500.88,-0.0615,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma vs garch_t,2026-10-09 10:45:00,baseline_var99 baseline_sigma,72857.25,72889.37,-0.0441,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma vs garch_t,2026-10-09 11:00:00,baseline_var99 baseline_sigma,80728.41,80755.93,-0.0341,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma vs garch_t,2026-10-09 11:15:00,baseline_var99 baseline_sigma,78714.01,78740.52,-0.0337,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma vs garch_t,2026-10-09 11:30:00,baseline_var99 baseline_sigma,77413.95,77439.44,-0.0329,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma vs garch_t,2026-10-09 11:45:00,baseline_var99 baseline_sigma,78718.3,78741.94,-0.03,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma vs garch_t,2026-10-09 12:00:00,baseline_var99 baseline_sigma,79436.69,79458.5,-0.0274,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma vs garch_t,2026-10-09 12:15:00,baseline_var99 baseline_sigma,81797.39,81817.49,-0.0246,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma vs garch_t,2026-10-09 12:30:00,baseline_var99 baseline_sigma,81656.05,81674.87,-0.023,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma vs garch_t,2026-10-09 12:45:00,baseline_var99 baseline_sigma,79448.94,79467.07,-0.0228,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma vs garch_t,2026-10-09 13:00:00,baseline_var99 baseline_sigma,77156.66,77174.18,-0.0227,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma vs garch_t,2026-10-09 13:15:00,baseline_var99 baseline_sigma,74754.14,74771.18,-0.0228,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma vs garch_t,2026-10-09 13:30:00,baseline_var99 baseline_sigma,72567.83,72584.32,-0.0227,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma vs garch_t,2026-10-09 13:45:00,baseline_var99 baseline_sigma,70646.41,70662.31,-0.0225,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma vs garch_t,2026-10-09 14:00:00,baseline_var99 baseline_sigma,68702.01,68717.38,-0.0224,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma vs garch_t,2026-10-09 14:15:00,baseline_var99 baseline_sigma,66925.08,66939.94,-0.0222,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma vs garch_t,2026-10-09 14:30:00,baseline_var99 baseline_sigma,65119.92,65134.25,-0.022,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma vs garch_t,2026-10-09 14:45:00,baseline_var99 baseline_sigma,64175.66,64189.32,-0.0213,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma vs garch_t,2026-10-09 15:00:00,baseline_var99 baseline_sigma,62302.44,62315.73,-0.0213,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma vs garch_t,2026-10-09 15:15:00,baseline_var99 baseline_sigma,60428.35,60441.21,-0.0213,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma vs garch_t,2026-10-09 15:30:00,baseline_var99 baseline_sigma,58762.22,58774.63,-0.0211,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma vs garch_t,2026-10-09 15:45:00,baseline_var99 baseline_sigma,57748.32,57760.16,-0.0205,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma vs garch_t,2026-10-09 16:00:00,baseline_var99 baseline_sigma,56060.05,56071.48,-0.0204,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma vs garch_t,2026-10-09 16:15:00,baseline_var99 baseline_sigma,54353.68,54364.76,-0.0204,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma vs garch_t,2026-10-09 16:30:00,baseline_var99 baseline_sigma,52803.48,52814.22,-0.0203,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma vs garch_t,2026-10-09 16:45:00,baseline_var99 baseline_sigma,51197.53,51207.93,-0.0203,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-05 10:15:00,baseline_var99 baseline_sigma,71949.5,82273.67,-12.5486,missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-05 10:30:00,baseline_var99 baseline_sigma,71413.72,81703.32,-12.5939,missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-05 10:45:00,baseline_var99 baseline_sigma,98469.69,105858.41,-6.9798,missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-05 11:00:00,baseline_var99 baseline_sigma,100644.02,107400.49,-6.2909,missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-05 11:15:00,baseline_var99 baseline_sigma,110149.25,116118.33,-5.1405,missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-05 11:30:00,baseline_var99 baseline_sigma,140573.98,144869.16,-2.9649,missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-05 11:45:00,baseline_var99 baseline_sigma,136614.63,140800.58,-2.973,missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-05 12:00:00,baseline_var99 baseline_sigma,138613.96,142565.65,-2.7718,missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-05 12:15:00,baseline_var99 baseline_sigma,135469.44,139276.89,-2.7337,missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-05 12:30:00,baseline_var99 baseline_sigma,131412.13,135088.98,-2.7218,missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-05 12:45:00,baseline_var99 baseline_sigma,127283.66,130845.6,-2.7222,missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-05 13:00:00,baseline_var99 baseline_sigma,124581.6,128022.61,-2.6878,missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-05 13:15:00,baseline_var99 baseline_sigma,120922.52,124274.23,-2.697,missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-05 13:30:00,baseline_var99 baseline_sigma,118108.54,121308.75,-2.6381,missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-05 13:45:00,baseline_var99 baseline_sigma,114464.81,117551.08,-2.6255,missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-05 14:00:00,baseline_var99 baseline_sigma,111013.73,113994.74,-2.615,missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-05 14:15:00,baseline_var99 baseline_sigma,109667.14,112518.64,-2.5342,missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-05 14:30:00,baseline_var99 baseline_sigma,106674.7,109428.83,-2.5168,missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-05 14:45:00,baseline_var99 baseline_sigma,104576.68,107227.83,-2.4724,missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-05 15:00:00,baseline_var99 baseline_sigma,101653.71,104220.84,-2.4632,missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-05 15:15:00,baseline_var99 baseline_sigma,98588.8,101067.23,-2.4523,missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-05 15:30:00,baseline_var99 baseline_sigma,95736.1,98140.03,-2.4495,missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-05 15:45:00,baseline_var99 baseline_sigma,93089.03,95410.4,-2.433,missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-05 16:00:00,baseline_var99 baseline_sigma,91294.01,93519.92,-2.3801,missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-05 16:15:00,baseline_var99 baseline_sigma,88522.09,90685.73,-2.3859,missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-05 16:30:00,baseline_var99 baseline_sigma,91312.03,93262.52,-2.0914,missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-05 16:45:00,baseline_var99 baseline_sigma,88534.97,90421.98,-2.0869,missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-05 17:00:00,baseline_var99 baseline_sigma,86870.62,88667.98,-2.0271,missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-06 10:15:00,baseline_var99 baseline_sigma,89195.87,90834.54,-1.804,missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-06 10:30:00,baseline_var99 baseline_sigma,88468.93,90003.79,-1.7053,missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-06 10:45:00,baseline_var99 baseline_sigma,87599.26,89050.04,-1.6292,missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-06 11:00:00,baseline_var99 baseline_sigma,94965.51,96208.49,-1.292,missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-06 11:15:00,baseline_var99 baseline_sigma,92559.6,93764.67,-1.2852,missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-06 11:30:00,baseline_var99 baseline_sigma,92613.2,93738.69,-1.2007,missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-06 11:45:00,baseline_var99 baseline_sigma,90285.26,91361.13,-1.1776,missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-06 12:00:00,baseline_var99 baseline_sigma,87598.65,88638.85,-1.1735,missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-06 12:15:00,baseline_var99 baseline_sigma,86861.69,87848.38,-1.1232,missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-06 12:30:00,baseline_var99 baseline_sigma,84533.8,85487.81,-1.116,missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-06 12:45:00,baseline_var99 baseline_sigma,82206.56,83129.91,-1.1107,missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-06 13:00:00,baseline_var99 baseline_sigma,80658.78,81544.83,-1.0866,missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-06 13:15:00,baseline_var99 baseline_sigma,78465.91,79320.17,-1.077,missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-06 13:30:00,baseline_var99 baseline_sigma,76056.95,76886.94,-1.0795,missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-06 13:45:00,baseline_var99 baseline_sigma,74197.97,74999.71,-1.069,missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-06 14:00:00,baseline_var99 baseline_sigma,72192.15,72962.75,-1.0562,missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-06 14:15:00,baseline_var99 baseline_sigma,70311.7,71058.23,-1.0506,missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-06 14:30:00,baseline_var99 baseline_sigma,68587.22,69309.41,-1.042,missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-06 14:45:00,baseline_var99 baseline_sigma,67842.86,68531.86,-1.0054,missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-06 15:00:00,baseline_var99 baseline_sigma,66290.03,66954.74,-0.9928,missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-06 15:15:00,baseline_var99 baseline_sigma,64302.79,64941.67,-0.9838,missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-06 15:30:00,baseline_var99 baseline_sigma,62647.42,63261.61,-0.9709,missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-06 15:45:00,baseline_var99 baseline_sigma,61357.19,61947.7,-0.9532,missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-06 16:00:00,baseline_var99 baseline_sigma,59757.69,60326.7,-0.9432,missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-06 16:15:00,baseline_var99 baseline_sigma,60132.97,60661.14,-0.8707,missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-06 16:30:00,baseline_var99 baseline_sigma,58289.97,58800.62,-0.8684,missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-06 16:45:00,baseline_var99 baseline_sigma,56851.83,57343.2,-0.8569,missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-06 17:00:00,baseline_var99 baseline_sigma,55507.03,55977.06,-0.8397,missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-07 10:15:00,baseline_var99 baseline_sigma,53973.77,54434.92,-0.8472,missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-07 10:30:00,baseline_var99 baseline_sigma,52683.17,53126.11,-0.8338,missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-07 10:45:00,baseline_var99 baseline_sigma,56991.07,57374.75,-0.6687,missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-07 11:00:00,baseline_var99 baseline_sigma,56834.59,57196.9,-0.6334,missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-07 11:15:00,baseline_var99 baseline_sigma,60782.59,61101,-0.5211,missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-07 11:30:00,baseline_var99 baseline_sigma,63234.23,64177.81,-1.4703,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-07 11:45:00,baseline_var99 baseline_sigma,62945.2,63827.8,-1.3828,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-07 12:00:00,baseline_var99 baseline_sigma,61485.99,62334.58,-1.3613,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-07 12:15:00,baseline_var99 baseline_sigma,59606.96,60427.27,-1.3575,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-07 12:30:00,baseline_var99 baseline_sigma,59861.22,60630.78,-1.2693,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-07 12:45:00,baseline_var99 baseline_sigma,60123.05,60847.25,-1.1902,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-07 13:00:00,baseline_var99 baseline_sigma,58837.73,59534.42,-1.1702,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-07 13:15:00,baseline_var99 baseline_sigma,57099.49,57775.12,-1.1694,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-07 13:30:00,baseline_var99 baseline_sigma,55714,56365.62,-1.1561,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-07 13:45:00,baseline_var99 baseline_sigma,58027.33,58611.15,-0.9961,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-07 14:00:00,baseline_var99 baseline_sigma,58711.31,59257.89,-0.9224,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-07 14:15:00,baseline_var99 baseline_sigma,60494.95,60997.55,-0.824,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-07 14:30:00,baseline_var99 baseline_sigma,58732.87,59221.06,-0.8244,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-07 14:45:00,baseline_var99 baseline_sigma,56966.42,57438.49,-0.8219,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-07 15:00:00,baseline_var99 baseline_sigma,55394.12,55850.03,-0.8163,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-07 15:15:00,baseline_var99 baseline_sigma,53724.15,54165.1,-0.8141,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-07 15:30:00,baseline_var99 baseline_sigma,52334.44,52758.78,-0.8043,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-07 15:45:00,baseline_var99 baseline_sigma,50771.05,51182.17,-0.8032,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-07 16:00:00,baseline_var99 baseline_sigma,49246.12,49644.52,-0.8025,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-07 16:15:00,baseline_var99 baseline_sigma,47794.92,48183.25,-0.8059,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-07 16:30:00,baseline_var99 baseline_sigma,47998.66,48360.16,-0.7475,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-07 16:45:00,baseline_var99 baseline_sigma,47853.52,48193.34,-0.7051,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-07 17:00:00,baseline_var99 baseline_sigma,46578.76,46906.74,-0.6992,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-08 10:15:00,baseline_var99 baseline_sigma,45234.57,45559.01,-0.7121,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-08 10:30:00,baseline_var99 baseline_sigma,44306.24,44616.98,-0.6965,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-08 10:45:00,baseline_var99 baseline_sigma,55087.79,55324.97,-0.4287,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-08 11:00:00,baseline_var99 baseline_sigma,53795.56,54024.12,-0.4231,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-08 11:15:00,baseline_var99 baseline_sigma,59304.34,59501.07,-0.3306,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-08 11:30:00,baseline_var99 baseline_sigma,57724.5,57914.18,-0.3275,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-08 11:45:00,baseline_var99 baseline_sigma,66097.93,66256.22,-0.2389,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-08 12:00:00,baseline_var99 baseline_sigma,65624,65773.54,-0.2274,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-08 12:15:00,baseline_var99 baseline_sigma,72886.67,73011.86,-0.1715,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-08 12:30:00,baseline_var99 baseline_sigma,71330.9,71451.53,-0.1688,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-08 12:45:00,baseline_var99 baseline_sigma,69533.39,69649.46,-0.1666,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-08 13:00:00,baseline_var99 baseline_sigma,70074.17,70181.88,-0.1535,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-08 13:15:00,baseline_var99 baseline_sigma,69852.8,69954.84,-0.1459,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-08 13:30:00,baseline_var99 baseline_sigma,68428.41,68525.16,-0.1412,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-08 13:45:00,baseline_var99 baseline_sigma,66376.12,66469.16,-0.14,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-08 14:00:00,baseline_var99 baseline_sigma,69490.56,69574.57,-0.1207,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-08 14:15:00,baseline_var99 baseline_sigma,71769.26,71846.33,-0.1073,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-08 14:30:00,baseline_var99 baseline_sigma,69963.31,70037.71,-0.1062,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-08 14:45:00,baseline_var99 baseline_sigma,67822.51,67894.69,-0.1063,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-08 15:00:00,baseline_var99 baseline_sigma,66075.33,66144.81,-0.105,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-08 15:15:00,baseline_var99 baseline_sigma,65129.91,65195.81,-0.1011,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-08 15:30:00,baseline_var99 baseline_sigma,63151.63,63215.59,-0.1012,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-08 15:45:00,baseline_var99 baseline_sigma,61235.8,61297.85,-0.1012,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-08 16:00:00,baseline_var99 baseline_sigma,59539.03,59598.88,-0.1004,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-08 16:15:00,baseline_var99 baseline_sigma,58060.24,58117.74,-0.0989,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-08 16:30:00,baseline_var99 baseline_sigma,56370.69,56426.44,-0.0988,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-08 16:45:00,baseline_var99 baseline_sigma,55138.69,55192.08,-0.0967,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-08 17:00:00,baseline_var99 baseline_sigma,53476.28,53527.99,-0.0966,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-09 10:15:00,baseline_var99 baseline_sigma,65349.98,65390.25,-0.0616,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-09 10:30:00,baseline_var99 baseline_sigma,63461.81,63500.88,-0.0615,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-09 10:45:00,baseline_var99 baseline_sigma,72857.25,72889.37,-0.0441,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-09 11:00:00,baseline_var99 baseline_sigma,80728.41,80755.93,-0.0341,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-09 11:15:00,baseline_var99 baseline_sigma,78714.01,78740.52,-0.0337,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-09 11:30:00,baseline_var99 baseline_sigma,77413.95,77439.44,-0.0329,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-09 11:45:00,baseline_var99 baseline_sigma,78718.3,78741.94,-0.03,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-09 12:00:00,baseline_var99 baseline_sigma,79436.69,79458.5,-0.0274,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-09 12:15:00,baseline_var99 baseline_sigma,81797.39,81817.49,-0.0246,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-09 12:30:00,baseline_var99 baseline_sigma,81656.05,81674.87,-0.023,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-09 12:45:00,baseline_var99 baseline_sigma,79448.94,79467.07,-0.0228,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-09 13:00:00,baseline_var99 baseline_sigma,77156.66,77174.18,-0.0227,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-09 13:15:00,baseline_var99 baseline_sigma,74754.14,74771.18,-0.0228,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-09 13:30:00,baseline_var99 baseline_sigma,72567.83,72584.32,-0.0227,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-09 13:45:00,baseline_var99 baseline_sigma,70646.41,70662.31,-0.0225,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-09 14:00:00,baseline_var99 baseline_sigma,68702.01,68717.38,-0.0224,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-09 14:15:00,baseline_var99 baseline_sigma,66925.08,66939.94,-0.0222,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-09 14:30:00,baseline_var99 baseline_sigma,65119.92,65134.25,-0.022,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-09 14:45:00,baseline_var99 baseline_sigma,64175.66,64189.32,-0.0213,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-09 15:00:00,baseline_var99 baseline_sigma,62302.44,62315.73,-0.0213,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-09 15:15:00,baseline_var99 baseline_sigma,60428.35,60441.21,-0.0213,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-09 15:30:00,baseline_var99 baseline_sigma,58762.22,58774.63,-0.0211,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-09 15:45:00,baseline_var99 baseline_sigma,57748.32,57760.16,-0.0205,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-09 16:00:00,baseline_var99 baseline_sigma,56060.05,56071.48,-0.0204,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-09 16:15:00,baseline_var99 baseline_sigma,54353.68,54364.76,-0.0204,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-09 16:30:00,baseline_var99 baseline_sigma,52803.48,52814.22,-0.0203,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)
+b3_real,ewma_nodq vs garch_t,2026-10-09 16:45:00,baseline_var99 baseline_sigma,51197.53,51207.93,-0.0203,missing-data policy (partial bar 2026-10-07 11:30:00: 1 assets missing)

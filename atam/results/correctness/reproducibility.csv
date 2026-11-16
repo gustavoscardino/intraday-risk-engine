@@ -1,0 +1,7 @@
+variant,run_a,run_b,files,compared_cells,differing_cells,notes
+ewma,atam/work/runs/ewma/synthetic_rep1,atam/work/runs/ewma/synthetic_rep2,10,101532,0,
+ewma,atam/work/runs/ewma/synthetic_rep1,atam/work/runs/ewma/synthetic_rep3,10,101532,0,
+garch_t,atam/work/runs/garch_t/synthetic_rep1,atam/work/runs/garch_t/synthetic_rep2,8,100268,0,
+garch_t,atam/work/runs/garch_t/synthetic_rep1,atam/work/runs/garch_t/synthetic_rep3,8,100268,0,
+realized_caviar,atam/work/runs/realized_caviar/synthetic_rep1_XPET3,atam/work/runs/realized_caviar/synthetic_rep2_XPET3,8,161396,0,
+realized_caviar,atam/work/runs/realized_caviar/synthetic_rep1_XPET3,atam/work/runs/realized_caviar/synthetic_rep3_XPET3,8,161396,0,

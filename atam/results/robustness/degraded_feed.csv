@@ -1,0 +1,6 @@
+variant,unit,forecasts_compared,unmatched_forecasts,share_dev_gt_1pct,share_dev_gt_5pct,median_dev_pct,max_dev_pct,max_dev_at
+ewma,portfolio forecasts,2517,0,9.098,0.04,0.3225,7.86,2026-07-28 11:30:00
+ewma_nodq,portfolio forecasts,2517,0,40.445,8.343,0.7221,50.253,2026-07-28 11:45:00
+garch_t,portfolio forecasts,2517,0,65.952,26.42,2.077,108.567,2026-07-28 11:45:00
+garch_t_zclip6,portfolio forecasts,2517,0,64.561,13.627,1.6011,59.43,2026-07-28 11:45:00
+realized_caviar,single-stock forecasts of 15 stocks,31655,685,59.796,24.682,1.5244,532.311,2026-07-08 14:45:00 (XPET3)

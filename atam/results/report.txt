@@ -1,0 +1,272 @@
+ATAM evaluation of the intraday risk engines
+  Architectures: ewma and garch_t (portfolio engines) and realized_caviar (single-instrument engine with
+  matched EWMA-N and GARCH-t baselines), replaying the same data. Quality ruler: atam/utility_tree.csv.
+  Every number below is reproduced by atam/run.bat (Windows) or atam/run.sh.
+
+Environment of the ATAM evidence
+  generated: 2026-11-15
+  engines and data: commit dc9300e 2026-11-15 (uncommitted changes: no)
+  machine: Intel(R) Core(TM) i7-8565U CPU @ 1.80GHz, 8 hardware threads, Windows 11 (build 26200)
+  python: 3.10.11
+
+  engine binaries (the ready-to-run programs versioned in each module's bin/)
+    ewma/bin/ewma_risk.exe  sha256 32fbf3aa49fdf0e7  3.62 MB
+    ewma/bin/benchmark.exe  sha256 87f4b978b31469f8  3.06 MB
+    garch_t/bin/intraday_risk.exe  sha256 07a34411252d9d78  3.83 MB
+    garch_t/bin/benchmark.exe  sha256 21d9022b1d2a6b64  0.89 MB
+    realized_caviar/build/realized_caviar.exe  sha256 c927b20fbaea28d4  3.46 MB
+    realized_caviar/build/realized_caviar.exe  sha256 c927b20fbaea28d4  3.46 MB
+
+Scorecard (default configuration of each engine)
+  id   (I,D)  threshold            EWMA                      GARCH-t                   Realized-CAViaR           
+  Cp1  (H,M)  <= 0 forecasts       NOT MET 6 forecasts       NOT MET 6 forecasts       MET 0 forecasts           
+  C1   (H,H)  <= 0 cells           NOT MET 42 728 cells      NOT MET 39 607 cells      NOT MET 11 368 cells      
+  Rp1  (H,L)  <= 0 cells           MET 0 cells               MET 0 cells               MET 0 cells               
+  R1   (H,M)  <= 1 %               MET 0.04%                 NOT MET 26.42%            NOT MET 24.68%            
+  R2   (H,H)  >= 0.95 ratio        MET 1.000                 MET 1.000                 NOT MET 0.000             
+  P1   (H,M)  <= 10 us             MET 5.20 us               PARTIAL 10 us             N/A                       
+  P2   (M,H)  <= 1000 us           MET 166 us                MET 237 us                N/A                       
+  P3   (M,M)  <= 1000 ms           MET 8.44 ms               MET 122 ms                MET 76.24 ms              
+  P4   (M,L)  reported             PENDING                   PENDING                   REPORTED 40 bytes         
+  M1   (M,M)  <= 2 files           NOT MET 5 files           NOT MET 5 files           MET 2 files               
+  M2   (M,H)  >= 1 yes/no          NOT MET no                NOT MET no                MET yes                   
+
+Findings
+  [risk] R-8 A shock followed by a halt never reaches the CAViaR features (R2)
+      Realized-CAViaR builds its features from four consecutive bars of the session and skips incomplete
+      windows. The scripted market crash (market crash) is followed by a two-bar halt, so no window contains
+      it: the forecasts of that session never see the crash, while the matched baselines of the same engine,
+      which take every printed bar, do. A halt right after a crash is exactly when the VaR matters most.
+  [risk] R-1 The default estimation window depends on how much data follows (C1)
+      EWMA, GARCH-t and Realized-CAViaR set the estimation window to half of the sessions in the file (at most
+      60). Cut the feed at T, as a live feed is, and earlier forecasts change (EWMA: 42,726 values and rows,
+      GARCH-t: 39,607 values and rows, Realized-CAViaR: 11,368 values and rows). With --window-days fixed
+      these changes vanish (the 2 rows of EWMA that remain are R-2): the window must be configuration, never
+      derived from the input length.
+  [risk] R-2 The end of the data is taken as the end of the session (C1)
+      The portfolio replays mark the last bar of the file as a session close (batch assumption: ewma
+      replay.cpp:78, garch_t replay.cpp:94). With a fixed window, a feed cut at the first bar of a session
+      still changes 2 rows in EWMA: the pending overnight forecast is replaced by a record whose target is its
+      own issue time. A streaming engine must take the session close from the calendar.
+  [risk] R-3 The engines do not apply the same data-quality policy by default (Cp1)
+      EWMA runs its data-quality layer by default and GARCH-t and Realized-CAViaR have none, so the shared
+      baseline of the portfolio engines differs in 6 forecasts on the synthetic market and 320 on the B3 data.
+      Every statistical comparison must run the engines under one declared policy.
+  [risk] R-4 No common model interface (M1)
+      None of the engines has a model interface. In EWMA and GARCH-t the models are named fields of the
+      engine's result, so a new model touches 5 files of EWMA and 5 files of GARCH-t outside the model layer.
+      Realized-CAViaR keeps it to 2 files, its replay orchestrator, where the models are selected by position.
+      The monograph's NFR05 (one interface for the three models) is not met by the current code.
+  [risk] R-5 The target time grid is reachable in one engine only (M2)
+      EWMA and GARCH-t set bars in whole minutes and forecast one bar ahead, so the grid of the project
+      (5-second sampling, a 5-minute VaR issued every minute) needs code there; Realized-CAViaR implements it
+      in its high-frequency mode. The shared 15-minute data keeps every experiment on 15-minute bars, so the
+      monograph must state which grid it reports.
+  [risk] R-6 The comparison engine has no data-quality layer (R1)
+      On the faulty feed 24.7% of Realized-CAViaR's single-stock forecasts move more than 5% (32340
+      single-stock forecasts of 15 stocks (685 issued from one feed only, counted as off); >1%: 59.80%; max
+      532.3% at 2026-07-08 14:45:00 (XPET3)): a bad tick enters |R| and RV directly. Moving the EWMA
+      data-quality rule into the shared loader (garch_t market_data, compiled by all engines) would protect
+      every model at once.
+  [risk] R-7 Latency is measured at different boundaries (P1)
+      EWMA and GARCH-t time a bar cycle of a 15-stock book (fills, data quality, correlations, VaR);
+      Realized-CAViaR times the model stage of one instrument in batches of 1000, whose percentiles are of
+      batch means. The GARCH-t Monte Carlo revaluation of the option book (7.1 ms per bar at the median) and
+      the EWMA confirmation of suspect prices run outside their timers. The numbers are not comparable across
+      engines: the cost side of the research question must use the matched model-stage benchmark, where the
+      three models share one boundary.
+  [sensitivity] S-1 Missing-data policy of the covariance update (Cp1)
+      EWMA keeps a missing asset's variance and shrinks its covariances; GARCH-t imputes the missing return
+      from the observed ones. On the B3 data, bars with up to 6 of 15 assets missing make 139 forecasts differ
+      (up to 12.6% of the baseline VaR), with the same data-quality policy. Real feeds make this a
+      comparability risk the synthetic market cannot show.
+  [sensitivity] S-2 Tail recalibration on fills runs inside the bar cycle (P1)
+      GARCH-t recalibrates its tail model when a fill changes the book, inside the timed bar update: those
+      bars take up to 1,332 us against a median of 4.2 us (without fill bars the maximum is 76 us). Moving it
+      out of the critical path would flatten the latency tail.
+  [sensitivity] S-3 The matched comparison does not cover the opening hour (Cp1)
+      CAViaR needs one hour of returns of the same session, so Realized-CAViaR scores every model on targets
+      starting 11:00-16:45 only. The most volatile bars of the day (the opening hour) are outside the
+      comparison, so its conclusions about the models hold from 11:00 on.
+  [sensitivity] S-4 Reuse by compiling the other modules' sources (Cp1, M1)
+      Realized-CAViaR compiles 9 source files of ewma and garch_t (loader, EWMA, GARCH, backtest). It
+      guarantees the same conventions and estimators in the comparison, but couples the modules with no
+      interface or version: a change in ewma or garch_t silently changes the comparison engine. atam/run.bat
+      rebuilds it before every evaluation, so a rerun after such a change is the safeguard.
+  [trade-off] T-1 Data-quality layer: robustness vs reaction to genuine shocks (R1, R2, P1)
+      With the layer, 0.04% of the faulty-feed forecasts stray more than 5% from the clean-feed ones (without
+      it: 8.34%). The price is paid on genuine moves: at a shock bar the VaR moves up to 2.1% away from the
+      unprotected one, for 1 bar, because the suspect stock keeps its last price and a winsorized return until
+      the next bar confirms the move. Timed latency cost: none measurable (median per bar 1.30 us with the
+      layer, 1.20 us without, inside the run-to-run spread). Its confirmation step runs before the timer, so
+      part of its cost is not in this figure.
+  [trade-off] T-2 Stateless clipping: half the protection, and it dampens real shocks (R1, R2)
+      Clipping standardized shocks at 6 sd cuts the faulty-feed damage of GARCH-t from 26.4% to 13.6% of
+      forecasts, but it also clips genuine shocks (lowest VaR ratio at a shock 0.962, 27 bars affected). In
+      these runs the stateful rule of the EWMA engine, which confirms a suspect move with the next bar, does
+      better on both sides; the engines also differ in model, so this is indicative (porting the rule to
+      GARCH-t would settle it).
+  [non-risk] N1 No look-ahead in the data path (C1)
+      Replacing every price after a cut time leaves all earlier forecasts and calibrations unchanged in EWMA,
+      GARCH-t and Realized-CAViaR (982,027 cells over three cuts); the same test changes 100% of the later
+      forecasts (lowest engine), so it would have caught a leak.
+  [non-risk] N2 Replays are deterministic (Rp1)
+      Three runs of EWMA, GARCH-t and Realized-CAViaR produce identical output files apart from timing columns
+      (726,392 cells compared), including the multithreaded GARCH-t refits, the Monte Carlo option revaluation
+      and the multi-start CAViaR fits.
+  [non-risk] N3 The portfolio engines read the market identically on clean data (Cp1)
+      With the same data-quality policy, the EWMA(0.94) baseline that EWMA and GARCH-t both compute is
+      identical forecast by forecast on the synthetic market: the two pipelines read, align and return the
+      market in the same way.
+  [non-risk] N5 The model comparison runs on the shared market and on matched targets (Cp1)
+      Realized-CAViaR reads the market with the repository's shared convention (synthetic: 2156 of 2156 target
+      returns equal the shared convention; b3_real: 720 of 720 target returns equal the shared convention; the
+      three models share one target record per forecast by construction). It is the engine in which the
+      research question can be answered fairly.
+  [non-risk] N4 Latency and recalibration are far below the bar interval (P1, P2, P3)
+      Per-bar updates of the portfolio engines take microseconds (EWMA p99 5.2 us, GARCH-t p99 10.0 us;
+      Realized-CAViaR updates in 27 ns at the model stage) and the daily refit at most EWMA 8 ms, GARCH-t 122
+      ms, Realized-CAViaR 76 ms, against 15-minute bars: at this scale performance does not constrain the
+      designs. Timings vary by a factor of two between sessions on the reference laptop, so verdicts near a
+      threshold are marked PARTIAL.
+  [non-risk] N6 The main model is the cheapest one under a common boundary (P1, P4)
+      In the matched model-stage benchmark (Realized-CAViaR 27 ns / 40 B, GARCH-t 40 ns / 280 B, EWMA-N 45 ns
+      / 240 B) Realized-CAViaR has the lowest update cost and the smallest state: the computational side of
+      the research question does not penalize it.
+
+  figures: atam/results/figures/atam_utility_tree.png, atam/results/figures/atam_scorecard.png, atam/results/figures/atam_tradeoffs.png
+
+C1 - no look-ahead (forecasts at or before a cut time T must not depend on what follows T)
+  EWMA (DQ on): 435101 cells compared over 3 cuts
+    perturbation              changed      0 cells, missing   0 rows, extra   0 rows   (test power: 100.0% of later forecasts changed)
+    truncation                changed  41943 cells, missing   1 rows, extra 784 rows
+        e.g. risk_15m.csv 2026-05-27 17:00:00 sigma: 37417.0926 -> 38727.9726
+        e.g. risk_15m.csv 2026-05-27 17:00:00 lambda: 0.94558 -> 0.94981
+        e.g. risk_15m.csv 2026-05-27 17:00:00 nu: 6.328 -> 6.770
+    truncation, fixed window  changed      0 cells, missing   1 rows, extra   1 rows
+        e.g. risk_overnight.csv 2026-08-31 17:00:00: forecast missing
+        e.g. risk_overnight.csv 2026-09-01 10:15:00 -> 2026-09-01 10:15:00: forecast not in the reference run
+  GARCH-t: 418787 cells compared over 3 cuts
+    perturbation              changed      0 cells, missing   0 rows, extra   0 rows   (test power: 100.0% of later forecasts changed)
+    truncation                changed  38824 cells, missing   0 rows, extra 783 rows
+        e.g. risk_15m.csv 2026-05-27 17:00:00 sigma: 39327.9078 -> 37572.0627
+        e.g. risk_15m.csv 2026-05-27 17:00:00 nu: 6.2271 -> 6.0327
+        e.g. risk_15m.csv 2026-05-27 17:00:00 var_95: 61755.48 -> 58268.97
+    truncation, fixed window  changed      0 cells, missing   0 rows, extra   0 rows
+  Realized-CAViaR (XPET3): 128139 cells compared over 3 cuts
+    perturbation              changed      0 cells, missing   0 rows, extra   0 rows   (test power: 100.0% of later forecasts changed)
+    truncation                changed  10720 cells, missing   0 rows, extra 648 rows
+        e.g. atam_risk.csv 2026-05-28 11:00:00 var_99: 1217.4344315696562 -> 1233.9600528146261
+        e.g. atam_risk.csv 2026-05-28 11:00:00 quantile: -0.012249058663487217 -> -0.012416365552243886
+        e.g. atam_risk.csv 2026-05-28 11:00:00 ewma_var_99: 862.71514280586246 -> 905.63528442945835
+    truncation, fixed window  changed      0 cells, missing   0 rows, extra   0 rows
+
+  cuts: 2026-06-29 12:00:00 (mid-session); 2026-07-30 17:00:00 (end of session (daily refit)); 2026-09-01 10:15:00 (first bar of a session)
+  perturbation: log-price random walk, sd 0.005 per bar, seeded by the cut time
+  figure: atam/results/figures/c1_no_lookahead.png
+
+Rp1 - reproducibility (the same replay, three runs, every output cell compared)
+  EWMA (DQ on): 3 runs, 203064 cells compared, 0 differ
+  GARCH-t: 3 runs, 200536 cells compared, 0 differ
+  Realized-CAViaR: 3 runs, 322792 cells compared, 0 differ
+
+Cp1 - comparability (shared EWMA(0.94) baseline, exposure and realized P&L, forecast by forecast)
+  synthetic: 0 bars in which some assets did not print
+    EWMA (DQ on) vs GARCH-t (default configurations): 6 of 2517 forecasts differ; forecasts only in one engine: 0 / 0
+        causes: data-quality layer: 6
+        e.g. 2026-08-21 13:15:00  baseline VaR 99% +3.28%  (data-quality layer: XVAR3)
+        e.g. 2026-09-03 12:45:00  baseline VaR 99% -1.36%  (data-quality layer: XSAU3)
+        e.g. 2026-06-03 10:30:00  baseline VaR 99% +1.02%  (data-quality layer: XVAR3)
+    EWMA (DQ off) vs GARCH-t (same data-quality policy): 0 of 2517 forecasts differ; forecasts only in one engine: 0 / 0
+        causes: none
+  b3_real: 2 bars in which some assets did not print: 2026-10-05 10:15:00 (6 missing), 2026-10-07 11:30:00 (1 missing)
+    EWMA (DQ on) vs GARCH-t (default configurations): 320 of 840 forecasts differ; forecasts only in one engine: 0 / 0
+        causes: data-quality layer: 181, missing-data policy: 139
+        e.g. 2026-10-05 10:30:00  baseline VaR 99% -12.80%  (missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing))
+        e.g. 2026-10-05 10:15:00  baseline VaR 99% -12.75%  (missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing))
+        e.g. 2026-09-24 15:45:00  baseline VaR 99% -11.02%  (data-quality layer: RADL3)
+    EWMA (DQ off) vs GARCH-t (same data-quality policy): 139 of 840 forecasts differ; forecasts only in one engine: 0 / 0
+        causes: missing-data policy: 139
+        e.g. 2026-10-05 10:30:00  baseline VaR 99% -12.59%  (missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing))
+        e.g. 2026-10-05 10:15:00  baseline VaR 99% -12.55%  (missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing))
+        e.g. 2026-10-05 10:45:00  baseline VaR 99% -6.98%  (missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing))
+  tolerance 0.006 (printed precision); figure: atam/results/figures/cp1_comparability.png
+  Realized-CAViaR (one instrument per run; synthetic XPET3, B3 PETR4): models EWMA-N, GARCH-t, Realized-CAViaR
+    synthetic: 0 of 2156 evaluated target returns differ from the returns re-derived from prices_15m.csv (shared convention); 0 of 2156 forecast times where the models do not share one target record (by construction); evaluated targets 11:00-16:45
+    b3_real: 0 of 720 evaluated target returns differ from the returns re-derived from prices_15m.csv (shared convention); 0 of 720 forecast times where the models do not share one target record (by construction); evaluated targets 11:00-16:45
+
+R1 - faulty feed (prices_15m_degraded.csv) vs clean feed, main-model VaR 99% forecast by forecast
+  EWMA (DQ on)             0.04% of 2517 portfolio forecasts off by >5% (>1%:  9.10%), max     7.86% at 2026-07-28 11:30:00; 0 issued from one feed only (counted as off)
+  EWMA (DQ off)            8.34% of 2517 portfolio forecasts off by >5% (>1%: 40.44%), max    50.25% at 2026-07-28 11:45:00; 0 issued from one feed only (counted as off)
+  GARCH-t                 26.42% of 2517 portfolio forecasts off by >5% (>1%: 65.95%), max   108.57% at 2026-07-28 11:45:00; 0 issued from one feed only (counted as off)
+  GARCH-t (clip 6 sd)     13.63% of 2517 portfolio forecasts off by >5% (>1%: 64.56%), max    59.43% at 2026-07-28 11:45:00; 0 issued from one feed only (counted as off)
+  Realized-CAViaR         24.68% of 32340 single-stock forecasts of 15 stocks off by >5% (>1%: 59.80%), max   532.31% at 2026-07-08 14:45:00 (XPET3); 685 issued from one feed only (counted as off)
+  feed faults: 2026-07-08 13:45:00 bad tick on XPET3 close; 2026-07-28 11:30:00 bad tick on XBAN4 close; 2026-09-04 12:00:00 XCON3 price frozen for bars 8-17; 2026-09-21 15:15:00 bad tick on XTEC3 close
+
+R2 - genuine shocks on the clean feed: VaR issued at the shock bar vs the same engine unprotected
+  EWMA (DQ on)           market crash (portfolio): ratio 1.000; XVAR3 earnings shock (portfolio): ratio 1.021; clean-feed forecasts more than 5% below unprotected: 0 (reference: EWMA (DQ off))
+  EWMA (DQ off)          market crash (portfolio): ratio 1.000; XVAR3 earnings shock (portfolio): ratio 1.000; clean-feed forecasts more than 5% below unprotected: 0 (no protection to switch off; the filters take every printed bar, so the shock enters at once)
+  GARCH-t                market crash (portfolio): ratio 1.000; XVAR3 earnings shock (portfolio): ratio 1.000; clean-feed forecasts more than 5% below unprotected: 0 (no protection to switch off; the filters take every printed bar, so the shock enters at once)
+  GARCH-t (clip 6 sd)    market crash (portfolio): ratio 1.000; XVAR3 earnings shock (portfolio): ratio 0.962; clean-feed forecasts more than 5% below unprotected: 0 (reference: GARCH-t)
+  Realized-CAViaR        market crash (XPET3): ratio 1.000, NEVER in the features (first forecast of the session 12:00), VaR exception; XVAR3 earnings shock (XVAR3): ratio 1.000, in the features 0 bar(s) later; clean-feed forecasts more than 5% below unprotected: 0 (no protection to switch off; checked instead whether the shock enters the CAViaR features)
+  shocks: 2026-07-17 10:15:00 market crash: factor shock of -9 conditional std devs; elevated market volatility regime until day 104; 2026-08-21 13:15:00 XVAR3 earnings shock: -9% idiosyncratic move in one bar
+  figures: atam/results/figures/r1_degraded_feed.png, atam/results/figures/r2_genuine_shocks.png
+
+P1 - per-bar latency (replay, 15 assets, intraday bars; from the scored forecasts of risk_15m.csv), P3 - daily refit (replay)
+  EWMA (DQ on)   p50   1.30 us  p95   2.60 us  p99    5.20 us  max     22.3 us   refit p50    5.14 ms, max    8.44 ms   (p99 across runs 3.48-5.25 us)
+                 slowest bars (run 1): 20 us, 20 us, 16 us, 16 us, 15 us
+                 without fill bars: max 22.3 us (median of runs)
+  GARCH-t        p50   4.20 us  p95   8.20 us  p99   10.00 us  max   1332.5 us   refit p50   27.74 ms, max  122.15 ms   (p99 across runs 8.20-22.80 us)
+                 slowest bars (run 1): 1332 us (fill), 1300 us (fill), 953 us (fill), 915 us (fill), 76 us
+                 without fill bars: max 75.8 us (median of runs)
+                 option book revalued by Monte Carlo at every bar, outside update_us: median 7.05 ms per bar
+  EWMA (DQ off)  p50   1.20 us  p99    3.80 us  (median of 3 runs; data-quality layer switched off (plain loader))
+  GARCH-t (clip 6 sd) p50   5.20 us  p99   26.15 us  (median of 3 runs; stateless clipping of standardized shocks at 6 sd)
+
+P2 - scalability (each engine's benchmark program, median of three runs)
+  EWMA       15 assets: median per bar     0.90 us, p99     1.70 us; refit     8.95 ms
+  EWMA       50 assets: median per bar     8.50 us, p99    14.30 us; refit    24.94 ms
+  EWMA      200 assets: median per bar   165.80 us, p99   414.70 us; refit   207.51 ms
+  GARCH-t    15 assets: median per bar     1.50 us, p99 not reported; refit    53.30 ms
+  GARCH-t    50 assets: median per bar    13.10 us, p99 not reported; refit   133.00 ms
+  GARCH-t   200 assets: median per bar   236.70 us, p99 not reported; refit   877.90 ms
+  figure: atam/results/figures/p1_p2_latency.png
+
+P1/P3/P4 - single-instrument engines: model-stage cost of each model under one measurement boundary (update + quantile + monetary VaR, timed in batches of 1000; median of three runs)
+  Realized-CAViaR  mean   27.9 ns  p50   26.8 ns  p95   29.1 ns  p99   47.1 ns   35.9 M updates/s  state 40 bytes
+  EWMA-N           mean   45.3 ns  p50   44.9 ns  p95   45.3 ns  p99   55.2 ns   22.1 M updates/s  state 240 bytes
+  GARCH-t          mean   40.0 ns  p50   39.7 ns  p95   42.3 ns  p99   57.0 ns   25.0 M updates/s  state 280 bytes
+  daily calibration of the three models (sum of fit times): p50 42.5 ms, max 76.2 ms (90 calibrations, XPET3)
+  percentiles are of batch means (1000 updates per batch), which average away the per-update tail: they compare the models with each other, not with the per-bar p99 of the portfolio engines
+  figure: atam/results/figures/p1_p4_model_stage.png
+
+M1 / M2 - modifiability (static analysis of the engines' source code)
+  EWMA: 9 modules, 23 include edges, 2979 lines of library code, 790 of programs, 586 of tests
+    M1: common model interface: no; files outside the model layer (ewma, risk, seasonality) that name a specific model's result: 5
+        ewma/source/apps/ewma_risk.cpp
+        ewma/source/include/ewmar/engine.hpp
+        ewma/source/include/ewmar/replay.hpp
+        ewma/source/src/engine.cpp
+        ewma/source/src/replay.cpp
+    M2: target grid reachable by configuration: no
+        ewma/source/apps/ewma_risk.cpp:10: bar length is set in whole minutes (--session HH:MM,BAR_MIN,BARS): 5-second sampling needs code
+        ewma/source/src/replay.cpp:365: the forecast horizon is one bar ahead (next_slot = slot + 1): a 5-minute horizon issued every minute needs code (overlapping horizons)
+  GARCH-t: 11 modules, 38 include edges, 5854 lines of library code, 1267 of programs, 1663 of tests
+    M1: common model interface: no; files outside the model layer (garch, risk, seasonality) that name a specific model's result: 5
+        garch_t/source/apps/intraday_risk.cpp
+        garch_t/source/include/garcht/portfolio.hpp
+        garch_t/source/include/garcht/replay.hpp
+        garch_t/source/src/portfolio.cpp
+        garch_t/source/src/replay.cpp
+    M2: target grid reachable by configuration: no
+        garch_t/source/apps/intraday_risk.cpp:10: bar length is set in whole minutes (--session HH:MM,BAR_MIN,BARS): 5-second sampling needs code
+        garch_t/source/src/replay.cpp:284: the forecast horizon is one bar ahead (next_slot = slot + 1): a 5-minute horizon issued every minute needs code (overlapping horizons)
+  Realized-CAViaR: 4 modules, 4 include edges, 979 lines of library code, 111 of programs, 210 of tests
+    M1: common model interface: no; files outside the model layer (model) that name a specific model's result: 2
+        realized_caviar/source/include/rcaviar/replay.hpp
+        realized_caviar/source/src/replay.cpp
+    M2: target grid reachable by configuration: yes
+        realized_caviar/source/src/replay.cpp:137: high-frequency mode (--prices) takes 5-second prices
+        realized_caviar/source/src/replay.cpp:37: forecasts every minute in five 1-minute phases of a 5-minute horizon
+        realized_caviar/source/src/shared_data.cpp:13: the shared-data mode accepts 15-minute bars only
+    reuse: compiles 9 source files of other modules: ewma/source/src/ewma.cpp, ewma/source/src/math.cpp, ewma/source/src/seasonality.cpp, garch_t/source/src/backtest.cpp, garch_t/source/src/garch.cpp, garch_t/source/src/market_data.cpp, garch_t/source/src/math.cpp, garch_t/source/src/optimize.cpp, garch_t/source/src/risk.cpp

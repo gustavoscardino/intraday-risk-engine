@@ -1,0 +1,28 @@
+variant,cut,cut_position,test,window_days,compared_cells,changed_cells,missing_rows,extra_rows,examples,later_forecasts,later_changed_pct
+ewma,2026-06-29 12:00:00,mid-session,perturbation,60,23233,0,0,0,,1920,100
+ewma,2026-06-29 12:00:00,mid-session,truncation,41,23198,13511,0,551,risk_15m.csv 2026-05-27 17:00:00 sigma: 37417.0926 -> 38727.9726 | risk_15m.csv 2026-05-27 17:00:00 lambda: 0.94558 -> 0.94981 | risk_15m.csv 2026-05-27 17:00:00 nu: 6.328 -> 6.770,,
+ewma,2026-06-29 12:00:00,mid-session,"truncation, fixed window",60,23198,0,0,0,,,
+ewma,2026-07-30 17:00:00,end of session (daily refit),perturbation,60,48949,0,0,0,,1259,100
+ewma,2026-07-30 17:00:00,end of session (daily refit),truncation,52,48896,28432,0,232,risk_15m.csv 2026-05-27 17:00:00 sigma: 37417.0926 -> 37987.1398 | risk_15m.csv 2026-05-27 17:00:00 lambda: 0.94558 -> 0.94340 | risk_15m.csv 2026-05-27 17:00:00 nu: 6.328 -> 6.615,,
+ewma,2026-07-30 17:00:00,end of session (daily refit),"truncation, fixed window",60,48896,0,0,0,,,
+ewma,2026-09-01 10:15:00,first bar of a session,perturbation,60,72947,0,0,0,,642,100
+ewma,2026-09-01 10:15:00,first bar of a session,truncation,60,72892,0,1,1,risk_overnight.csv 2026-08-31 17:00:00: forecast missing | risk_overnight.csv 2026-09-01 10:15:00 -> 2026-09-01 10:15:00: forecast not in the reference run,,
+ewma,2026-09-01 10:15:00,first bar of a session,"truncation, fixed window",60,72892,0,1,1,risk_overnight.csv 2026-08-31 17:00:00: forecast missing | risk_overnight.csv 2026-09-01 10:15:00 -> 2026-09-01 10:15:00: forecast not in the reference run,,
+garch_t,2026-06-29 12:00:00,mid-session,perturbation,60,22411,0,0,0,,1920,100
+garch_t,2026-06-29 12:00:00,mid-session,truncation,41,22386,12530,0,551,risk_15m.csv 2026-05-27 17:00:00 sigma: 39327.9078 -> 37572.0627 | risk_15m.csv 2026-05-27 17:00:00 nu: 6.2271 -> 6.0327 | risk_15m.csv 2026-05-27 17:00:00 var_95: 61755.48 -> 58268.97,,
+garch_t,2026-06-29 12:00:00,mid-session,"truncation, fixed window",60,22386,0,0,0,,,
+garch_t,2026-07-30 17:00:00,end of session (daily refit),perturbation,60,47133,0,0,0,,1259,100
+garch_t,2026-07-30 17:00:00,end of session (daily refit),truncation,52,47097,26294,0,232,risk_15m.csv 2026-05-27 17:00:00 sigma: 39327.9078 -> 40191.4218 | risk_15m.csv 2026-05-27 17:00:00 nu: 6.2271 -> 6.6027 | risk_15m.csv 2026-05-27 17:00:00 var_95: 61755.48 -> 63397.18,,
+garch_t,2026-07-30 17:00:00,end of session (daily refit),"truncation, fixed window",60,47097,0,0,0,,,
+garch_t,2026-09-01 10:15:00,first bar of a session,perturbation,60,70109,0,0,0,,642,100
+garch_t,2026-09-01 10:15:00,first bar of a session,truncation,60,70084,0,0,0,,,
+garch_t,2026-09-01 10:15:00,first bar of a session,"truncation, fixed window",60,70084,0,0,0,,,
+realized_caviar,2026-06-29 12:00:00,mid-session,perturbation,60,6849,0,0,0,,1647,100
+realized_caviar,2026-06-29 12:00:00,mid-session,truncation,41,6849,3452,0,456,atam_risk.csv 2026-05-28 11:00:00 var_99: 1217.4344315696562 -> 1233.9600528146261 | atam_risk.csv 2026-05-28 11:00:00 quantile: -0.012249058663487217 -> -0.012416365552243886 | atam_risk.csv 2026-05-28 11:00:00 ewma_var_99: 862.71514280586246 -> 905.63528442945835,,
+realized_caviar,2026-06-29 12:00:00,mid-session,"truncation, fixed window",60,6849,0,0,0,,,
+realized_caviar,2026-07-30 17:00:00,end of session (daily refit),perturbation,60,14401,0,0,0,,1080,100
+realized_caviar,2026-07-30 17:00:00,end of session (daily refit),truncation,52,14401,7268,0,192,atam_risk.csv 2026-05-28 11:00:00 var_99: 1217.4344315696562 -> 1224.1389387007835 | atam_risk.csv 2026-05-28 11:00:00 quantile: -0.012249058663487217 -> -0.012316932327476928 | atam_risk.csv 2026-05-28 11:00:00 ewma_var_99: 862.71514280586246 -> 866.28469429956363,,
+realized_caviar,2026-07-30 17:00:00,end of session (daily refit),"truncation, fixed window",60,14401,0,0,0,,,
+realized_caviar,2026-09-01 10:15:00,first bar of a session,perturbation,60,21463,0,0,0,,552,100
+realized_caviar,2026-09-01 10:15:00,first bar of a session,truncation,60,21463,0,0,0,,,
+realized_caviar,2026-09-01 10:15:00,first bar of a session,"truncation, fixed window",60,21463,0,0,0,,,
