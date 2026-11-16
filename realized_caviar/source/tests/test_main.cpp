@@ -180,6 +180,29 @@ int main() {
         const auto short_run=rcaviar::run_replay(input,config);
         for (const auto& f:short_run.forecasts) for (std::size_t m=0;m<3;++m)
             close(f.var[m],200000*std::expm1(-f.quantile[m]),1e-10);
+        // Diurnal baselines: with a strong U shape, the same filter state gives a wider VaR for a
+        // target at a volatile slot; returns enter the filters divided by their slot factor.
+        auto seasonal=input;
+        seasonal.bars_per_day=28;
+        for (std::size_t j=0;j<seasonal.returns.size();++j) {
+            const int slot=static_cast<int>(j%28);
+            seasonal.return_slots.push_back(slot);
+            seasonal.returns[j]*=(slot<4 || slot>23)?3.0:1.0;
+        }
+        rcaviar::ReplayConfig seasonal_config; seasonal_config.compare=true; seasonal_config.refit=rcaviar::RefitSchedule::Once;
+        seasonal_config.fit_options.starts=2; seasonal_config.fit_options.max_iterations=120;
+        const auto deseasonalized=rcaviar::run_replay(seasonal,seasonal_config);
+        require(deseasonalized.diurnal,"diurnal adjustment not applied");
+        require(deseasonalized.calibrations.front().diurnal.size()==28,"profile missing");
+        const auto& u=deseasonalized.calibrations.front().diurnal;
+        require(u[0]>2*u[12] && u[27]>2*u[12],"U profile not recovered");
+        seasonal_config.diurnal=false;
+        const auto raw=rcaviar::run_replay(seasonal,seasonal_config);
+        require(!raw.diurnal && raw.calibrations.front().diurnal.empty(),"diurnal flag ignored");
+        for (const auto& s:deseasonalized.summaries) require(s.benchmark_updates>=1000 && s.mean_ns>0,"batch benchmark missing");
+        rcaviar::ReplayConfig reference=seasonal_config; reference.estimate_lambda=false; reference.ewma_lambda=.94;
+        require(rcaviar::run_replay(seasonal,reference).summaries[1].model=="EWMA-N (ref)","RiskMetrics name");
+        require(deseasonalized.summaries[1].model=="EWMA-N","estimated EWMA name");
         auto wrong=input; wrong.horizon_seconds=60; rejects([&]{rcaviar::run_replay(wrong,config);});
         config.confidence=1; rejects([&]{rcaviar::run_replay(input,config);});
         std::cout << checks << " checks passed\n";

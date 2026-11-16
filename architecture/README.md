@@ -9,7 +9,7 @@ Seis vistas do sistema: uma visão geral com todos os módulos e o detalhe de ca
 | 2. EWMA: módulos | como o código do `ewma` está organizado? | [`02_modulos.mmd`](02_modulos.mmd) |
 | 3. EWMA: ciclo de 15 minutos | o que o motor faz a cada barra? | [`03_ciclo_15min.mmd`](03_ciclo_15min.mmd) |
 | 4. GARCH-t: módulos | como o código do `garch_t` está organizado? | [`04_modulos_garch_t.mmd`](04_modulos_garch_t.mmd) |
-| 5. Realized-CAViaR | como o `realized_caviar` funciona e o que reutiliza? | [`05_realized_caviar.mmd`](05_realized_caviar.mmd) |
+| 5. Realized-CAViaR | como funciona a comparação dos três modelos e o que ela reutiliza? | [`05_realized_caviar.mmd`](05_realized_caviar.mmd) |
 
 Os diagramas estão em [Mermaid](https://mermaid.js.org): são texto, ficam versionados no git e
 aparecem desenhados no GitHub e no VS Code (extensão *Markdown Preview Mermaid Support*).
@@ -22,11 +22,12 @@ O PDF `arquitetura.pdf` (para o drive compartilhado) e os PNG/SVG desta pasta s�
 ## 0. Visão geral
 
 Cada técnica é um módulo próprio que lê os mesmos dados de `data/`. O `garch_t` e o `ewma` são
-independentes entre si e gravam o `backtest_summary.csv` com as mesmas colunas. O `realized_caviar`
-reutiliza parte do código do `garch_t` (compila `math`, `optimize`, `risk`, `backtest` e
-`market_data` a partir das fontes dele), trabalha com uma ação por execução e grava os próprios
-arquivos (`forecasts.csv`, `report.txt`). A comparação do TCC é qualidade estatística versus custo
-computacional.
+independentes entre si e gravam o `backtest_summary.csv` com as mesmas colunas, em nível de
+carteira. O `realized_caviar` faz a comparação central do TCC: Realized-CAViaR, EWMA-N e GARCH-t na
+mesma ação, nos mesmos alvos, com a mesma exposição e o mesmo calendário de calibração. Para isso
+compila partes do `garch_t` (`market_data`, `backtest`, `garch`, `math`, `optimize`, `risk`) e do
+`ewma` (filtro EWMA, estimação de λ e perfil diurno). A comparação é qualidade estatística versus
+custo computacional.
 
 ```mermaid
 flowchart LR
@@ -41,14 +42,14 @@ flowchart LR
         direction TB
         GT["garch_t/ · C++17<br/>GARCH(1,1)-t por ação · carteira<br/>correlação dinâmica · cauda EVT<br/>opções por Monte Carlo"]
         EW["ewma/ · C++17<br/>EWMA-N (ref) · EWMA-N · EWMA-t · carteira<br/>camada de qualidade de dados"]
-        RC["realized_caviar/ · C++20<br/>Realized-CAViaR · uma ação por execução<br/>quantil de 1% direto (VaR 99%)<br/>reutiliza math · risk · backtest · market_data do garch_t"]
+        RC["realized_caviar/ · C++20<br/>Realized-CAViaR × EWMA-N × GARCH-t<br/>mesma ação, mesmos alvos e calibração<br/>reutiliza código do garch_t e do ewma"]
         GT ~~~ EW ~~~ RC
     end
 
     subgraph Resultados["results/ de cada módulo"]
         direction TB
         RS["garch_t · ewma<br/>risk_15m.csv · risk_overnight.csv<br/>backtest_summary.csv (mesmas colunas)"]
-        BS["realized_caviar<br/>forecasts.csv · report.txt<br/>Kupiec · Christoffersen · pinball"]
+        BS["realized_caviar<br/>backtest_summary · backtest_by_hour<br/>Kupiec · Christoffersen · pinball · latência"]
         RS ~~~ BS
     end
 
@@ -228,12 +229,14 @@ flowchart TB
 
 ## 5. Realized-CAViaR
 
-Terceira técnica (C++20). Em vez de estimar a volatilidade e supor uma distribuição, estima
-diretamente o quantil de 1% do retorno (VaR 99%) por uma recursão que usa o retorno agregado R e a
-variância realizada RV da janela anterior. Os coeficientes são estimados uma vez, fora do caminho
-crítico, minimizando a perda pinball; a atualização online só aplica a recursão. Há dois modos de
-entrada: preços a cada 5 s (simulação própria ou CSV) ou uma ação dos dados compartilhados de
-`data/`, em barras de 15 min. A caixa da direita mostra o código que vem do `garch_t`.
+Terceira técnica e comparação central (C++20). O Realized-CAViaR estima diretamente o quantil de
+1% do retorno (VaR 99%) por uma recursão com o retorno agregado R e a variância realizada RV da
+janela anterior. Na mesma execução, um EWMA-N e um GARCH-t de uma ação são calibrados no mesmo
+calendário (re-estimação diária) e avaliados nos mesmos alvos. Os dois rodam sobre retornos
+divididos pelo perfil diurno do horário, como no `ewma` e no `garch_t`. A calibração fica fora do
+caminho crítico; a latência é medida em lotes. Há dois modos de entrada: preços a cada 5 s
+(simulação própria ou CSV) ou uma ação de `data/` em barras de 15 min. A caixa da direita mostra o
+código reutilizado.
 
 ```mermaid
 flowchart LR
@@ -246,27 +249,23 @@ flowchart LR
 
     subgraph Lib["Biblioteca rcaviar"]
         direction TB
-        DA["data<br/>leitura e simulação de preços<br/>janelas: R, RV e alvo futuro"]
-        SD["shared_data<br/>janelas de 1 h (4 barras) sobre data/<br/>sem atravessar o pernoite"]
-        FIT["model · fit (offline)<br/>minimiza a perda pinball<br/>Nelder-Mead com vários pontos iniciais"]
-        FL["model · Filter (online)<br/>q(t+1) = β0 + β1·q(t) + β2·|R(t)| + β3·√RV(t)<br/>4 coeficientes + 1 quantil"]
-        DA --> FIT
-        SD --> FIT
-        FIT --> FL
+        DA["data · shared_data<br/>janelas causais: R, RV e alvo futuro<br/>sem atravessar o pernoite"]
+        CAL["Calibração diária comum (fora do caminho crítico)<br/>CAViaR: perda pinball · EWMA: λ por QLIKE<br/>GARCH-t: máxima verossimilhança · perfil U"]
+        FL["Modelos online, mesmos alvos e exposição<br/>Realized-CAViaR: q(t+1) = β0 + β1·q(t) + β2·|R(t)| + β3·√RV(t)<br/>EWMA-N e GARCH-t sobre r / s(horário)"]
+        DA --> CAL --> FL
     end
 
-    subgraph Reuso["Reutilizado do garch_t (compilado das fontes)"]
+    subgraph Reuso["Reutilizado (compilado das fontes)"]
         direction TB
-        GMD["market_data<br/>CSV · grade de barras · retornos"]
-        GBT["backtest<br/>Kupiec · Christoffersen"]
-        GMA["math · optimize · risk"]
-        GMD ~~~ GBT ~~~ GMA
+        GT["garch_t<br/>market_data · backtest · garch<br/>math · optimize · risk"]
+        EW["ewma<br/>ewma (filtro e λ) · seasonality (perfil U)<br/>math"]
+        GT ~~~ EW
     end
 
     subgraph Saida["results/"]
         direction TB
-        VAR["VaR da posição comprada<br/>−E · expm1(q)"]
-        OUT["forecasts.csv · report.txt<br/>exceções · Kupiec · Christoffersen<br/>pinball · latência p50/p95/p99"]
+        VAR["VaR da posição (comprada ou vendida)<br/>−E · expm1(q)"]
+        OUT["backtest_summary · backtest_by_hour<br/>Kupiec · Christoffersen · pinball<br/>latência em lotes p50/p95/p99"]
         VAR --> OUT
     end
 

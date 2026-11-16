@@ -8,27 +8,23 @@ flowchart LR
 
     subgraph Lib["Biblioteca rcaviar"]
         direction TB
-        DA["data<br/>leitura e simulação de preços<br/>janelas: R, RV e alvo futuro"]
-        SD["shared_data<br/>janelas de 1 h (4 barras) sobre data/<br/>sem atravessar o pernoite"]
-        FIT["model · fit (offline)<br/>minimiza a perda pinball<br/>Nelder-Mead com vários pontos iniciais"]
-        FL["model · Filter (online)<br/>q(t+1) = β0 + β1·q(t) + β2·|R(t)| + β3·√RV(t)<br/>4 coeficientes + 1 quantil"]
-        DA --> FIT
-        SD --> FIT
-        FIT --> FL
+        DA["data · shared_data<br/>janelas causais: R, RV e alvo futuro<br/>sem atravessar o pernoite"]
+        CAL["Calibração diária comum (fora do caminho crítico)<br/>CAViaR: perda pinball · EWMA: λ por QLIKE<br/>GARCH-t: máxima verossimilhança · perfil U"]
+        FL["Modelos online, mesmos alvos e exposição<br/>Realized-CAViaR: q(t+1) = β0 + β1·q(t) + β2·|R(t)| + β3·√RV(t)<br/>EWMA-N e GARCH-t sobre r / s(horário)"]
+        DA --> CAL --> FL
     end
 
-    subgraph Reuso["Reutilizado do garch_t (compilado das fontes)"]
+    subgraph Reuso["Reutilizado (compilado das fontes)"]
         direction TB
-        GMD["market_data<br/>CSV · grade de barras · retornos"]
-        GBT["backtest<br/>Kupiec · Christoffersen"]
-        GMA["math · optimize · risk"]
-        GMD ~~~ GBT ~~~ GMA
+        GT["garch_t<br/>market_data · backtest · garch<br/>math · optimize · risk"]
+        EW["ewma<br/>ewma (filtro e λ) · seasonality (perfil U)<br/>math"]
+        GT ~~~ EW
     end
 
     subgraph Saida["results/"]
         direction TB
-        VAR["VaR da posição comprada<br/>−E · expm1(q)"]
-        OUT["forecasts.csv · report.txt<br/>exceções · Kupiec · Christoffersen<br/>pinball · latência p50/p95/p99"]
+        VAR["VaR da posição (comprada ou vendida)<br/>−E · expm1(q)"]
+        OUT["backtest_summary · backtest_by_hour<br/>Kupiec · Christoffersen · pinball<br/>latência em lotes p50/p95/p99"]
         VAR --> OUT
     end
 

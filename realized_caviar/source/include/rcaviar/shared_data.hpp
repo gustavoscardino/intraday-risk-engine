@@ -14,6 +14,8 @@ struct SharedData {
     // Every observed grid bar, including warmup and missing observations (NaN).
     std::vector<std::int64_t> return_times, session_starts;
     std::vector<double> returns;
+    std::vector<int> return_slots;  // session slot of each return (0 = first bar)
+    int bars_per_day = 0;
 };
 SharedData read_shared_data(const std::string& folder, const std::string& ticker, int window_days = 0,
                             const std::string& prices_path = {});

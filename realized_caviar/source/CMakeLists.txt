@@ -10,18 +10,35 @@ endif()
 set(GARCH_SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/../../garch_t/source")
 add_library(rcaviar_statistics STATIC
   ${GARCH_SOURCE}/src/math.cpp ${GARCH_SOURCE}/src/optimize.cpp ${GARCH_SOURCE}/src/garch.cpp ${GARCH_SOURCE}/src/risk.cpp ${GARCH_SOURCE}/src/backtest.cpp ${GARCH_SOURCE}/src/market_data.cpp
-  ../../ewma/source/src/math.cpp ../../ewma/source/src/ewma.cpp)
+  ../../ewma/source/src/math.cpp ../../ewma/source/src/ewma.cpp ../../ewma/source/src/seasonality.cpp)
 target_include_directories(rcaviar_statistics PUBLIC ${GARCH_SOURCE}/include)
 target_include_directories(rcaviar_statistics PUBLIC ../../ewma/source/include)
 add_library(rcaviar STATIC src/model.cpp src/data.cpp src/shared_data.cpp src/replay.cpp)
 target_include_directories(rcaviar PUBLIC include)
 target_link_libraries(rcaviar PUBLIC rcaviar_statistics)
+# Windows (MinGW): UTF-8 code page, so paths with accents work (as in ewma and garch_t), and
+# self-contained programs. windres runs as a plain command: its include options break on
+# folders with spaces; the object is linked into each program.
+if(MINGW)
+  enable_language(RC)
+  set(RCAVIAR_MANIFEST "${CMAKE_CURRENT_BINARY_DIR}/windows_utf8_manifest.o")
+  add_custom_command(OUTPUT "${RCAVIAR_MANIFEST}"
+    COMMAND ${CMAKE_RC_COMPILER} "${CMAKE_CURRENT_SOURCE_DIR}/apps/windows_utf8.rc" -O coff -o "${RCAVIAR_MANIFEST}"
+    DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/apps/windows_utf8.rc" VERBATIM)
+  set_source_files_properties("${RCAVIAR_MANIFEST}" PROPERTIES EXTERNAL_OBJECT TRUE GENERATED TRUE)
+endif()
 add_executable(realized_caviar apps/replay.cpp)
 target_link_libraries(realized_caviar PRIVATE rcaviar rcaviar_statistics)
 add_executable(rcaviar_tests tests/test_main.cpp)
 target_link_libraries(rcaviar_tests PRIVATE rcaviar rcaviar_statistics)
 add_executable(rcaviar_fit apps/fit_series.cpp)
 target_link_libraries(rcaviar_fit PRIVATE rcaviar)
+if(MINGW)
+  foreach(app realized_caviar rcaviar_tests rcaviar_fit)
+    target_sources(${app} PRIVATE "${RCAVIAR_MANIFEST}")
+    target_link_libraries(${app} PRIVATE -static)
+  endforeach()
+endif()
 foreach(target rcaviar_statistics rcaviar realized_caviar rcaviar_tests rcaviar_fit)
   if(MSVC)
     target_compile_options(${target} PRIVATE /W4)

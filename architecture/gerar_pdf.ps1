@@ -6,7 +6,7 @@ Set-Location $PSScriptRoot
 $cli = '@mermaid-js/mermaid-cli@11.4.2'
 $views = @(
     @{ f = '00_visao_geral'; t = '0. Visão geral do sistema';
-       d = 'Cada técnica é um módulo próprio que lê os mesmos dados de data/. O garch_t e o ewma são independentes entre si e gravam o backtest_summary.csv com as mesmas colunas; o realized_caviar reutiliza parte do código do garch_t, trabalha com uma ação por execução e grava os próprios arquivos. A comparação do TCC é qualidade estatística versus custo computacional.' },
+       d = 'Cada técnica é um módulo próprio que lê os mesmos dados de data/. O garch_t e o ewma trabalham em nível de carteira e gravam o backtest_summary.csv com as mesmas colunas. O realized_caviar faz a comparação central: Realized-CAViaR, EWMA-N e GARCH-t na mesma ação, nos mesmos alvos e com o mesmo calendário de calibração, reutilizando código do garch_t e do ewma.' },
     @{ f = '01_fluxo_de_dados'; t = '1. EWMA: fluxo de dados';
        d = 'Do arquivo de preços até o relatório: os preços passam pela camada de qualidade de dados, que decide o que o motor pode usar; o motor produz as previsões dos três modelos (EWMA-N (ref), EWMA-N e EWMA-t); o backtest as compara com o que aconteceu.' },
     @{ f = '02_modulos'; t = '2. EWMA: módulos';
@@ -16,7 +16,7 @@ $views = @(
     @{ f = '04_modulos_garch_t'; t = '4. GARCH-t: módulos';
        d = 'Organização do código do garch_t, levantada a partir dos #include de garch_t/source/. O núcleo é o portfolio (IntradayRiskEngine); synthetic gera o mercado fictício usado por todos os módulos; revaluation reavalia as opções por Monte Carlo.' },
     @{ f = '05_realized_caviar'; t = '5. Realized-CAViaR';
-       d = 'Terceira técnica (C++20): estima diretamente o quantil de 1% do retorno (VaR 99%) por uma recursão com o retorno agregado R e a variância realizada RV. Os coeficientes são estimados uma vez, fora do caminho crítico (perda pinball); a atualização online só aplica a recursão. A caixa da direita é o código reutilizado do garch_t.' }
+       d = 'Terceira técnica e comparação central (C++20): o Realized-CAViaR estima o quantil de 1% do retorno por uma recursão com o retorno agregado R e a variância realizada RV; EWMA-N e GARCH-t de uma ação, sobre retornos divididos pelo perfil diurno, são calibrados no mesmo calendário e avaliados nos mesmos alvos. Latência medida em lotes.' }
 )
 $sections = ''
 foreach ($v in $views) {

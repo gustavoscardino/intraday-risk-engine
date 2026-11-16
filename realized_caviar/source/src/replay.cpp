@@ -2,20 +2,29 @@
 #include "garcht/garch.hpp"
 #include "garcht/math.hpp"
 #include "ewmar/ewma.hpp"
+#include "ewmar/seasonality.hpp"
 #include <algorithm>
 #include <chrono>
+#include <cstdio>
 #include <cmath>
 #include <filesystem>
 #include <fstream>
 #include <iomanip>
 #include <limits>
+#include <map>
 #include <optional>
 #include <stdexcept>
 
 namespace rcaviar {
 namespace {
 using Clock=std::chrono::steady_clock;
-constexpr std::array<const char*,3> names{"Realized-CAViaR","EWMA-N","GARCH-t"};
+// Names follow the definitions used across the repository: "EWMA-N (ref)" is RiskMetrics
+// (lambda 0.94 fixed, raw returns); "EWMA-N" has its lambda estimated and/or the U profile.
+std::string model_name(const ReplayConfig& cfg,bool diurnal,std::size_t m) {
+    if (m==0) return "Realized-CAViaR";
+    if (m==1) return !diurnal && !cfg.estimate_lambda && cfg.ewma_lambda==.94 ? "EWMA-N (ref)" : "EWMA-N";
+    return "GARCH-t";
+}
 double elapsed(Clock::time_point start) {
     return std::chrono::duration<double,std::nano>(Clock::now()-start).count();
 }
@@ -29,9 +38,45 @@ std::size_t phase_at(const ReplayInput& in,std::int64_t time) {
 }
 struct BaselineState {
     ewmar::EwmaCovariance ewma{1};
+    double lambda=.94;
     garcht::GarchFilter garch;
     double student_tail=0;
 };
+// Lambda by Gaussian predictive quasi-likelihood (as in the ewma module): the first quarter of
+// the history sets the starting variance and is not scored.
+double estimate_ewma_lambda(const std::vector<double>& y,double fallback) {
+    const std::size_t n=y.size(), burn=std::min(n/2,std::max<std::size_t>(n/4,11));
+    double squares=0; std::size_t k=0;
+    for (std::size_t i=0;i<burn;++i) if (std::isfinite(y[i])) { squares+=y[i]*y[i]; ++k; }
+    if (k<10 || !(squares>0)) return fallback;
+    return ewmar::estimate_lambda(y,1,burn,n,{squares/static_cast<double>(k)},.80,.999);
+}
+struct BenchStats { double mean=0,p50=0,p95=0,p99=0; std::size_t updates=0; };
+// Times `step` (one forecast's model work) in batches, so the clock resolution and overhead
+// (100 ns on Windows) are spread over `batch` updates. Percentiles are over batch means.
+template<class Step> BenchStats time_batches(std::size_t ops,std::size_t batch,std::size_t min_updates,Step&& step) {
+    BenchStats stats;
+    if (ops==0 || batch==0) return stats;
+    volatile double sink=0;
+    for (std::size_t i=0;i<ops;++i) sink=sink+step(i);  // warm-up pass
+    std::vector<double> per_update;
+    double total_ns=0;
+    std::size_t k=0;
+    while (stats.updates<min_updates || per_update.size()<5) {
+        const auto start=Clock::now();
+        double acc=0;
+        for (std::size_t j=0;j<batch;++j) { acc+=step(k); if (++k==ops) k=0; }
+        const double ns=elapsed(start);
+        sink=sink+acc;
+        per_update.push_back(ns/static_cast<double>(batch));
+        total_ns+=ns; stats.updates+=batch;
+    }
+    std::sort(per_update.begin(),per_update.end());
+    auto pct=[&](double q){return per_update[static_cast<std::size_t>(q*static_cast<double>(per_update.size()-1))];};
+    stats.mean=total_ns/static_cast<double>(stats.updates);
+    stats.p50=pct(.5); stats.p95=pct(.95); stats.p99=pct(.99);
+    return stats;
+}
 void validate(const ReplayInput& in,const ReplayConfig& cfg) {
     if (in.windows.empty() || in.session_starts.empty() || in.training_sessions==0 || in.horizon_seconds<=0)
         throw std::invalid_argument("replay needs windows, sessions and a positive horizon/training window");
@@ -56,6 +101,8 @@ void validate(const ReplayInput& in,const ReplayConfig& cfg) {
             throw std::invalid_argument("invalid replay window");
         last=w.forecast_time;
     }
+    if (!in.return_slots.empty() && (in.return_slots.size()!=in.returns.size() || in.bars_per_day<=0))
+        throw std::invalid_argument("return slots are inconsistent with the return grid");
     if (in.return_times.size()!=in.returns.size() || (cfg.compare && in.returns.empty())
         || (!in.return_times.empty() && in.return_times.front()<in.session_starts.front())
         || (cfg.compare && !in.shared && in.return_times.front()<in.phase_starts.front()))
@@ -70,6 +117,7 @@ void validate(const ReplayInput& in,const ReplayConfig& cfg) {
 ReplayInput shared_input(const SharedData& data) {
     ReplayInput in;
     in.windows=data.windows; in.return_times=data.return_times; in.returns=data.returns;
+    in.return_slots=data.return_slots; in.bars_per_day=data.bars_per_day;
     in.session_starts=data.session_starts; in.cutoff=data.cutoff; in.horizon_seconds=900;
     in.training_sessions=data.training_sessions; in.shared=true;
     in.description="Shared 15m bars; preceding 1h features; no overnight targets. Sessions="+std::to_string(data.sessions)
@@ -122,6 +170,25 @@ ReplayResult run_replay(const ReplayInput& in,const ReplayConfig& cfg) {
     const double normal_tail=garcht::math::norm_ppf(tau);
     std::size_t previous_session=std::numeric_limits<std::size_t>::max(), return_cursor=0;
     std::int64_t next_evaluation=-1;
+    // Diurnal profile of the baselines (shared mode): r / s_slot enters the filters, and the
+    // forecast for a target bar is scaled back by that bar's factor.
+    const bool use_diurnal=cfg.compare && cfg.diurnal && in.shared && !in.return_slots.empty() && in.bars_per_day>0;
+    result.diurnal=use_diurnal;
+    std::vector<double> profile;
+    auto factor_at=[&](std::size_t j) {
+        if (profile.empty()) return 1.0;
+        const int slot=in.return_slots[j];
+        return slot>=0 && static_cast<std::size_t>(slot)<profile.size() ? profile[static_cast<std::size_t>(slot)] : 1.0;
+    };
+    auto target_factor=[&](std::int64_t forecast_time) {
+        if (profile.empty()) return 1.0;
+        const auto it=std::lower_bound(in.return_times.begin(),in.return_times.end(),forecast_time);
+        if (it==in.return_times.end() || *it!=forecast_time) return 1.0;
+        const int slot=in.return_slots[static_cast<std::size_t>(it-in.return_times.begin())]+1;
+        return slot>=1 && static_cast<std::size_t>(slot)<profile.size() ? profile[static_cast<std::size_t>(slot)] : 1.0;
+    };
+    // Per forecast: the returns its baseline update consumed, for the latency benchmark.
+    std::vector<std::pair<std::size_t,std::size_t>> consumed;
     auto calibrate=[&](std::size_t session,std::int64_t effective,std::int64_t end) {
         Calibration record;
         record.effective_time=effective; record.training_end=end;
@@ -151,9 +218,22 @@ ReplayResult run_replay(const ReplayInput& in,const ReplayConfig& cfg) {
         if (cfg.compare) {
             const auto begin=std::lower_bound(in.return_times.begin(),in.return_times.end(),record.training_start);
             const auto stop=std::upper_bound(in.return_times.begin(),in.return_times.end(),end);
+            if (use_diurnal) {  // U profile of the training window, as in the ewma/garch_t engines
+                std::vector<double> rows; std::vector<int> slots;
+                for (auto it=begin;it!=stop;++it) {
+                    const auto j=static_cast<std::size_t>(it-in.return_times.begin());
+                    if (in.return_slots[j]>=0) { rows.push_back(in.returns[j]); slots.push_back(in.return_slots[j]); }
+                }
+                ewmar::DiurnalProfile estimated(in.bars_per_day,1,ewmar::DiurnalMode::Pooled);
+                estimated.estimate(rows,slots);
+                profile=estimated.pooled();
+                record.diurnal=profile;
+            }
             std::vector<std::vector<double>> histories(phases);
-            for (auto it=begin;it!=stop;++it)
-                histories[phase_at(in,*it)].push_back(sign*in.returns[static_cast<std::size_t>(it-in.return_times.begin())]);
+            for (auto it=begin;it!=stop;++it) {
+                const auto j=static_cast<std::size_t>(it-in.return_times.begin());
+                histories[phase_at(in,*it)].push_back(sign*in.returns[j]/factor_at(j));
+            }
             for (std::size_t phase=0;phase<phases;++phase) {
                 auto& state=baselines[phase];
                 const auto& history=histories[phase];
@@ -164,11 +244,13 @@ ReplayResult run_replay(const ReplayInput& in,const ReplayConfig& cfg) {
                     if (result.calibrations.empty()) throw std::invalid_argument("baseline phase needs at least 100 observed training returns; use --caviar-only for short histories");
                     b.status[0]="previous_fit";
                 } else {
+                    state.lambda=cfg.estimate_lambda?estimate_ewma_lambda(history,cfg.ewma_lambda):cfg.ewma_lambda;
                     state.ewma.set(ewmar::initial_covariance(history,1,0,history.size()));
-                    for (double r:history) state.ewma.update(&r,cfg.ewma_lambda);
+                    for (double r:history) state.ewma.update(&r,state.lambda);
                     b.status[0]="fitted";
                 }
                 b.ewma_variance=state.ewma(0,0);
+                b.ewma_lambda=state.lambda;
                 b.elapsed_ms[0]=elapsed(start)/1e6;
                 start=Clock::now();
                 garcht::FitOptions options; options.compute_std_errors=false;
@@ -200,7 +282,8 @@ ReplayResult run_replay(const ReplayInput& in,const ReplayConfig& cfg) {
             const auto end=caviar?in.session_starts[session]-1:in.cutoff;
             if (caviar && cfg.compare) while (return_cursor<in.returns.size() && in.return_times[return_cursor]<=end) {
                 auto& state=baselines[phase_at(in,in.return_times[return_cursor])];
-                double r=sign*in.returns[return_cursor++]; state.ewma.update(&r,cfg.ewma_lambda); state.garch.update(r);
+                double r=sign*in.returns[return_cursor]/factor_at(return_cursor); ++return_cursor;
+                state.ewma.update(&r,state.lambda); state.garch.update(r);
             }
             calibrate(session,w.forecast_time,end);
         }
@@ -209,24 +292,22 @@ ReplayResult run_replay(const ReplayInput& in,const ReplayConfig& cfg) {
         f.forecast_time=w.forecast_time; f.target_time=w.target_time;
         f.aggregate_return=w.observation.aggregate_return; f.realized_variance=w.observation.realized_variance;
         f.target_return=w.observation.target_return;
-        auto start=Clock::now();
         f.quantile[0]=caviar->update(f.aggregate_return,f.realized_variance);
         f.var[0]=position_var(cfg.exposure,f.quantile[0]);
-        f.latency_ns[0]=elapsed(start);
         if (cfg.compare) {
             auto& selected=baselines[phase_at(in,w.forecast_time)];
             const auto begin=return_cursor;
             while (return_cursor<in.returns.size() && in.return_times[return_cursor]<=w.forecast_time) ++return_cursor;
-            start=Clock::now();
             for (std::size_t j=begin;j<return_cursor;++j) {
-                double r=sign*in.returns[j]; baselines[phase_at(in,in.return_times[j])].ewma.update(&r,cfg.ewma_lambda);
+                auto& state=baselines[phase_at(in,in.return_times[j])];
+                double r=sign*in.returns[j]/factor_at(j);
+                state.ewma.update(&r,state.lambda); state.garch.update(r);
             }
-            f.quantile[1]=normal_tail*std::sqrt(selected.ewma(0,0)); f.var[1]=position_var(cfg.exposure,f.quantile[1]);
-            f.latency_ns[1]=elapsed(start);
-            start=Clock::now();
-            for (std::size_t j=begin;j<return_cursor;++j) baselines[phase_at(in,in.return_times[j])].garch.update(sign*in.returns[j]);
-            f.quantile[2]=selected.garch.mean()+selected.student_tail*std::sqrt(selected.garch.variance()); f.var[2]=position_var(cfg.exposure,f.quantile[2]);
-            f.latency_ns[2]=elapsed(start);
+            consumed.emplace_back(begin,return_cursor);
+            const double s=target_factor(w.forecast_time);
+            f.quantile[1]=normal_tail*std::sqrt(selected.ewma(0,0))*s; f.var[1]=position_var(cfg.exposure,f.quantile[1]);
+            f.quantile[2]=(selected.garch.mean()+selected.student_tail*std::sqrt(selected.garch.variance()))*s;
+            f.var[2]=position_var(cfg.exposure,f.quantile[2]);
         }
         // Selection depends on target intervals, not future target availability.
         if (f.forecast_time>=next_evaluation) {
@@ -235,29 +316,71 @@ ReplayResult run_replay(const ReplayInput& in,const ReplayConfig& cfg) {
         }
         result.forecasts.push_back(f);
     }
+    // ---- model-stage latency, timed in batches over the out-of-sample sequence. Each step is
+    // one forecast's model work: CAViaR recursion; baseline updates with the returns that
+    // forecast consumed (deseasonalized) + quantile; then monetary VaR. Values are prepared
+    // beforehand, so lookups and CSV are excluded; states are copies of the final ones.
+    std::vector<BenchStats> bench(models);
+    {
+        const std::size_t ops=result.forecasts.size();
+        Filter filter=*caviar;
+        bench[0]=time_batches(ops,cfg.benchmark_batch,cfg.benchmark_min_updates,[&](std::size_t i) {
+            const auto& f=result.forecasts[i];
+            return position_var(cfg.exposure,filter.update(f.aggregate_return,f.realized_variance));
+        });
+        if (cfg.compare) {
+            std::vector<double> y(in.returns.size());
+            std::vector<std::size_t> phase_of(in.returns.size());
+            for (std::size_t j=0;j<y.size();++j) { y[j]=sign*in.returns[j]; phase_of[j]=phase_at(in,in.return_times[j]); }
+            std::vector<double> divisor(in.returns.size()), scale(ops);
+            for (std::size_t j=0;j<y.size();++j) divisor[j]=factor_at(j);
+            std::vector<std::size_t> selected(ops);
+            for (std::size_t i=0;i<ops;++i) {
+                scale[i]=target_factor(result.forecasts[i].forecast_time);
+                selected[i]=phase_at(in,result.forecasts[i].forecast_time);
+            }
+            auto states=baselines;
+            bench[1]=time_batches(ops,cfg.benchmark_batch,cfg.benchmark_min_updates,[&](std::size_t i) {
+                for (std::size_t j=consumed[i].first;j<consumed[i].second;++j) {
+                    auto& state=states[phase_of[j]];
+                    double r=y[j]/divisor[j]; state.ewma.update(&r,state.lambda);
+                }
+                return position_var(cfg.exposure,normal_tail*std::sqrt(states[selected[i]].ewma(0,0))*scale[i]);
+            });
+            states=baselines;
+            bench[2]=time_batches(ops,cfg.benchmark_batch,cfg.benchmark_min_updates,[&](std::size_t i) {
+                for (std::size_t j=consumed[i].first;j<consumed[i].second;++j) states[phase_of[j]].garch.update(y[j]/divisor[j]);
+                const auto& g=states[selected[i]];
+                return position_var(cfg.exposure,(g.garch.mean()+g.student_tail*std::sqrt(g.garch.variance()))*scale[i]);
+            });
+        }
+    }
     for (std::size_t m=0;m<models;++m) {
-        ModelSummary summary; summary.model=names[m];
-        std::vector<int> hits; std::vector<bool> adjacent; std::vector<double> latency;
+        ModelSummary summary; summary.model=model_name(cfg,use_diurnal,m);
+        std::vector<int> hits; std::vector<bool> adjacent;
+        std::map<int,std::vector<int>> hour_hits;
         std::int64_t previous_target=-1;
         for (const auto& f:result.forecasts) {
-            latency.push_back(f.latency_ns[m]);
-            summary.mean_ns+=f.latency_ns[m];
             if (!f.evaluated) continue;
-            hits.push_back(sign*f.target_return<f.quantile[m]);
+            const int hit=sign*f.target_return<f.quantile[m];
+            hits.push_back(hit);
+            hour_hits[static_cast<int>(((f.forecast_time%86400)+86400)%86400/3600)].push_back(hit);
             adjacent.push_back(f.forecast_time==previous_target);
             previous_target=f.target_time;
             summary.mean_pinball+=pinball(sign*f.target_return,f.quantile[m],tau);
         }
         if (hits.empty()) throw std::invalid_argument("no observed out-of-sample targets");
         summary.coverage=coverage_with_boundaries(hits,adjacent,tau);
+        for (const auto& [hour,group]:hour_hits) summary.by_hour.push_back({hour,garcht::coverage_test(group,tau)});
         summary.mean_pinball/=static_cast<double>(hits.size());
-        summary.mean_ns/=static_cast<double>(latency.size());
-        std::sort(latency.begin(),latency.end());
-        auto pct=[&](double p){return latency[static_cast<std::size_t>(p*static_cast<double>(latency.size()-1))];};
-        summary.p50_ns=pct(.5); summary.p95_ns=pct(.95); summary.p99_ns=pct(.99);
+        summary.mean_ns=bench[m].mean; summary.p50_ns=bench[m].p50; summary.p95_ns=bench[m].p95; summary.p99_ns=bench[m].p99;
+        summary.benchmark_updates=bench[m].updates;
         summary.updates_per_second=summary.mean_ns>0?1e9/summary.mean_ns:std::numeric_limits<double>::infinity();
-        summary.state_bytes=m==0?sizeof(Filter):m==1?phases*(sizeof(ewmar::EwmaCovariance)+sizeof(double)+sizeof(char))+sizeof(double)
-            :phases*(sizeof(garcht::GarchFilter)+sizeof(double));
+        // Persistent numeric state: CAViaR 4 coefficients + quantile; EWMA variance + lambda per
+        // phase; GARCH filter + tail factor per phase; the U profile is shared by the baselines.
+        const std::size_t profile_bytes=profile.size()*sizeof(double);
+        summary.state_bytes=m==0?sizeof(Filter):m==1?phases*2*sizeof(double)+profile_bytes
+            :phases*(sizeof(garcht::GarchFilter)+sizeof(double))+profile_bytes;
         result.summaries.push_back(summary);
     }
     return result;
@@ -270,7 +393,9 @@ void write_results(const ReplayInput& in,const ReplayConfig& cfg,const ReplayRes
         file << std::setprecision(17); return file;
     };
     auto forecasts=output("forecasts.csv"), risk=output(in.shared?"risk_15m.csv":"risk_5m.csv"), backtest=output("backtest_summary.csv"),
-        parameters=output("params_daily.csv"), benchmark=output("benchmark.csv"), report=output("report.txt");
+        parameters=output("params_daily.csv"), benchmark=output("benchmark.csv"), report=output("report.txt"),
+        by_hour=output("backtest_by_hour.csv");
+    auto name=[&](std::size_t m){return result.summaries[m].model;};
     forecasts << "model,forecast_time,target_time,aggregate_return,realized_variance,quantile,exposure,var,target_return,realized_pnl,exception,evaluated\n";
     risk << "model,forecast_time,target_time,exposure,confidence,var,realized_pnl,evaluated\n";
     for (const auto& f:result.forecasts) for (std::size_t m=0;m<result.summaries.size();++m) {
@@ -278,25 +403,39 @@ void write_results(const ReplayInput& in,const ReplayConfig& cfg,const ReplayRes
         const double pnl=observed?cfg.exposure*std::expm1(f.target_return):std::nan("");
         // Output quantile uses the original asset-return direction (upper tail for shorts).
         const double q=cfg.exposure<0?-f.quantile[m]:f.quantile[m];
-        forecasts << names[m] << ',' << f.forecast_time << ',' << f.target_time << ',' << f.aggregate_return << ',' << f.realized_variance
+        forecasts << name(m) << ',' << f.forecast_time << ',' << f.target_time << ',' << f.aggregate_return << ',' << f.realized_variance
             << ',' << q << ',' << cfg.exposure << ',' << f.var[m] << ',' << f.target_return << ',' << pnl << ',';
         if (observed) forecasts << ((cfg.exposure<0?-f.target_return:f.target_return)<f.quantile[m]);
         forecasts << ',' << f.evaluated << '\n';
-        risk << names[m] << ',' << f.forecast_time << ',' << f.target_time << ',' << cfg.exposure << ',' << cfg.confidence
+        risk << name(m) << ',' << f.forecast_time << ',' << f.target_time << ',' << cfg.exposure << ',' << cfg.confidence
             << ',' << f.var[m] << ',' << pnl << ',' << f.evaluated << '\n';
     }
     backtest << "model,confidence,n,exceptions,rate,expected_rate,kupiec_p,christoffersen_ind_p,conditional_coverage_p,mean_pinball\n";
-    benchmark << "model,mean_ns,p50_ns,p95_ns,p99_ns,updates_per_second,state_bytes\n";
+    benchmark << "model,mean_ns,p50_ns,p95_ns,p99_ns,updates_per_second,state_bytes,timed_updates,batch_size\n";
+    by_hour << "model,hour,n,exceptions,rate,expected_rate,kupiec_p\n";
+    std::int64_t first_tod=86400, last_tod=-1;
+    for (const auto& f:result.forecasts) if (f.evaluated) {
+        const auto tod=((f.forecast_time%86400)+86400)%86400;
+        first_tod=std::min(first_tod,tod); last_tod=std::max(last_tod,tod);
+    }
+    auto clock_text=[](std::int64_t seconds) {
+        char text[8]; std::snprintf(text,sizeof text,"%02d:%02d",static_cast<int>(seconds/3600),static_cast<int>(seconds%3600/60));
+        return std::string(text);
+    };
     report << "Matched intraday VaR replay\n" << in.description << "\nConfidence: " << cfg.confidence << "; signed exposure: " << cfg.exposure
         << "\nRefit: " << (cfg.refit==RefitSchedule::Daily?"daily rolling":"once") << "; calibrations: " << result.calibrations.size()
         << "\nInitial training cutoff: " << in.cutoff << "; horizon seconds: " << in.horizon_seconds
         << "\nOOS forecast times: " << result.forecasts.size()
         << "\nReturns/quantiles are log returns. Monetary VaR and P&L use expm1 (no linear P&L approximation).\n"
         << "Evaluation: same observed non-overlapping targets for every model; independence excludes session/gap transitions.\n"
-        << "EWMA: fixed lambda=" << cfg.ewma_lambda << "; GARCH: zero-mean Student-t; no diurnal adjustment.\n"
+        << "EWMA: lambda " << (cfg.estimate_lambda?"estimated at each calibration (Gaussian predictive QLIKE)":"fixed at "+std::to_string(cfg.ewma_lambda))
+        << "; GARCH: zero-mean Student-t; baselines " << (result.diurnal?"deseasonalized by the U profile of each training window (r / s_slot)":"without diurnal adjustment") << ".\n"
+        << "Evaluated targets start between " << clock_text(first_tod) << " and " << clock_text(last_tod)
+        << " (exchange clock); CAViaR's feature warm-up excludes earlier targets of each session, so every model is scored on those only.\n"
         << (in.shared?"Baselines: one filter each, raw 15m returns, exact next-bar targets.\n"
             :"Baselines: five staggered filters each, non-overlapping 5m returns per phase, exact next 5m targets; no variance scaling approximation.\n")
-        << "Latency: model update(s) + return quantile + monetary VaR; prepared inputs, no CSV/features/scoring/refit; includes clock overhead.\n"
+        << "Latency: per forecast, model update(s) + return quantile + monetary VaR, timed in batches of " << cfg.benchmark_batch
+        << " over the out-of-sample sequence (clock overhead spread over the batch); prepared inputs, no CSV/features/scoring/refit.\n"
         << "Baselines consume all intervening observations of their timeline; CAViaR consumes complete feature windows.\n"
         << "State bytes: persistent filter and cached quantiles only; excludes history, prepared features, allocator overhead and measurements.\n"
         << "Shorts fit the lower tail of -return. Coverage tests are asymptotic; small tail samples have low power.\n";
@@ -304,34 +443,48 @@ void write_results(const ReplayInput& in,const ReplayConfig& cfg,const ReplayRes
         const auto& c=s.coverage;
         backtest << s.model << ',' << cfg.confidence << ',' << c.n << ',' << c.exceptions << ',' << c.rate << ',' << 1-cfg.confidence
             << ',' << c.p_uc << ',' << c.p_ind << ',' << c.p_cc << ',' << s.mean_pinball << '\n';
-        benchmark << s.model << ',' << s.mean_ns << ',' << s.p50_ns << ',' << s.p95_ns << ',' << s.p99_ns << ',' << s.updates_per_second << ',' << s.state_bytes << '\n';
+        benchmark << s.model << ',' << s.mean_ns << ',' << s.p50_ns << ',' << s.p95_ns << ',' << s.p99_ns << ',' << s.updates_per_second << ',' << s.state_bytes
+            << ',' << s.benchmark_updates << ',' << cfg.benchmark_batch << '\n';
+        for (const auto& h:s.by_hour)
+            by_hour << s.model << ',' << h.hour << ',' << h.coverage.n << ',' << h.coverage.exceptions << ',' << h.coverage.rate
+                << ',' << 1-cfg.confidence << ',' << h.coverage.p_uc << '\n';
         report << s.model << ": n=" << c.n << " exceptions=" << c.exceptions << " rate=" << c.rate << " Kupiec_p=" << c.p_uc
             << " independence_p=" << c.p_ind << " conditional_coverage_p=" << c.p_cc << " mean_pinball=" << s.mean_pinball
             << "\n  mean_ns=" << s.mean_ns << " p50_ns=" << s.p50_ns << " p95_ns=" << s.p95_ns << " p99_ns=" << s.p99_ns
             << " updates_per_second=" << s.updates_per_second << " state_bytes=" << s.state_bytes << '\n';
+        report << "  exception rate by hour of the target start:";
+        for (const auto& h:s.by_hour) report << ' ' << h.hour << "h " << 100*h.coverage.rate << "% (" << h.coverage.exceptions << '/' << h.coverage.n << ')';
+        report << '\n';
     }
-    parameters << "effective_time,training_start,training_end,model,phase,status,fit_ms,beta0,beta1,beta2,beta3,initial_quantile,last_quantile,mean_pinball,constant_pinball,evaluations,ewma_variance,mu,omega,alpha,beta,nu\n";
+    parameters << "effective_time,training_start,training_end,model,phase,status,fit_ms,beta0,beta1,beta2,beta3,initial_quantile,last_quantile,mean_pinball,constant_pinball,evaluations,ewma_variance,mu,omega,alpha,beta,nu,lambda\n";
     for (const auto& c:result.calibrations) {
-        auto emit=[&](std::size_t model,std::size_t phase,const std::string& status,double ms,const std::array<double,15>& values){
-            parameters << c.effective_time << ',' << c.training_start << ',' << c.training_end << ',' << names[model] << ',' << phase << ',' << status << ',' << ms;
+        auto emit=[&](std::size_t model,std::size_t phase,const std::string& status,double ms,const std::array<double,16>& values){
+            parameters << c.effective_time << ',' << c.training_start << ',' << c.training_end << ',' << name(model) << ',' << phase << ',' << status << ',' << ms;
             for (double value:values) { parameters << ','; if (std::isfinite(value)) parameters << value; }
             parameters << '\n';
         };
         const auto& p=c.caviar.params;
-        std::array<double,15> values; values.fill(std::nan(""));
+        std::array<double,16> values; values.fill(std::nan(""));
         values[0]=p.beta0; values[1]=p.beta1; values[2]=p.beta2; values[3]=p.beta3;
         values[4]=c.caviar.initial_quantile; values[5]=c.caviar.last_quantile;
         values[6]=c.caviar.mean_loss; values[7]=c.caviar.constant_loss; values[8]=c.caviar.evaluations;
         emit(0,0,c.status[0],c.elapsed_ms[0],values);
         for (const auto& b:c.baselines) {
-            values.fill(std::nan("")); values[9]=b.ewma_variance;
+            values.fill(std::nan("")); values[9]=b.ewma_variance; values[15]=b.ewma_lambda;
             emit(1,b.phase,b.status[0],b.elapsed_ms[0],values);
             values.fill(std::nan(""));
             std::copy(b.garch_params.begin(),b.garch_params.end(),values.begin()+10);
             emit(2,b.phase,b.status[1],b.elapsed_ms[1],values);
         }
     }
-    for (auto* file:{&forecasts,&risk,&backtest,&parameters,&benchmark,&report}) {
+    if (!result.calibrations.empty() && !result.calibrations.back().diurnal.empty()) {
+        auto profile_file=output("diurnal_profile.csv");
+        profile_file << "slot,factor\n";
+        const auto& profile=result.calibrations.back().diurnal;
+        for (std::size_t k=0;k<profile.size();++k) profile_file << k << ',' << profile[k] << '\n';
+        profile_file.close(); if (!profile_file) throw std::runtime_error("output write failed");
+    }
+    for (auto* file:{&forecasts,&risk,&backtest,&parameters,&benchmark,&report,&by_hour}) {
         file->close(); if (!*file) throw std::runtime_error("output write failed");
     }
 }
