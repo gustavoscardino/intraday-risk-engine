@@ -96,6 +96,11 @@ def main():
     exe = find_exe()
     raw_root = MODULE / "results" / "comparison"
     datasets = [d for d in args.datasets.split(",") if d]
+    # code version, read before anything is written (the output folder itself is not code)
+    commit = subprocess.run(["git", "-C", str(REPO), "rev-parse", "--short", "HEAD"], capture_output=True, text=True).stdout.strip()
+    dirty = subprocess.run(["git", "-C", str(REPO), "status", "--porcelain", "--", "realized_caviar", "ewma/source", "garch_t/source",
+                            f":(exclude){args.out.resolve().relative_to(REPO).as_posix()}" if args.out.resolve().is_relative_to(REPO) else "."],
+                           capture_output=True, text=True).stdout.strip()
 
     jobs = [(ds, row["ticker"]) for ds in datasets for row in read(REPO / "data" / ds / "assets.csv")]
     print(f"{len(jobs)} runs ({', '.join(f'{d}: window {WINDOWS[d]} sessions' for d in datasets)}), {args.jobs} at a time")
@@ -188,9 +193,6 @@ def main():
                           for (ds, m, h), v in sorted(by_hour.items())], ["dataset", "model", "hour", "n", "exceptions", "rate"])
     write("diebold_mariano.csv", dm_rows, list(dm_rows[0]))
 
-    commit = subprocess.run(["git", "-C", str(REPO), "rev-parse", "--short", "HEAD"], capture_output=True, text=True).stdout.strip()
-    dirty = subprocess.run(["git", "-C", str(REPO), "status", "--porcelain", "--", "realized_caviar", "ewma/source", "garch_t/source"],
-                           capture_output=True, text=True).stdout.strip()
     lines = [
         "Matched comparison: Realized-CAViaR, EWMA-N, EWMA-t and GARCH-t on every stock",
         f"VaR confidence {args.confidence:g} (expected exception rate {tau:.2%}); daily rolling calibration;",
