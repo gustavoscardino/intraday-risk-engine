@@ -124,10 +124,11 @@ def epoch_to_iso(v: str) -> str:
     return dt.datetime.fromtimestamp(x, tz=dt.timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
 
 
-CAVIAR_MODELS = {"Realized-CAViaR": "", "EWMA-N": "ewma_", "EWMA-N (ref)": "ewma_", "GARCH-t": "garch_"}
+CAVIAR_MODELS = {"Realized-CAViaR": "", "EWMA-N": "ewma_", "EWMA-N (ref)": "ewma_", "GARCH-t": "garch_",
+                 "EWMA-t": "ewmat_"}
 CAVIAR_COLUMNS = ["forecast_time", "target_time", "net_exposure", "var_99", "quantile", "ewma_var_99",
-                  "ewma_quantile", "garch_var_99", "garch_quantile", "target_return", "realized_pnl", "evaluated",
-                  "update_us"]
+                  "ewma_quantile", "garch_var_99", "garch_quantile", "ewmat_var_99", "ewmat_quantile",
+                  "target_return", "realized_pnl", "evaluated", "update_us"]
 
 
 def caviar_adapter(out: Path) -> None:

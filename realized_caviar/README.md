@@ -1,7 +1,7 @@
 # Realized-CAViaR and matched intraday VaR comparison
 
-C++20 library and replay for `../DECISIONS.md`. Runs Realized-CAViaR, EWMA-N
-and GARCH-t on **the same instrument, forecast timestamps, future return targets,
+C++20 library and replay for `../DECISIONS.md`. Runs Realized-CAViaR, EWMA-N,
+EWMA-t and GARCH-t on **the same instrument, forecast timestamps, future return targets,
 confidence, signed exposure and calibration calendar**. The EWMA and GARCH
 implementations are compiled from the existing modules; their portfolio engines
 and stored reports are unchanged. No external C++ library is needed.
@@ -132,6 +132,36 @@ is identified in the parameter CSV. No optimization occurs during model updates.
 At least 100 observed training labels are required for CAViaR, and at least 100
 observed returns **per baseline phase** for comparison. Use longer data or
 `--caviar-only` for a shorter high-frequency sample.
+
+**EWMA-t.** The EWMA-N sigma (same filter, lambda and U profile) with a
+unit-variance Student-t tail, as in the `ewma` module: at each calibration nu is
+the maximum-likelihood fit (Brent on [2.5, 60], `garch_t`'s estimator) on the
+window's one-step-ahead standardized EWMA residuals (first quarter as burn-in).
+EWMA-N against EWMA-t isolates the tail; EWMA-t against GARCH-t the volatility
+dynamics.
+
+## Comparison over every stock
+
+`run_comparison.bat` / `run_comparison.sh` build, test, and run
+`tools/compare_all.py`: one replay per stock of `data/synthetic` and
+`data/b3_real` with the estimation window **fixed** at 60 and 30 sessions (the
+default, half of the sessions, would depend on the length of the file), then
+consolidated tables in the versioned folder `comparison/`:
+
+| File | Content |
+|---|---|
+| `report.txt` | the tables below, readable, with the configuration and the commit |
+| `summary.csv` | per dataset and model: exceptions pooled over the stocks, Kupiec / CC rejections, mean pinball, stocks with the lowest loss, latency, state size |
+| `by_stock.csv` | the backtest of every stock and model |
+| `by_hour.csv` | exceptions per hour of the target start, pooled over the stocks |
+| `diebold_mariano.csv` | every pair of models, per stock and pooled: mean pinball-loss difference, DM statistic, p-value |
+
+Diebold-Mariano tests whether two models have the same expected pinball loss,
+with a Newey-West variance (Bartlett weights, lag `4 (n/100)^(2/9)`); p-values
+are asymptotic. The pooled test uses, at each target time, the mean loss
+difference over the stocks, so the common market moves are not counted as
+independent evidence. The raw runs stay in `results/comparison/` (not versioned).
+`--confidence C` and `--jobs N` are passed through.
 
 ## Model and monetary risk
 
