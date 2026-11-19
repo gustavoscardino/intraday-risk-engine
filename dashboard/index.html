@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Intraday VaR · Painel</title>
+<meta name="description" content="Painel do TCC: Realized-CAViaR, EWMA e GARCH-t lado a lado. VaR intradiário calculado no navegador pelo mesmo motor C++, compilado para WebAssembly.">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="css/style.css">
+<script src="vendor/echarts.min.js"></script>
+<script type="module" src="js/app.js"></script>
+</head>
+<body>
+<header class="top">
+  <div class="brand">
+    <span class="brand-mark" aria-hidden="true"></span>
+    <div>
+      <p class="brand-title" data-i18n="app.title">VaR intradiário</p>
+      <p class="brand-sub" data-i18n="app.subtitle">Realized-CAViaR × EWMA × GARCH-t</p>
+    </div>
+  </div>
+  <div class="lang" role="group" aria-label="Idioma / Language">
+    <button type="button" data-lang="pt">PT</button>
+    <button type="button" data-lang="en">EN</button>
+  </div>
+</header>
+
+<nav class="tabs" aria-label="Seções">
+  <a href="#overview" data-tab="overview" data-i18n="tab.overview">Visão geral</a>
+  <a href="#how" data-tab="how" data-i18n="tab.how">Como funcionam</a>
+  <a href="#replay" data-tab="replay" data-i18n="tab.replay">Replay ao vivo</a>
+  <a href="#compare" data-tab="compare" data-i18n="tab.compare">Comparação</a>
+  <a href="#quality" data-tab="quality" data-i18n="tab.quality">Arquitetura e qualidade</a>
+  <a href="#method" data-tab="method" data-i18n="tab.method">Método e limitações</a>
+</nav>
+
+<main>
+  <section id="tab-overview" class="tab" hidden></section>
+  <section id="tab-how" class="tab" hidden></section>
+  <section id="tab-replay" class="tab" hidden></section>
+  <section id="tab-compare" class="tab" hidden></section>
+  <section id="tab-quality" class="tab" hidden></section>
+  <section id="tab-method" class="tab" hidden></section>
+</main>
+
+<footer class="foot">
+  <p data-i18n="app.authors">Gabriel Palassi · Gustavo Hess · Gustavo Scardino — orientador: Prof. Dr. Reginaldo Arakaki</p>
+  <p class="foot-meta" id="foot-meta"></p>
+</footer>
+</body>
+</html>
