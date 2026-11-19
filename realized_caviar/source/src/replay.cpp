@@ -23,6 +23,7 @@ using Clock=std::chrono::steady_clock;
 std::string model_name(const ReplayConfig& cfg,bool diurnal,std::size_t m) {
     if (m==0) return "Realized-CAViaR";
     if (m==1) return !diurnal && !cfg.estimate_lambda && cfg.ewma_lambda==.94 ? "EWMA-N (ref)" : "EWMA-N";
+    if (m==3) return "EWMA-t";
     return "GARCH-t";
 }
 double elapsed(Clock::time_point start) {
@@ -41,6 +42,7 @@ struct BaselineState {
     double lambda=.94;
     garcht::GarchFilter garch;
     double student_tail=0;
+    double ewma_nu=8, ewma_t_tail=0;  // EWMA-t: unit-variance t quantile on the EWMA sigma
 };
 // Lambda by Gaussian predictive quasi-likelihood (as in the ewma module): the first quarter of
 // the history sets the starting variance and is not scored.
@@ -50,6 +52,22 @@ double estimate_ewma_lambda(const std::vector<double>& y,double fallback) {
     for (std::size_t i=0;i<burn;++i) if (std::isfinite(y[i])) { squares+=y[i]*y[i]; ++k; }
     if (k<10 || !(squares>0)) return fallback;
     return ewmar::estimate_lambda(y,1,burn,n,{squares/static_cast<double>(k)},.80,.999);
+}
+// One-step-ahead standardized EWMA residuals of a history (first quarter = burn-in, not
+// scored), for the nu of EWMA-t: the same predictive variances the lambda estimate scores.
+std::vector<double> ewma_residuals(const std::vector<double>& y,double lambda) {
+    const std::size_t n=y.size(), burn=std::min(n/2,std::max<std::size_t>(n/4,11));
+    double v=0; std::size_t k=0;
+    for (std::size_t i=0;i<burn;++i) if (std::isfinite(y[i])) { v+=y[i]*y[i]; ++k; }
+    std::vector<double> u;
+    if (k<10 || !(v>0)) return u;
+    v/=static_cast<double>(k);
+    for (std::size_t i=burn;i<n;++i) {
+        if (!std::isfinite(y[i])) continue;
+        u.push_back(y[i]/std::sqrt(v));
+        v=lambda*v+(1-lambda)*y[i]*y[i];
+    }
+    return u;
 }
 struct BenchStats { double mean=0,p50=0,p95=0,p99=0; std::size_t updates=0; };
 // Times `step` (one forecast's model work) in batches, so the clock resolution and overhead
@@ -163,7 +181,7 @@ ReplayResult run_replay(const ReplayInput& in,const ReplayConfig& cfg) {
     if (first==in.windows.end()) throw std::invalid_argument("no out-of-sample forecasts");
     ReplayResult result;
     const double sign=cfg.exposure<0?-1.0:1.0, tau=1-cfg.confidence;
-    const std::size_t models=cfg.compare?3:1;
+    const std::size_t models=cfg.compare?4:1;
     std::optional<Filter> caviar;
     const std::size_t phases=in.shared?1:5;
     std::vector<BaselineState> baselines(phases);
@@ -252,6 +270,20 @@ ReplayResult run_replay(const ReplayInput& in,const ReplayConfig& cfg) {
                 b.ewma_variance=state.ewma(0,0);
                 b.ewma_lambda=state.lambda;
                 b.elapsed_ms[0]=elapsed(start)/1e6;
+                // EWMA-t: nu by maximum likelihood of a unit-variance t (as in the ewma module) on the
+                // window's standardized EWMA residuals; the sigma is EWMA-N's.
+                start=Clock::now();
+                const auto residuals=ewma_residuals(history,state.lambda);
+                if (residuals.size()<100) {
+                    if (result.calibrations.empty()) throw std::invalid_argument("EWMA-t needs at least 100 standardized training residuals");
+                    b.status[2]="previous_fit";
+                } else {
+                    state.ewma_nu=garcht::fit_student_shock(residuals,2.5,60).nu;
+                    b.status[2]="fitted";
+                }
+                state.ewma_t_tail=garcht::math::std_t_ppf(tau,state.ewma_nu);
+                b.ewma_nu=state.ewma_nu;
+                b.elapsed_ms[2]=elapsed(start)/1e6;
                 start=Clock::now();
                 garcht::FitOptions options; options.compute_std_errors=false;
                 const auto fitted=garcht::fit_garch(history,garcht::GarchSpec{},options);
@@ -268,6 +300,7 @@ ReplayResult run_replay(const ReplayInput& in,const ReplayConfig& cfg) {
                 b.garch_params={p.mu,p.omega,p.alpha,p.beta,p.nu};
                 b.elapsed_ms[1]=elapsed(start)/1e6;
                 record.elapsed_ms[1]+=b.elapsed_ms[0]; record.elapsed_ms[2]+=b.elapsed_ms[1];
+                record.elapsed_ms[3]+=b.elapsed_ms[0]+b.elapsed_ms[2];
                 record.baselines.push_back(b);
             }
             return_cursor=static_cast<std::size_t>(stop-in.return_times.begin());
@@ -308,6 +341,7 @@ ReplayResult run_replay(const ReplayInput& in,const ReplayConfig& cfg) {
             f.quantile[1]=normal_tail*std::sqrt(selected.ewma(0,0))*s; f.var[1]=position_var(cfg.exposure,f.quantile[1]);
             f.quantile[2]=(selected.garch.mean()+selected.student_tail*std::sqrt(selected.garch.variance()))*s;
             f.var[2]=position_var(cfg.exposure,f.quantile[2]);
+            f.quantile[3]=selected.ewma_t_tail*std::sqrt(selected.ewma(0,0))*s; f.var[3]=position_var(cfg.exposure,f.quantile[3]);
         }
         // Selection depends on target intervals, not future target availability.
         if (f.forecast_time>=next_evaluation) {
@@ -353,6 +387,15 @@ ReplayResult run_replay(const ReplayInput& in,const ReplayConfig& cfg) {
                 const auto& g=states[selected[i]];
                 return position_var(cfg.exposure,(g.garch.mean()+g.student_tail*std::sqrt(g.garch.variance()))*scale[i]);
             });
+            states=baselines;
+            bench[3]=time_batches(ops,cfg.benchmark_batch,cfg.benchmark_min_updates,[&](std::size_t i) {
+                for (std::size_t j=consumed[i].first;j<consumed[i].second;++j) {
+                    auto& state=states[phase_of[j]];
+                    double r=y[j]/divisor[j]; state.ewma.update(&r,state.lambda);
+                }
+                const auto& e=states[selected[i]];
+                return position_var(cfg.exposure,e.ewma_t_tail*std::sqrt(e.ewma(0,0))*scale[i]);
+            });
         }
     }
     for (std::size_t m=0;m<models;++m) {
@@ -377,9 +420,11 @@ ReplayResult run_replay(const ReplayInput& in,const ReplayConfig& cfg) {
         summary.benchmark_updates=bench[m].updates;
         summary.updates_per_second=summary.mean_ns>0?1e9/summary.mean_ns:std::numeric_limits<double>::infinity();
         // Persistent numeric state: CAViaR 4 coefficients + quantile; EWMA variance + lambda per
-        // phase; GARCH filter + tail factor per phase; the U profile is shared by the baselines.
+        // phase (EWMA-t: + its tail factor); GARCH filter + tail factor per phase; the U profile
+        // is shared by the baselines.
         const std::size_t profile_bytes=profile.size()*sizeof(double);
         summary.state_bytes=m==0?sizeof(Filter):m==1?phases*2*sizeof(double)+profile_bytes
+            :m==3?phases*3*sizeof(double)+profile_bytes
             :phases*(sizeof(garcht::GarchFilter)+sizeof(double))+profile_bytes;
         result.summaries.push_back(summary);
     }
@@ -429,6 +474,7 @@ void write_results(const ReplayInput& in,const ReplayConfig& cfg,const ReplayRes
         << "\nReturns/quantiles are log returns. Monetary VaR and P&L use expm1 (no linear P&L approximation).\n"
         << "Evaluation: same observed non-overlapping targets for every model; independence excludes session/gap transitions.\n"
         << "EWMA: lambda " << (cfg.estimate_lambda?"estimated at each calibration (Gaussian predictive QLIKE)":"fixed at "+std::to_string(cfg.ewma_lambda))
+        << "; EWMA-t: the EWMA-N sigma with a unit-variance t tail, nu estimated at each calibration (maximum likelihood on the standardized EWMA residuals)"
         << "; GARCH: zero-mean Student-t; baselines " << (result.diurnal?"deseasonalized by the U profile of each training window (r / s_slot)":"without diurnal adjustment") << ".\n"
         << "Evaluated targets start between " << clock_text(first_tod) << " and " << clock_text(last_tod)
         << " (exchange clock); CAViaR's feature warm-up excludes earlier targets of each session, so every model is scored on those only.\n"
@@ -475,6 +521,8 @@ void write_results(const ReplayInput& in,const ReplayConfig& cfg,const ReplayRes
             values.fill(std::nan(""));
             std::copy(b.garch_params.begin(),b.garch_params.end(),values.begin()+10);
             emit(2,b.phase,b.status[1],b.elapsed_ms[1],values);
+            values.fill(std::nan("")); values[9]=b.ewma_variance; values[14]=b.ewma_nu; values[15]=b.ewma_lambda;
+            emit(3,b.phase,b.status[2],b.elapsed_ms[0]+b.elapsed_ms[2],values);
         }
     }
     if (!result.calibrations.empty() && !result.calibrations.back().diurnal.empty()) {

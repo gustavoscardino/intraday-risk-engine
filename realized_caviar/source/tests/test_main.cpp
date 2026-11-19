@@ -156,7 +156,14 @@ int main() {
         config.fit_options.starts=2; config.fit_options.max_iterations=120;
         const auto matched=rcaviar::run_replay(input,config);
         require(matched.calibrations.size()==3,"missing daily refits");
-        require(matched.summaries.size()==3,"missing baseline models");
+        require(matched.summaries.size()==4,"missing baseline models");
+        require(matched.summaries[3].model=="EWMA-t","EWMA-t missing");
+        for (const auto& f:matched.forecasts) {  // EWMA-t: same sigma as EWMA-N, heavier 1% tail
+            require(f.quantile[3]<f.quantile[1],"EWMA-t 99% quantile must be beyond the Normal one");
+            close(f.quantile[3]/f.quantile[1],matched.forecasts.front().quantile[3]/matched.forecasts.front().quantile[1],1e-9);
+            if (&f!=&matched.forecasts.front()) break;
+        }
+        for (const auto& c:matched.calibrations) for (const auto& b:c.baselines) require(b.ewma_nu>=2.5 && b.ewma_nu<=60,"EWMA-t nu out of range");
         for (const auto& s:matched.summaries) require(s.coverage.n==72,"models must use identical target sets");
         for (const auto& c:matched.calibrations) require(c.training_end<c.effective_time,"calibration sees forecast future");
         require(matched.calibrations[1].training_start==input.session_starts[1],"window must roll by session");
@@ -165,7 +172,7 @@ int main() {
         for (std::size_t j=0;j<perturbed.returns.size();++j) if (perturbed.return_times[j]>first_time) perturbed.returns[j]*=2;
         for (auto& w:perturbed.windows) if (w.target_time>first_time) w.observation.target_return*=2;
         const auto causal=rcaviar::run_replay(perturbed,config);
-        for (std::size_t m=0;m<3;++m) close(causal.forecasts.front().quantile[m],matched.forecasts.front().quantile[m]);
+        for (std::size_t m=0;m<4;++m) close(causal.forecasts.front().quantile[m],matched.forecasts.front().quantile[m]);
         config.refit=rcaviar::RefitSchedule::Once;
         const auto once=rcaviar::run_replay(input,config);
         require(once.calibrations.size()==1,"once must not refit daily");
@@ -178,7 +185,7 @@ int main() {
         config.refit=rcaviar::RefitSchedule::Once;
         config.exposure=-200000;
         const auto short_run=rcaviar::run_replay(input,config);
-        for (const auto& f:short_run.forecasts) for (std::size_t m=0;m<3;++m)
+        for (const auto& f:short_run.forecasts) for (std::size_t m=0;m<4;++m)
             close(f.var[m],200000*std::expm1(-f.quantile[m]),1e-10);
         // Diurnal baselines: with a strong U shape, the same filter state gives a wider VaR for a
         // target at a volatile slot; returns enter the filters divided by their slot factor.

@@ -1,0 +1,9 @@
+dataset,model,stocks,n,exceptions,rate,expected_rate,kupiec_rejections,cc_rejections,mean_pinball,lowest_pinball_stocks,median_latency_ns,state_bytes
+synthetic,Realized-CAViaR,15,32340,341,0.0105442,0.01,2,0,0.000123186,4,27.5511,40
+synthetic,EWMA-N,15,32340,515,0.0159246,0.01,12,11,0.000124037,1,52.1161,240
+synthetic,EWMA-t,15,32340,377,0.0116574,0.01,0,1,0.000122761,5,51.0808,248
+synthetic,GARCH-t,15,32340,318,0.00983302,0.01,0,0,0.000122207,5,44.1456,280
+b3_real,Realized-CAViaR,15,10782,151,0.0140048,0.01,3,2,9.73747e-05,7,26.2687,40
+b3_real,EWMA-N,15,10782,216,0.0200334,0.01,8,7,0.000103678,0,45.9543,240
+b3_real,EWMA-t,15,10782,177,0.0164162,0.01,3,2,0.000101148,2,46.6097,248
+b3_real,GARCH-t,15,10782,172,0.0159525,0.01,4,2,9.841e-05,6,42.0481,280

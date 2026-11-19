@@ -45,7 +45,7 @@ def fixture(folder):
     return history
 
 
-MODELS = {'Realized-CAViaR', 'EWMA-N', 'GARCH-t'}
+MODELS = {'Realized-CAViaR', 'EWMA-N', 'GARCH-t', 'EWMA-t'}
 
 
 def verify_output(out, exposure, confidence, models=MODELS):
@@ -58,7 +58,7 @@ def verify_output(out, exposure, confidence, models=MODELS):
         assert math.isclose(float(row['realized_pnl']), exposure * math.expm1(target), rel_tol=1e-12, abs_tol=1e-12)
     assert set(groups) == models
     target_sets = [{r['target_time'] for r in group if r['evaluated'] == '1'} for group in groups.values()]
-    assert target_sets[0] == target_sets[1] == target_sets[2]
+    assert all(t == target_sets[0] for t in target_sets)
     assert len(target_sets[0]) == 4*24
     for summary in rows(out / 'backtest_summary.csv'):
         group = [r for r in groups[summary['model']] if r['evaluated'] == '1']
@@ -135,13 +135,14 @@ def high_frequency(exe, root):
     out = root / 'hf'
     subprocess.run([str(exe), '--prices', str(path), '--out', str(out)], check=True, capture_output=True)
     forecasts = rows(out / 'forecasts.csv')
-    assert {r['model'] for r in forecasts} == {'Realized-CAViaR', 'EWMA-N', 'GARCH-t'}
+    assert {r['model'] for r in forecasts} == MODELS
     parameters = rows(out / 'params_daily.csv')
-    assert len(parameters) == 11  # CAViaR + 5 EWMA + 5 GARCH phases
+    assert len(parameters) == 16  # CAViaR + 5 EWMA-N + 5 GARCH-t + 5 EWMA-t phases
     variances = {int(r['phase']): float(r['ewma_variance']) for r in parameters if r['model'] == 'EWMA-N'}
     lambdas = {int(r['phase']): float(r['lambda']) for r in parameters if r['model'] == 'EWMA-N'}
     assert all(.8 <= lam <= .999 for lam in lambdas.values())  # estimated per phase
     cutoff = prices[len(prices)//2][0]
+    ewma_n, t_quantiles = {}, {}
     tail = NormalDist().inv_cdf(1-.99)
     selected = []
     for row in forecasts:
@@ -166,7 +167,17 @@ def high_frequency(exe, root):
                 variances[phase] = lambdas[phase]*variances[phase]+(1-lambdas[phase])*r*r
             expected = tail * math.sqrt(variances[phase])
             assert math.isclose(float(row['quantile']), expected, rel_tol=1e-12)
+            ewma_n[time] = float(row['quantile'])
+        if row['model'] == 'EWMA-t':
+            t_quantiles[time] = float(row['quantile'])
     assert all(a[1] <= b[0] for a, b in zip(selected, selected[1:]))
+    # EWMA-t uses EWMA-N's sigma: per phase the ratio of the two quantiles is the ratio of the tails.
+    nus = {int(r['phase']): float(r['nu']) for r in parameters if r['model'] == 'EWMA-t'}
+    assert all(2.5 <= nu <= 60 for nu in nus.values())
+    ratios = defaultdict(set)
+    for time, q in t_quantiles.items():
+        ratios[(time-200)//60 % 5].add(round(q / ewma_n[time], 9))
+    assert all(len(r) == 1 and next(iter(r)) >= 1 for r in ratios.values())
     assert len(rows(out / 'risk_5m.csv')) == len(forecasts)
     for model in ('Realized-CAViaR', 'EWMA-N', 'GARCH-t'):
         assert [(r['forecast_time'], r['evaluated']) for r in forecasts if r['model'] == model] == [
@@ -196,14 +207,14 @@ def main():
             assert int(row['training_end']) < int(row['effective_time'])
             calendars[row['model']].append((row['effective_time'], row['training_start'], row['training_end']))
         assert len(calendars['Realized-CAViaR']) == 4
-        assert calendars['Realized-CAViaR'] == calendars['EWMA-N'] == calendars['GARCH-t']
+        assert calendars['Realized-CAViaR'] == calendars['EWMA-N'] == calendars['GARCH-t'] == calendars['EWMA-t']
         assert len({r[1] for r in calendars['Realized-CAViaR']}) == 4
         assert len(rows(root / 'daily' / 'diurnal_profile.csv')) == 28
         run(exe, data, root / 'once', '--refit', 'once')
-        assert len(rows(root / 'once' / 'params_daily.csv')) == 3
+        assert len(rows(root / 'once' / 'params_daily.csv')) == 4
         # RiskMetrics reference: fixed lambda .94, raw returns -> named EWMA-N (ref).
         run(exe, data, root / 'reference', '--refit', 'once', '--diurnal', 'off', '--lambda', '.94')
-        verify_output(root / 'reference', 100000, .99, {'Realized-CAViaR', 'EWMA-N (ref)', 'GARCH-t'})
+        verify_output(root / 'reference', 100000, .99, {'Realized-CAViaR', 'EWMA-N (ref)', 'GARCH-t', 'EWMA-t'})
         assert not (root / 'reference' / 'diurnal_profile.csv').exists()
         assert {float(r['lambda']) for r in rows(root / 'reference' / 'params_daily.csv') if r['model'] == 'EWMA-N (ref)'} == {.94}
         run(exe, data, root / 'short', '--refit', 'once', '--exposure', '-200000', '--confidence', '.95')

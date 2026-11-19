@@ -36,21 +36,22 @@ struct Forecast {
     std::int64_t forecast_time=0, target_time=0;
     double aggregate_return=0, realized_variance=0, target_return=0;
     // Quantiles are on signed returns: r for longs, -r for shorts.
-    std::array<double,3> quantile{}, var{};
+    // Models: 0 Realized-CAViaR, 1 EWMA-N, 2 GARCH-t, 3 EWMA-t (same EWMA sigma as 1, t tail).
+    std::array<double,4> quantile{}, var{};
     bool evaluated=false;
 };
 struct BaselineCalibration {
     std::size_t phase=0;
-    double ewma_variance=0, ewma_lambda=0;
+    double ewma_variance=0, ewma_lambda=0, ewma_nu=0;
     std::array<double,5> garch_params{}; // mu, omega, alpha, beta, nu
-    std::array<double,2> elapsed_ms{};
-    std::array<std::string,2> status;
+    std::array<double,3> elapsed_ms{};   // EWMA, GARCH-t, EWMA-t (nu)
+    std::array<std::string,3> status;
 };
 struct Calibration {
     std::int64_t effective_time=0, training_start=0, training_end=0;
     FitResult caviar;
-    std::array<double,3> elapsed_ms{};
-    std::array<std::string,3> status;
+    std::array<double,4> elapsed_ms{};
+    std::array<std::string,4> status;
     std::vector<BaselineCalibration> baselines;
     std::vector<double> diurnal;  // baseline U factor per slot; empty = no adjustment
 };
