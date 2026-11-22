@@ -88,9 +88,10 @@ Shared mode uses the existing loader and return conventions: first bar
 but only the selected instrument is modeled. No target crosses the session
 close. A missing price inside the feature hour merges the two returns around it
 (the squared returns of any partition of the hour add up to an unbiased realized
-variance), so one missing bar no longer removes four forecasts; a window with
-more than one missing price, or without the price at its start or end, is
-skipped. A missing future target does not suppress an observed feature update. Baselines process every available
+variance) and leaves the aggregate return exact, so one missing bar no longer
+removes four forecasts and a two-bar halt after a shock does not hide it; a
+window with three or more missing prices, or without the price at its start or
+end, is skipped. A missing future target does not suppress an observed feature update. Baselines process every available
 bar, including session warmup, and missing grid slots advance GARCH by its
 conditional expectation. GARCH uses zero-mean standardized t innovations; no
 EVT. These are single-instrument baselines, not the enriched portfolio outputs

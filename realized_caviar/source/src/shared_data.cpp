@@ -35,8 +35,10 @@ std::vector<Window> make_bar_windows(const garcht::BarPanel& panel, std::size_t 
                                 : (have(0) ? price(panel.close,at[0]) : std::nan(""));
         if (!std::isfinite(start)) continue;
         // R and RV from the returns between consecutive available prices. Their squares add up to an
-        // unbiased realized variance for any partition of the hour, so one missing interior price
-        // only merges two returns. A window with more than one missing price is dropped.
+        // unbiased realized variance for any partition of the hour, so a missing interior price only
+        // merges two returns, and R is exact whenever the prices at the start and end are known. Up to
+        // two of the four closes may be missing (a two-bar halt after a shock still reaches the
+        // features); a window with three missing closes is dropped.
         int missing=0;
         double aggregate=0,rv=0,prev=start;
         bool prev_is_last=true;  // the previous available price is the one just before (no merge)
@@ -49,7 +51,7 @@ std::vector<Window> make_bar_windows(const garcht::BarPanel& panel, std::size_t 
             aggregate+=r; rv+=r*r;
             prev=c; prev_is_last=true;
         }
-        if (missing>1 || !std::isfinite(aggregate) || !std::isfinite(rv)) continue;
+        if (missing>2 || !std::isfinite(aggregate) || !std::isfinite(rv)) continue;
         // Forecast existence depends on observed features, never future data.
         // A missing next bar has an unscorable target but still updates q.
         double target=std::nan("");
