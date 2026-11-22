@@ -1,0 +1,3 @@
+# The WebAssembly engine package: its loader (rcaviar.js) reads rcaviar.data at fixed byte offsets,
+# so git must store these files byte for byte (no end-of-line conversion).
+engine/* -text

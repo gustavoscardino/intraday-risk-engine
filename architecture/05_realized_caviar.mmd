@@ -10,7 +10,7 @@ flowchart LR
         direction TB
         DA["data · shared_data<br/>janelas causais: R, RV e alvo futuro<br/>sem atravessar o pernoite"]
         CAL["Calibração diária comum (fora do caminho crítico)<br/>CAViaR: perda pinball · EWMA: λ por QLIKE<br/>GARCH-t: máxima verossimilhança · perfil U"]
-        FL["Modelos online, mesmos alvos e exposição<br/>Realized-CAViaR: q(t+1) = β0 + β1·q(t) + β2·|R(t)| + β3·√RV(t)<br/>EWMA-N e GARCH-t sobre r / s(horário)"]
+        FL["Modelos online, mesmos alvos e exposição<br/>Realized-CAViaR: q(t+1) = β0 + β1·q(t) + β2·|R(t)| + β3·√RV(t)<br/>EWMA-N, EWMA-t e GARCH-t sobre r / s(horário)"]
         DA --> CAL --> FL
     end
 

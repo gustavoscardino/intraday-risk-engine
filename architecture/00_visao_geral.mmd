@@ -10,7 +10,7 @@ flowchart LR
         direction TB
         GT["garch_t/ · C++17<br/>GARCH(1,1)-t por ação · carteira<br/>correlação dinâmica · cauda EVT<br/>opções por Monte Carlo"]
         EW["ewma/ · C++17<br/>EWMA-N (ref) · EWMA-N · EWMA-t · carteira<br/>camada de qualidade de dados"]
-        RC["realized_caviar/ · C++20<br/>Realized-CAViaR × EWMA-N × GARCH-t<br/>mesma ação, mesmos alvos e calibração<br/>reutiliza código do garch_t e do ewma"]
+        RC["realized_caviar/ · C++20<br/>Realized-CAViaR × EWMA-N × EWMA-t × GARCH-t<br/>mesma ação, mesmos alvos e calibração<br/>reutiliza código do garch_t e do ewma"]
         GT ~~~ EW ~~~ RC
     end
 
