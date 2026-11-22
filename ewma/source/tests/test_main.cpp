@@ -614,6 +614,33 @@ TEST(replay_first_forecast_and_window) {
     CHECK(threw);
 }
 
+TEST(replay_cut_inside_a_session) {
+    // A feed cut at the first bar of a session (as a live feed is at any moment) is not the end of
+    // that session: the overnight forecast issued at the previous close is scored at that first bar,
+    // as in the whole replay, and no end-of-day work runs on the cut.
+    SimMarket m = simulate_market(2, 25, 28, 5);
+    ReplayInput in;
+    in.tickers = m.feed.tickers;
+    in.feed = m.feed;
+    in.initial_quantity = {100, -50};
+    ReplayConfig cfg;
+    cfg.window_days = 20;
+    const ReplayResult whole = run_replay(in, cfg);
+    const int cut_day = m.days[23];
+    in.feed.rows.erase(std::remove_if(in.feed.rows.begin(), in.feed.rows.end(), [&](const RawRow& r) {
+                           return r.time.ymd > cut_day || (r.time.ymd == cut_day && r.time.minute > 615);  // keep its first bar
+                       }),
+                       in.feed.rows.end());
+    const ReplayResult cut = run_replay(in, cfg);
+    CHECK(cut.overnight.size() == 4 && whole.overnight.size() == 5);
+    bool same = cut.overnight.size() <= whole.overnight.size();
+    for (size_t i = 0; same && i < cut.overnight.size(); ++i)
+        same = cut.overnight[i].forecast_time == whole.overnight[i].forecast_time &&
+               cut.overnight[i].target_time == whole.overnight[i].target_time && cut.overnight[i].pnl == whole.overnight[i].pnl;
+    CHECK(same);
+    CHECK(cut.daily.size() + 2 == whole.daily.size());  // no refit at the cut (the last two closes are missing)
+}
+
 // ------------------------------------------------------------------ runner
 
 int main() {

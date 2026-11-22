@@ -75,7 +75,10 @@ ReplayResult run_replay(const ReplayInput& in, const ReplayConfig& cfg) {
         throw std::runtime_error("the data has " + std::to_string(res.sessions) + " sessions; a window of " +
                                  std::to_string(cfg.window_days) + " days needs at least one more session");
     std::vector<char> eod(T, 0);
-    for (size_t t = 0; t < T; ++t) eod[t] = t + 1 == T || P.ymd[t + 1] != P.ymd[t];
+    // A session ends where the next one starts; the last bar of the data ends its session only if it is
+    // the last slot of the grid: a feed cut inside a session (as a live feed is at any moment) must not
+    // run the end-of-day work, or the pending overnight forecast would be replaced before its outcome.
+    for (size_t t = 0; t < T; ++t) eod[t] = t + 1 == T ? P.slot[t] == K - 1 : P.ymd[t + 1] != P.ymd[t];
 
     EngineConfig ecfg = cfg.engine;
     ecfg.bars_per_day = K;

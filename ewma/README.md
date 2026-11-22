@@ -324,7 +324,7 @@ the largest difference is 7%, at the bar where the bad tick was still undecided.
 
 ## Tests and validation
 
-`build.bat` (or `build.sh`) rebuilds and runs **27 unit tests (415 checks)** and 4 end-to-end
+`build.bat` (or `build.sh`) rebuilds and runs **28 unit tests (418 checks)** and 4 end-to-end
 replays (clean, faulty with and without DQ, B3). They cover:
 
 - **Math:** Φ⁻¹, t distribution (cdf, pdf, quantile), incomplete beta and χ² against SciPy, deep in
@@ -338,6 +338,8 @@ replays (clean, faulty with and without DQ, B3). They cover:
 - **Data quality:** each rule on a small series with its fault injected; score, modes and
   hysteresis; bad tick vs real jump inside a replay.
 - **Data:** CSV formats, decimal comma, time zones, B3 calendar, return conventions.
+- **Replay:** a feed cut inside a session leaves every earlier forecast, overnight one included,
+  as in the whole replay.
 
 **Performance** (`results/benchmark.txt`, 40-session window; timings vary by up to a factor of two
 between sessions on the same laptop):
