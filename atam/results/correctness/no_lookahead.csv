@@ -1,13 +1,13 @@
 variant,cut,cut_position,test,window_days,compared_cells,changed_cells,missing_rows,extra_rows,examples,later_forecasts,later_changed_pct
-ewma,2026-06-09 12:00:00,mid-session,perturbation,40,29767,0,0,0,,2312,100
-ewma,2026-06-09 12:00:00,mid-session,truncation,40,29732,0,0,0,,,
-ewma,2026-06-09 12:00:00,mid-session,"truncation, fixed window",40,29732,0,0,0,,,
-ewma,2026-07-16 17:00:00,end of session (daily refit),perturbation,40,59953,0,0,0,,1536,100
-ewma,2026-07-16 17:00:00,end of session (daily refit),truncation,40,59900,0,0,0,,,
-ewma,2026-07-16 17:00:00,end of session (daily refit),"truncation, fixed window",40,59900,0,0,0,,,
-ewma,2026-08-24 10:15:00,first bar of a session,perturbation,40,88193,0,0,0,,810,100
-ewma,2026-08-24 10:15:00,first bar of a session,truncation,40,88158,0,0,0,,,
-ewma,2026-08-24 10:15:00,first bar of a session,"truncation, fixed window",40,88158,0,0,0,,,
+ewma,2026-06-09 12:00:00,mid-session,perturbation,40,30532,0,0,0,,2312,100
+ewma,2026-06-09 12:00:00,mid-session,truncation,40,30496,0,0,0,,,
+ewma,2026-06-09 12:00:00,mid-session,"truncation, fixed window",40,30496,0,0,0,,,
+ewma,2026-07-16 17:00:00,end of session (daily refit),perturbation,40,61494,0,0,0,,1536,100
+ewma,2026-07-16 17:00:00,end of session (daily refit),truncation,40,61440,0,0,0,,,
+ewma,2026-07-16 17:00:00,end of session (daily refit),"truncation, fixed window",40,61440,0,0,0,,,
+ewma,2026-08-24 10:15:00,first bar of a session,perturbation,40,90460,0,0,0,,810,100
+ewma,2026-08-24 10:15:00,first bar of a session,truncation,40,90424,0,0,0,,,
+ewma,2026-08-24 10:15:00,first bar of a session,"truncation, fixed window",40,90424,0,0,0,,,
 garch_t,2026-06-09 12:00:00,mid-session,perturbation,40,28669,0,0,0,,2312,100
 garch_t,2026-06-09 12:00:00,mid-session,truncation,40,28644,0,0,0,,,
 garch_t,2026-06-09 12:00:00,mid-session,"truncation, fixed window",40,28644,0,0,0,,,

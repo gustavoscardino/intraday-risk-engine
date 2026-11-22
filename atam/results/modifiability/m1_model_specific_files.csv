@@ -1,13 +1,6 @@
 engine,file
-ewma,ewma/source/apps/ewma_risk.cpp
 ewma,ewma/source/include/ewmar/engine.hpp
-ewma,ewma/source/include/ewmar/replay.hpp
 ewma,ewma/source/src/engine.cpp
-ewma,ewma/source/src/replay.cpp
-garch_t,garch_t/source/apps/intraday_risk.cpp
-garch_t,garch_t/source/include/garcht/portfolio.hpp
-garch_t,garch_t/source/include/garcht/replay.hpp
-garch_t,garch_t/source/src/portfolio.cpp
 garch_t,garch_t/source/src/replay.cpp
 realized_caviar,realized_caviar/source/include/rcaviar/replay.hpp
 realized_caviar,realized_caviar/source/src/replay.cpp

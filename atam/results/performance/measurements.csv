@@ -1,64 +1,66 @@
 scenario,variant,metric,value,unit,detail
-P1,ewma,latency_max_without_fill_bars_us,52.9,us,0 of the 5 slowest bars of run 1 applied a fill
-P1,ewma,latency_p50_us_no_book,1.3,us,"same replay without the option book (--no-options), median of runs"
-P1,ewma,latency_p99_us_no_book,4.005,us,"same replay without the option book (--no-options), median of runs"
-P1,ewma,latency_p99_us,10.98,us,"p50 1.30, p95 2.90, p99 10.98, max 52.9 us; median of 3 runs (2966 intraday bars each)"
-P1,ewma,latency_p50_us,1.3,us,
-P1,ewma,latency_p95_us,2.9,us,
-P3,ewma,refit_max_ms,7.819,ms,"daily refit in the replay: p50 4.32 ms, max 7.82 ms (111 refits, median of 3 runs)"
-P3,ewma,refit_p50_ms,4.323,ms,
-P1,ewma,latency_max_us,52.9,us,
+P1,ewma,latency_max_without_fill_bars_us,91.3,us,0 of the 5 slowest bars of run 1 applied a fill
+P1,ewma,latency_p50_us_no_book,1.7,us,"same replay without the option book (--no-options), per-bar minimum of the replays"
+P1,ewma,latency_p99_us_no_book,2.8,us,"same replay without the option book (--no-options), per-bar minimum of the replays"
+P1,ewma,latency_p99_us,2.9,us,"p50 1.70, p95 2.00, p99 2.90, max 13.0 us; per-bar minimum of 3 replays (2966 intraday bars), the operating system's interruptions removed; raw p99 of each replay 14.27-14.90 us"
+P1,ewma,latency_p99_us_raw,14.9,us,median over the replays of each replay's own p99 (14.27-14.90 us)
+P1,ewma,latency_p50_us,1.7,us,
+P1,ewma,latency_p95_us,2,us,
+P3,ewma,refit_max_ms,6.41,ms,"daily refit in the replay: p50 4.00 ms, max 6.41 ms (111 refits, median of 3 runs)"
+P3,ewma,refit_p50_ms,4.005,ms,
+P1,ewma,latency_max_us,13,us,
 P4,ewma,state_bytes_per_asset,,n/a,portfolio engine: the state per stock grows with the estimation window (40 sessions of returns kept for the daily refit) and with the book (a row of the n x n correlation); the per-instrument filter states are compared in the matched model-stage benchmark
-P1,ewma,latency_p50_us_min,1.3,us,3 runs
-P1,ewma,latency_p50_us_max,1.4,us,3 runs
-P1,ewma,latency_p99_us_min,8.67,us,3 runs
-P1,ewma,latency_p99_us_max,15.035,us,3 runs
-P1,garch_t,latency_max_without_fill_bars_us,95.9,us,0 of the 5 slowest bars of run 1 applied a fill
-P1,garch_t,mc_revaluation_p50_us,7631.5,us,"per-bar Monte Carlo revaluation of the option book, timed apart from update_us"
-P1,garch_t,latency_p50_us_no_book,1.3,us,"same replay without the option book (--no-options), median of runs"
-P1,garch_t,latency_p99_us_no_book,2.6,us,"same replay without the option book (--no-options), median of runs"
-P1,garch_t,latency_p99_us,18.435,us,"p50 3.80, p95 8.38, p99 18.43, max 95.9 us; median of 3 runs (2966 intraday bars each)"
-P1,garch_t,latency_p50_us,3.8,us,
-P1,garch_t,latency_p95_us,8.375,us,
-P3,garch_t,refit_max_ms,118.4,ms,"daily refit in the replay: p50 38.21 ms, max 118.40 ms (111 refits, median of 3 runs)"
-P3,garch_t,refit_p50_ms,38.21,ms,
-P1,garch_t,latency_max_us,95.9,us,
+P1,ewma,latency_p50_us_min,1.7,us,per-bar minimum over each pair of replays
+P1,ewma,latency_p50_us_max,1.7,us,per-bar minimum over each pair of replays
+P1,ewma,latency_p99_us_min,3,us,per-bar minimum over each pair of replays
+P1,ewma,latency_p99_us_max,3,us,per-bar minimum over each pair of replays
+P1,garch_t,latency_max_without_fill_bars_us,65,us,0 of the 5 slowest bars of run 1 applied a fill
+P1,garch_t,mc_revaluation_p50_us,6853.7,us,"per-bar Monte Carlo revaluation of the option book, off the bar thread (mc_us)"
+P1,garch_t,latency_p50_us_no_book,2.2,us,"same replay without the option book (--no-options), per-bar minimum of the replays"
+P1,garch_t,latency_p99_us_no_book,5,us,"same replay without the option book (--no-options), per-bar minimum of the replays"
+P1,garch_t,latency_p99_us,5,us,"p50 2.30, p95 2.90, p99 5.00, max 9.3 us; per-bar minimum of 3 replays (2966 intraday bars), the operating system's interruptions removed; raw p99 of each replay 6.43-8.41 us"
+P1,garch_t,latency_p99_us_raw,7.6,us,median over the replays of each replay's own p99 (6.43-8.41 us)
+P1,garch_t,latency_p50_us,2.3,us,
+P1,garch_t,latency_p95_us,2.9,us,
+P3,garch_t,refit_max_ms,105.54,ms,"daily refit in the replay: p50 31.82 ms, max 105.54 ms (111 refits, median of 3 runs)"
+P3,garch_t,refit_p50_ms,31.82,ms,
+P1,garch_t,latency_max_us,9.3,us,
 P4,garch_t,state_bytes_per_asset,,n/a,portfolio engine: the state per stock grows with the estimation window (40 sessions of returns kept for the daily refit) and with the book (a row of the n x n correlation); the per-instrument filter states are compared in the matched model-stage benchmark
-P1,garch_t,latency_p50_us_min,3.8,us,3 runs
-P1,garch_t,latency_p50_us_max,4,us,3 runs
-P1,garch_t,latency_p99_us_min,18.335,us,3 runs
-P1,garch_t,latency_p99_us_max,18.9,us,3 runs
-P1,ewma_nodq,latency_p50_us,1.2,us,median of 3 runs
-P1,ewma_nodq,latency_p99_us,5.07,us,median of 3 runs
-P1,ewma_nodq,latency_p50_us_min,1.2,us,3 runs
-P1,ewma_nodq,latency_p50_us_max,1.3,us,3 runs
-P1,ewma_nodq,latency_p99_us_min,4.67,us,3 runs
-P1,ewma_nodq,latency_p99_us_max,9.64,us,3 runs
-P1,garch_t_nojump,latency_p50_us,3.4,us,median of 3 runs
-P1,garch_t_nojump,latency_p99_us,17.9,us,median of 3 runs
-P1,garch_t_nojump,latency_p50_us_min,3.1,us,3 runs
-P1,garch_t_nojump,latency_p50_us_max,3.5,us,3 runs
-P1,garch_t_nojump,latency_p99_us_min,16.835,us,3 runs
-P1,garch_t_nojump,latency_p99_us_max,18.935,us,3 runs
-P1,garch_t_zclip6,latency_p50_us,2.7,us,median of 3 runs
-P1,garch_t_zclip6,latency_p99_us,16.435,us,median of 3 runs
-P1,garch_t_zclip6,latency_p50_us_min,2.6,us,3 runs
-P1,garch_t_zclip6,latency_p50_us_max,3.7,us,3 runs
-P1,garch_t_zclip6,latency_p99_us_min,15.935,us,3 runs
-P1,garch_t_zclip6,latency_p99_us_max,18.57,us,3 runs
-P2,ewma,scale200_p50_us,111.9,us,"200 assets, median per bar; p99 233.0 us"
-P2,garch_t,scale200_p50_us,151.4,us,"200 assets, median per bar; the benchmark reports no p99"
+P1,garch_t,latency_p50_us_min,2.3,us,per-bar minimum over each pair of replays
+P1,garch_t,latency_p50_us_max,2.4,us,per-bar minimum over each pair of replays
+P1,garch_t,latency_p99_us_min,5.1,us,per-bar minimum over each pair of replays
+P1,garch_t,latency_p99_us_max,5.135,us,per-bar minimum over each pair of replays
+P1,ewma_nodq,latency_p50_us,1.1,us,per-bar minimum of 3 replays
+P1,ewma_nodq,latency_p99_us,1.835,us,per-bar minimum of 3 replays
+P1,ewma_nodq,latency_p50_us_min,1.2,us,per-bar minimum over each pair of replays
+P1,ewma_nodq,latency_p50_us_max,1.2,us,per-bar minimum over each pair of replays
+P1,ewma_nodq,latency_p99_us_min,1.935,us,per-bar minimum over each pair of replays
+P1,ewma_nodq,latency_p99_us_max,2,us,per-bar minimum over each pair of replays
+P1,garch_t_nojump,latency_p50_us,1.7,us,per-bar minimum of 3 replays
+P1,garch_t_nojump,latency_p99_us,3,us,per-bar minimum of 3 replays
+P1,garch_t_nojump,latency_p50_us_min,1.7,us,per-bar minimum over each pair of replays
+P1,garch_t_nojump,latency_p50_us_max,1.7,us,per-bar minimum over each pair of replays
+P1,garch_t_nojump,latency_p99_us_min,3,us,per-bar minimum over each pair of replays
+P1,garch_t_nojump,latency_p99_us_max,3.1,us,per-bar minimum over each pair of replays
+P1,garch_t_zclip6,latency_p50_us,1.8,us,per-bar minimum of 3 replays
+P1,garch_t_zclip6,latency_p99_us,3.1,us,per-bar minimum of 3 replays
+P1,garch_t_zclip6,latency_p50_us_min,1.8,us,per-bar minimum over each pair of replays
+P1,garch_t_zclip6,latency_p50_us_max,1.8,us,per-bar minimum over each pair of replays
+P1,garch_t_zclip6,latency_p99_us_min,3.1,us,per-bar minimum over each pair of replays
+P1,garch_t_zclip6,latency_p99_us_max,3.3,us,per-bar minimum over each pair of replays
+P2,ewma,scale200_p50_us,127.3,us,"200 assets, median per bar; p99 265.5 us"
+P2,garch_t,scale200_p50_us,88.4,us,"200 assets, median per bar; the benchmark reports no p99"
 P2,realized_caviar,scale200_p50_us,,n/a,single-instrument engine: there is no multi-asset mode; a book of N stocks is N independent runs and no portfolio VaR
-P1,realized_caviar,latency_p99_us,,n/a,"model stage of one instrument (no features, CSV or scoring); percentiles of 1000-update batch means, so not comparable with a per-bar p99: CAViaR p50 17.5 ns, p99 of batch means 46.5 ns"
-P1,realized_caviar,model_stage_p50_us,0.0175,us,"model stage of one instrument (no features, CSV or scoring); percentiles of 1000-update batch means, so not comparable with a per-bar p99"
-P1,realized_caviar,model_stage_p50_ns:Realized-CAViaR,17.5,ns,median of batch means
-P1,realized_caviar,model_stage_p50_ns:EWMA-N,27,ns,median of batch means
-P1,realized_caviar,model_stage_p50_ns:GARCH-t,24.5,ns,median of batch means
-P1,realized_caviar,model_stage_p50_ns:EWMA-t,27,ns,median of batch means
+P1,realized_caviar,latency_p99_us,,n/a,"model stage of one instrument (no features, CSV or scoring); percentiles of 1000-update batch means, so not comparable with a per-bar p99: CAViaR p50 16.3 ns, p99 of batch means 48.5 ns"
+P1,realized_caviar,model_stage_p50_us,0.0163,us,"model stage of one instrument (no features, CSV or scoring); percentiles of 1000-update batch means, so not comparable with a per-bar p99"
+P1,realized_caviar,model_stage_p50_ns:Realized-CAViaR,16.3,ns,median of batch means
+P1,realized_caviar,model_stage_p50_ns:EWMA-N,25.3,ns,median of batch means
+P1,realized_caviar,model_stage_p50_ns:GARCH-t,23.3,ns,median of batch means
+P1,realized_caviar,model_stage_p50_ns:EWMA-t,24.7,ns,median of batch means
 P4,realized_caviar,state_bytes:Realized-CAViaR,40,bytes,
 P4,realized_caviar,state_bytes:EWMA-N,240,bytes,
 P4,realized_caviar,state_bytes:GARCH-t,280,bytes,
 P4,realized_caviar,state_bytes:EWMA-t,248,bytes,
-P3,realized_caviar,refit_max_ms,40.6196,ms,"daily calibration of CAViaR + EWMA-N + GARCH-t on XPET3: p50 22.7 ms, max 40.6 ms"
-P3,realized_caviar,refit_p50_ms,22.66025,ms,
+P3,realized_caviar,refit_max_ms,38.4798,ms,"daily calibration of CAViaR + EWMA-N + GARCH-t on XPET3: p50 24.6 ms, max 38.5 ms"
+P3,realized_caviar,refit_p50_ms,24.58255,ms,
 P4,realized_caviar,state_bytes_per_asset,40,bytes,"persistent model state per instrument: Realized-CAViaR 40 B, EWMA-N 240 B, GARCH-t 280 B, EWMA-t 248 B"

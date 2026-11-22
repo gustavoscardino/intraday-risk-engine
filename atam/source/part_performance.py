@@ -110,10 +110,10 @@ def _figure(lat: dict, bench: dict) -> str:
 
     fig, (a1, a2) = plt.subplots(1, 2, figsize=SLIDE, gridspec_kw={"width_ratios": [1, 1.15]})
     fig.subplots_adjust(left=0.075, right=0.985, top=0.775, bottom=0.11, wspace=0.22)
-    heading(fig, "P1/P2 - Portfolio engines: VaR updated in microseconds; the option book sets the latency tail",
+    heading(fig, "P1/P2 - Portfolio engines: VaR updated in microseconds, with or without the option book",
             "Left: per-bar engine latency in the replay of the synthetic market (15 stocks, intraday bars, end-of-"
-            "session refit excluded), median of three runs;\ndiamonds: the same replay without the option book (S-7). "
-            "Right: median per-bar latency from each engine's benchmark program as the book grows")
+            "session refit excluded), per-bar minimum of three replays;\ndiamonds: the same replay without the option "
+            "book. Right: median per-bar latency from each engine's benchmark program as the book grows")
     keys = list(lat)
     stats = ["p50", "p95", "p99"]
     width = 0.36
@@ -133,13 +133,16 @@ def _figure(lat: dict, bench: dict) -> str:
     a1.set_xticks(range(len(stats)), stats)
     a1.set_ylabel("per-bar latency (us)")
     a1.legend(loc="upper left", bbox_to_anchor=(0.0, 0.93))
+    last = {ek: by_n[max(by_n)]["bar_p50_us"] for ek, by_n in bench.items()}
     for ek, by_n in bench.items():
         ns = sorted(by_n)
         ys = [by_n[n]["bar_p50_us"] for n in ns]
         a2.plot(ns, ys, marker="o", markersize=7, markeredgecolor=SURFACE, markeredgewidth=1.5,
                 color=ENGINE_COLOR[ek], label=ENGINES[ek].label)
-        a2.annotate(f"{ys[-1]:.0f} us", (ns[-1], ys[-1]), xytext=(-10, 8 if ek == "garch_t" else -14),
-                    textcoords="offset points", ha="right", fontsize=10, color=INK_2)
+        top = ys[-1] >= max(last.values())  # the higher end point labeled above, the lower one below
+        a2.annotate(f"{ys[-1]:.0f} us", (ns[-1], ys[-1]), xytext=(-10, 8 if top else -16),
+                    textcoords="offset points", ha="right", va="bottom" if top else "top", fontsize=10,
+                    color=ENGINE_COLOR[ek])
     a2.set_xscale("log")
     a2.set_yscale("log")
     a2.axhline(1000, color=MUTED, linewidth=0.8)

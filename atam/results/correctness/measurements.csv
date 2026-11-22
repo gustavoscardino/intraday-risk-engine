@@ -3,23 +3,23 @@ C1,ewma,lookahead_changed_cells,0,cells,"perturbation 0; truncation 0 (default w
 C1,ewma,c1_perturbation_changed,0,cells,
 C1,ewma,c1_truncation_changed,0,cells,
 C1,ewma,c1_truncation_fixed_window_changed,0,cells,
-C1,ewma,c1_compared_cells,533493,cells,
+C1,ewma,c1_compared_cells,547206,cells,
 C1,ewma,c1_power_pct,100,%,share of forecasts issued after T whose VaR 99% changed under perturbation
-Rp1,ewma,repro_differing_cells,0,cells,"3 runs, 247820 cells compared, timing columns excluded"
-Rp1,ewma,repro_compared_cells,247820,cells,
+Rp1,ewma,repro_differing_cells,0,cells,"3 runs, 254446 cells compared, timing columns excluded"
+Rp1,ewma,repro_compared_cells,254446,cells,
 C1,garch_t,lookahead_changed_cells,0,cells,"perturbation 0; truncation 0 (default window resolved from the file length); truncation with --window-days 40: 0 changed cells, 0 missing and 0 extra rows"
 C1,garch_t,c1_perturbation_changed,0,cells,
 C1,garch_t,c1_truncation_changed,0,cells,
 C1,garch_t,c1_truncation_fixed_window_changed,0,cells,
 C1,garch_t,c1_compared_cells,512909,cells,
 C1,garch_t,c1_power_pct,100,%,share of forecasts issued after T whose VaR 99% changed under perturbation
-Rp1,garch_t,repro_differing_cells,0,cells,"3 runs, 244966 cells compared, timing columns excluded"
-Rp1,garch_t,repro_compared_cells,244966,cells,
+Rp1,garch_t,repro_differing_cells,0,cells,"3 runs, 245016 cells compared, timing columns excluded"
+Rp1,garch_t,repro_compared_cells,245016,cells,
 C1,realized_caviar,lookahead_changed_cells,0,cells,"perturbation 0; truncation 0 (default window resolved from the file length); truncation with --window-days 40: 0 changed cells, 0 missing and 0 extra rows"
 C1,realized_caviar,c1_perturbation_changed,0,cells,
 C1,realized_caviar,c1_truncation_changed,0,cells,
 C1,realized_caviar,c1_truncation_fixed_window_changed,0,cells,
 C1,realized_caviar,c1_compared_cells,190065,cells,
 C1,realized_caviar,c1_power_pct,100,%,share of forecasts issued after T whose VaR 99% changed under perturbation
-Rp1,realized_caviar,repro_differing_cells,0,cells,"3 runs, 515864 cells compared, timing columns excluded"
-Rp1,realized_caviar,repro_compared_cells,515864,cells,
+Rp1,realized_caviar,repro_differing_cells,0,cells,"3 runs, 516224 cells compared, timing columns excluded"
+Rp1,realized_caviar,repro_compared_cells,516224,cells,

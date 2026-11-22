@@ -447,7 +447,7 @@ def _f_fault_catalogue(m: M):
         return Finding("risk", "R-9", "Moderate doses of every recoverable fault still move the VaR",
                        "On faulty copies of both datasets with missing, duplicated, out-of-order and late rows, halts, "
                        "frozen quotes, bad ticks, corrupt values and early-ending sessions together, "
-                       f"{names(bad)} stay above {limit:.0f}% of forecasts more than 5% away from the clean run "
+                       f"{names(bad)} {'stays' if len(bad) == 1 else 'stay'} above {limit:.0f}% of forecasts more than 5% away from the clean run "
                        f"({listing}). "
                        "atam/results/faults/ shows which fault does it, one kind at a time: missing data is the "
                        "residual problem (no protection can recover a print that never arrives).", ["R3"])

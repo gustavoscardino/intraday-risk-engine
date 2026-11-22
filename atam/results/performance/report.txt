@@ -1,31 +1,31 @@
 P1 - per-bar latency (replay, 15 assets, intraday bars; from the scored forecasts of risk_15m.csv), P3 - daily refit (replay)
-  EWMA (DQ on)   p50   1.30 us  p95   2.90 us  p99   10.98 us  max     52.9 us   refit p50    4.32 ms, max    7.82 ms   (p99 across runs 8.67-15.03 us)
-                 slowest bars (run 1): 53 us, 42 us, 28 us, 26 us, 25 us
-                 without fill bars: max 52.9 us (median of runs)
-                 without the option book (--no-options): p50 1.30 us, p99 4.00 us (median of 3 runs)
-  GARCH-t (filter on) p50   3.80 us  p95   8.38 us  p99   18.43 us  max     95.9 us   refit p50   38.21 ms, max  118.40 ms   (p99 across runs 18.33-18.90 us)
-                 slowest bars (run 1): 113 us, 38 us, 22 us, 22 us, 22 us
-                 without fill bars: max 95.9 us (median of runs)
-                 option book revalued by Monte Carlo at every bar, outside update_us: median 7.63 ms per bar
-                 without the option book (--no-options): p50 1.30 us, p99 2.60 us (median of 3 runs)
-  EWMA (DQ off)  p50   1.20 us  p99    5.07 us  (median of 3 runs; data-quality layer switched off (plain loader))
-  GARCH-t (filter off) p50   3.40 us  p99   17.90 us  (median of 3 runs; jump filter switched off: every print enters the model)
-  GARCH-t (clip 6 sd) p50   2.70 us  p99   16.43 us  (median of 3 runs; stateless clipping of standardized shocks at 6 sd instead of the jump filter)
+  EWMA (DQ on)   p50   1.70 us  p95   2.00 us  p99    2.90 us  max     13.0 us   refit p50    4.00 ms, max    6.41 ms   (per-bar minimum of 3 replays; over pairs p99 3.00-3.00 us; raw p99 of each replay 14.27-14.90 us)
+                 slowest bars (run 1): 170 us, 32 us, 20 us, 20 us, 19 us
+                 without fill bars: max 91.3 us (median of runs)
+                 without the option book (--no-options): p50 1.70 us, p99 2.80 us (per-bar minimum of 3 replays)
+  GARCH-t (filter on) p50   2.30 us  p95   2.90 us  p99    5.00 us  max      9.3 us   refit p50   31.82 ms, max  105.54 ms   (per-bar minimum of 3 replays; over pairs p99 5.10-5.13 us; raw p99 of each replay 6.43-8.41 us)
+                 slowest bars (run 1): 106 us, 29 us, 29 us, 22 us, 19 us
+                 without fill bars: max 65.0 us (median of runs)
+                 option book revalued by Monte Carlo at every bar, off the bar thread: median 6.85 ms per bar
+                 without the option book (--no-options): p50 2.20 us, p99 5.00 us (per-bar minimum of 3 replays)
+  EWMA (DQ off)  p50   1.10 us  p99    1.83 us  (per-bar minimum of 3 replays; data-quality layer switched off (plain loader): every print enters the models)
+  GARCH-t (filter off) p50   1.70 us  p99    3.00 us  (per-bar minimum of 3 replays; jump filter switched off: every print enters the model)
+  GARCH-t (clip 6 sd) p50   1.80 us  p99    3.10 us  (per-bar minimum of 3 replays; stateless clipping of standardized shocks at 6 sd instead of the jump filter)
 
 P2 - scalability (each engine's benchmark program, median of three runs)
-  EWMA       15 assets: median per bar     0.70 us, p99     1.00 us; refit     5.24 ms
-  EWMA       50 assets: median per bar     5.80 us, p99    20.70 us; refit    13.97 ms
-  EWMA      200 assets: median per bar   111.90 us, p99   233.00 us; refit    99.13 ms
-  GARCH-t    15 assets: median per bar     1.20 us, p99 not reported; refit    63.70 ms
-  GARCH-t    50 assets: median per bar     9.20 us, p99 not reported; refit   103.80 ms
-  GARCH-t   200 assets: median per bar   151.40 us, p99 not reported; refit   363.00 ms
+  EWMA       15 assets: median per bar     0.90 us, p99     2.00 us; refit     5.97 ms
+  EWMA       50 assets: median per bar     7.30 us, p99    22.40 us; refit    16.54 ms
+  EWMA      200 assets: median per bar   127.30 us, p99   265.50 us; refit   126.69 ms
+  GARCH-t    15 assets: median per bar     0.90 us, p99 not reported; refit    60.70 ms
+  GARCH-t    50 assets: median per bar     5.80 us, p99 not reported; refit   103.40 ms
+  GARCH-t   200 assets: median per bar    88.40 us, p99 not reported; refit   308.00 ms
   figure: atam/results/figures/p1_p2_latency.png
 
 P1/P3/P4 - single-instrument engines: model-stage cost of each model under one measurement boundary (update + quantile + monetary VaR, timed in batches of 1000; median of three runs)
-  Realized-CAViaR  mean   20.3 ns  p50   17.5 ns  p95   33.1 ns  p99   46.5 ns   49.2 M updates/s  state 40 bytes
-  EWMA-N           mean   33.4 ns  p50   27.0 ns  p95   58.3 ns  p99   85.6 ns   30.0 M updates/s  state 240 bytes
-  GARCH-t          mean   28.3 ns  p50   24.5 ns  p95   51.3 ns  p99   65.5 ns   35.3 M updates/s  state 280 bytes
-  EWMA-t           mean   32.6 ns  p50   27.0 ns  p95   55.1 ns  p99   80.3 ns   30.6 M updates/s  state 248 bytes
-  daily calibration of the three models (sum of fit times): p50 22.7 ms, max 40.6 ms (110 calibrations, XPET3)
+  Realized-CAViaR  mean   18.5 ns  p50   16.3 ns  p95   32.0 ns  p99   48.5 ns   54.1 M updates/s  state 40 bytes
+  EWMA-N           mean   28.6 ns  p50   25.3 ns  p95   51.0 ns  p99   69.4 ns   34.9 M updates/s  state 240 bytes
+  GARCH-t          mean   26.1 ns  p50   23.3 ns  p95   49.5 ns  p99   61.6 ns   38.4 M updates/s  state 280 bytes
+  EWMA-t           mean   29.1 ns  p50   24.7 ns  p95   53.2 ns  p99   74.3 ns   34.4 M updates/s  state 248 bytes
+  daily calibration of the three models (sum of fit times): p50 24.6 ms, max 38.5 ms (110 calibrations, XPET3)
   percentiles are of batch means (1000 updates per batch), which average away the per-update tail: they compare the models with each other, not with the per-bar p99 of the portfolio engines
   figure: atam/results/figures/p1_p4_model_stage.png

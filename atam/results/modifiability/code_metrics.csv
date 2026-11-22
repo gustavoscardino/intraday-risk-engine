@@ -1,4 +1,4 @@
 engine,modules,include_edges,loc_include,loc_src,loc_apps,loc_tests,common_model_interface,module_list
-ewma,9,23,651,2348,809,612,0,backtest data_quality engine ewma market_data math replay risk seasonality
-garch_t,12,41,1279,5123,1511,1903,0,backtest data_quality garch market_data math optimize portfolio replay revaluation risk seasonality synthetic
-realized_caviar,4,5,174,885,111,233,1,data model replay shared_data
+ewma,10,27,721,2357,827,711,1,backtest data_quality engine ewma market_data math models replay risk seasonality
+garch_t,13,43,1320,5204,1522,1974,1,backtest data_quality garch market_data math models optimize portfolio replay revaluation risk seasonality synthetic
+realized_caviar,4,5,197,948,126,282,0,data model replay shared_data

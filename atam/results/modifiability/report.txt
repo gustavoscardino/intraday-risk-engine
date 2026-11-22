@@ -1,30 +1,26 @@
 M1 / M2 - modifiability (static analysis of the engines' source code)
-  EWMA: 9 modules, 23 include edges, 2999 lines of library code, 809 of programs, 612 of tests
-    M1: common model interface: no; files outside the model layer (ewma, risk, seasonality) that name a specific model's result: 5
-        ewma/source/apps/ewma_risk.cpp
+  EWMA: 10 modules, 27 include edges, 3078 lines of library code, 827 of programs, 711 of tests
+    M1: common model interface: yes; files outside the model layer (ewma, risk, seasonality, models) that name a specific model's result: 2
         ewma/source/include/ewmar/engine.hpp
-        ewma/source/include/ewmar/replay.hpp
         ewma/source/src/engine.cpp
-        ewma/source/src/replay.cpp
-    M2: target grid reachable by configuration: no
-        ewma/source/apps/ewma_risk.cpp:10: bar length is set in whole minutes (--session HH:MM,BAR_MIN,BARS): 5-second sampling needs code
-        ewma/source/src/replay.cpp:368: the forecast horizon is one bar ahead (next_slot = slot + 1): a 5-minute horizon issued every minute needs code (overlapping horizons)
-  GARCH-t: 12 modules, 41 include edges, 6402 lines of library code, 1511 of programs, 1903 of tests
-    M1: common model interface: no; files outside the model layer (garch, risk, seasonality) that name a specific model's result: 5
-        garch_t/source/apps/intraday_risk.cpp
-        garch_t/source/include/garcht/portfolio.hpp
-        garch_t/source/include/garcht/replay.hpp
-        garch_t/source/src/portfolio.cpp
+    M2: target grid reachable by configuration: yes
+        ewma/source/apps/ewma_risk.cpp:10: 5-second (or any finer) samples are aggregated into the bars of any --session grid (--resample)
+        ewma/source/src/replay.cpp:306: the forecast horizon is one bar: a 5-minute VaR every minute is five runs on 5-minute grids opening one minute apart (--session 10:00,5,84 ... 10:04,5,83), each with non-overlapping targets, as CAViaR's phases
+    shared library common/ (model interface, RiskMetrics baseline, jump filter): built and linked
+  GARCH-t: 13 modules, 43 include edges, 6524 lines of library code, 1522 of programs, 1974 of tests
+    M1: common model interface: yes; files outside the model layer (garch, risk, seasonality, portfolio, models) that name a specific model's result: 1
         garch_t/source/src/replay.cpp
-    M2: target grid reachable by configuration: no
-        garch_t/source/apps/intraday_risk.cpp:10: bar length is set in whole minutes (--session HH:MM,BAR_MIN,BARS): 5-second sampling needs code
-        garch_t/source/src/replay.cpp:331: the forecast horizon is one bar ahead (next_slot = slot + 1): a 5-minute horizon issued every minute needs code (overlapping horizons)
-  Realized-CAViaR: 4 modules, 5 include edges, 1059 lines of library code, 111 of programs, 233 of tests
-    M1: common model interface: yes; files outside the model layer (model) that name a specific model's result: 2
+    M2: target grid reachable by configuration: yes
+        garch_t/source/apps/intraday_risk.cpp:10: 5-second (or any finer) samples are aggregated into the bars of any --session grid (--resample)
+        garch_t/source/src/replay.cpp:411: the forecast horizon is one bar: a 5-minute VaR every minute is five runs on 5-minute grids opening one minute apart (--session 10:00,5,84 ... 10:04,5,83), each with non-overlapping targets, as CAViaR's phases
+    shared library common/ (model interface, RiskMetrics baseline, jump filter): built and linked
+  Realized-CAViaR: 4 modules, 5 include edges, 1145 lines of library code, 126 of programs, 282 of tests
+    M1: common model interface: no; files outside the model layer (model) that name a specific model's result: 2
         realized_caviar/source/include/rcaviar/replay.hpp
         realized_caviar/source/src/replay.cpp
     M2: target grid reachable by configuration: yes
         realized_caviar/source/src/replay.cpp:155: high-frequency mode (--prices) takes 5-second prices
         realized_caviar/source/src/replay.cpp:38: forecasts every minute in five 1-minute phases of a 5-minute horizon
-        realized_caviar/source/src/shared_data.cpp:14: the shared-data mode accepts 15-minute bars only
-    reuse: compiles 9 source files of other modules: ewma/source/src/ewma.cpp, ewma/source/src/math.cpp, ewma/source/src/seasonality.cpp, garch_t/source/src/backtest.cpp, garch_t/source/src/garch.cpp, garch_t/source/src/market_data.cpp, garch_t/source/src/math.cpp, garch_t/source/src/optimize.cpp, garch_t/source/src/risk.cpp
+        realized_caviar/source/src/shared_data.cpp:16: the shared-data mode accepts 15-minute bars only
+    shared library common/ (model interface, RiskMetrics baseline, jump filter): built and linked
+    reuse: compiles 10 source files of other modules: ewma/source/src/ewma.cpp, ewma/source/src/math.cpp, ewma/source/src/seasonality.cpp, garch_t/source/src/backtest.cpp, garch_t/source/src/data_quality.cpp, garch_t/source/src/garch.cpp, garch_t/source/src/market_data.cpp, garch_t/source/src/math.cpp, garch_t/source/src/optimize.cpp, garch_t/source/src/risk.cpp

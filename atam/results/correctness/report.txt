@@ -1,5 +1,5 @@
 C1 - no look-ahead (forecasts at or before a cut time T must not depend on what follows T)
-  EWMA (DQ on): 533493 cells compared over 3 cuts
+  EWMA (DQ on): 547206 cells compared over 3 cuts
     perturbation              changed      0 cells, missing   0 rows, extra   0 rows   (test power: 100.0% of later forecasts changed)
     truncation                changed      0 cells, missing   0 rows, extra   0 rows
     truncation, fixed window  changed      0 cells, missing   0 rows, extra   0 rows
@@ -7,7 +7,7 @@ C1 - no look-ahead (forecasts at or before a cut time T must not depend on what 
     perturbation              changed      0 cells, missing   0 rows, extra   0 rows   (test power: 100.0% of later forecasts changed)
     truncation                changed      0 cells, missing   0 rows, extra   0 rows
     truncation, fixed window  changed      0 cells, missing   0 rows, extra   0 rows
-  Realized-CAViaR (XPET3): 190065 cells compared over 3 cuts
+  Realized-CAViaR (filter on) (XPET3): 190065 cells compared over 3 cuts
     perturbation              changed      0 cells, missing   0 rows, extra   0 rows   (test power: 100.0% of later forecasts changed)
     truncation                changed      0 cells, missing   0 rows, extra   0 rows
     truncation, fixed window  changed      0 cells, missing   0 rows, extra   0 rows
@@ -17,6 +17,6 @@ C1 - no look-ahead (forecasts at or before a cut time T must not depend on what 
   figure: atam/results/figures/c1_no_lookahead.png
 
 Rp1 - reproducibility (the same replay, three runs, every output cell compared)
-  EWMA (DQ on): 3 runs, 247820 cells compared, 0 differ
-  GARCH-t (filter on): 3 runs, 244966 cells compared, 0 differ
-  Realized-CAViaR: 3 runs, 515864 cells compared, 0 differ
+  EWMA (DQ on): 3 runs, 254446 cells compared, 0 differ
+  GARCH-t (filter on): 3 runs, 245016 cells compared, 0 differ
+  Realized-CAViaR (filter on): 3 runs, 516224 cells compared, 0 differ
