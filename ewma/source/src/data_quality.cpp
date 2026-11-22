@@ -221,25 +221,39 @@ DqMode ModeController::update(double score) {
 // ============================================================== detection against the truth
 
 std::vector<DetectionRow> evaluate_detection(const FeedFile& clean, const FeedFile& recv, const SessionSpec& s,
-                                             const std::unordered_map<long long, std::uint16_t>& cell_flags) {
+                                             const std::unordered_map<long long, std::uint16_t>& cell_flags,
+                                             int lateness_bars) {
     struct Cell {
         double open, close, volume;
     };
     std::unordered_map<long long, Cell> c_cells;
     for (const RawRow& r : clean.rows)
         if (s.slot_of(r.time.minute) >= 0) c_cells.emplace(cell_key(r.time.key(), r.asset), Cell{r.open, r.close, r.volume});
+    // grid-bar ordinal of each row, as the arrival rules count lateness
+    std::set<int> days;
+    for (const RawRow& r : recv.rows)
+        if (s.slot_of(r.time.minute) >= 0) days.insert(r.time.ymd);
+    std::unordered_map<int, long long> day_index;
+    long long di = 0;
+    for (int d : days) day_index[d] = di++;
     std::unordered_map<long long, int> count;
     std::unordered_map<long long, Cell> r_cells;
-    std::unordered_set<long long> truth_ooo;
+    std::unordered_set<long long> truth_ooo, truth_delay;
     std::vector<long long> wm(recv.tickers.size(), -1);
+    long long wm_global = -1;
     for (const RawRow& r : recv.rows) {
         if (s.slot_of(r.time.minute) < 0) continue;
         const long long k = cell_key(r.time.key(), r.asset);
+        const long long o = day_index[r.time.ymd] * s.bars_per_day + s.slot_of(r.time.minute);
         if (count[k]++ == 0) {
             r_cells.emplace(k, Cell{r.open, r.close, r.volume});
-            if (r.time.key() < wm[static_cast<size_t>(r.asset)]) truth_ooo.insert(k);
+            // arrived after the feed had moved more than lateness_bars past its bar: late; otherwise
+            // after a newer row of the same stock: out of order
+            if (wm_global - o > lateness_bars) truth_delay.insert(k);
+            else if (r.time.key() < wm[static_cast<size_t>(r.asset)]) truth_ooo.insert(k);
         }
         wm[static_cast<size_t>(r.asset)] = std::max(wm[static_cast<size_t>(r.asset)], r.time.key());
+        wm_global = std::max(wm_global, o);
     }
     std::unordered_set<long long> truth_gap, truth_dup, truth_stale, truth_spike;
     for (const auto& kv : c_cells)
@@ -259,9 +273,8 @@ std::vector<DetectionRow> evaluate_detection(const FeedFile& clean, const FeedFi
         std::uint16_t flag;
         const std::unordered_set<long long>* truth;
     };
-    const std::unordered_set<long long> none;
-    const Spec specs[] = {{kGap, &truth_gap},     {kDuplicate, &truth_dup}, {kOutOfOrder, &truth_ooo},
-                          {kDelay, &none},        {kStale, &truth_stale},   {kSpike, &truth_spike}};
+    const Spec specs[] = {{kGap, &truth_gap},      {kDuplicate, &truth_dup}, {kOutOfOrder, &truth_ooo},
+                          {kDelay, &truth_delay},  {kStale, &truth_stale},   {kSpike, &truth_spike}};
     std::vector<DetectionRow> out;
     for (const Spec& sp : specs) {
         DetectionRow d;

@@ -50,6 +50,8 @@ struct BaselineCalibration {
 struct Calibration {
     std::int64_t effective_time=0, training_start=0, training_end=0;
     FitResult caviar;
+    // Calibration time per model (0 CAViaR, 1 EWMA-N, 2 GARCH-t, 3 EWMA-t incl. the EWMA), the
+    // baselines summed over their phases; params_daily.csv has the time of each phase.
     std::array<double,4> elapsed_ms{};
     std::array<std::string,4> status;
     std::vector<BaselineCalibration> baselines;

@@ -30,6 +30,10 @@ namespace fs = std::filesystem;
 
 namespace {
 
+// Default estimation window (sessions), the same in every engine of the repository: fixed, so that
+// a forecast never depends on how many sessions follow it in the file.
+constexpr int kDefaultWindow = 40;
+
 struct Options {
     std::string data = "synthetic", prices, out, options, truth;
     bool no_options = false, daily = false, help = false, window_given = false, no_truth = false;
@@ -47,14 +51,22 @@ void usage() {
                  "                       with assets.csv and prices_15m.csv (default synthetic)\n"
                  "  --prices FILE        another price file of the dataset (e.g. prices_15m_degraded.csv)\n"
                  "  --out DIR            output folder (default ewma/results/NAME[_degraded][_nodq])\n"
-                 "  --window-days N      estimation window in sessions (default: half of the sessions, 20 to 60)\n"
+                 "  --window-days N      estimation window in sessions (default 40; half of the sessions if fewer)\n"
                  "  --lambda L           fixes the lambda of EWMA-N / EWMA-t (default: estimated every day)\n"
                  "  --nu N               fixes the nu of EWMA-t (default: estimated every day)\n"
                  "  --diurnal MODE       intraday profile: pooled (default), per-asset or off\n"
                  "  --no-dq              disables the data-quality layer (plain loader)\n"
                  "  --dq-thresholds A,B  dq_score limits of NORMAL and FREEZE (default 0.9,0.6)\n"
                  "  --truth FILE|none    clean price file for the detection rates and the robustness\n"
-                 "                       comparison (default: prices_15m.csv of the dataset)\n"
+                 "                       comparison (default: prices_15m.csv of the dataset, when --prices\n"
+                 "                       is another file)\n"
+                 "  --no-overnight       skips the overnight risk\n"
+                 "  --options FILE       option book (default: options.csv of the dataset, if present);\n"
+                 "                       --no-options ignores it\n"
+                 "  --session SPEC       auto (default) or HH:MM,BAR_MIN,BARS: session open (local time),\n"
+                 "                       minutes per bar and bars per session\n"
+                 "  --utc-offset MIN     offset applied to timestamps that carry a zone (default -180)\n"
+                 "  --daily              prints one summary line per day\n"
                  "  --es-sims N          simulations of the ES test p-value (0 = statistic only; default 2000)\n");
 }
 
@@ -272,12 +284,17 @@ int main(int argc, char** argv) {
         // ---------------------------------------------------------------- inputs
         ReplayInput in = load_inputs(opt, opt.prices);
         const size_t n = in.tickers.size();
-        if (!opt.window_given) {
+        bool short_data = false;
+        if (!opt.window_given) {  // fixed, as in every engine, so forecasts do not depend on the file's length
+            opt.replay.window_days = kDefaultWindow;
             std::vector<int> days;
             for (const RawRow& r : in.feed.rows) days.push_back(r.time.ymd);
             std::sort(days.begin(), days.end());
             const int sessions = static_cast<int>(std::unique(days.begin(), days.end()) - days.begin());
-            opt.replay.window_days = std::clamp(sessions / 2, 20, 60);
+            if (sessions <= kDefaultWindow) {  // too short a file: half of it
+                opt.replay.window_days = std::max(5, sessions / 2);
+                short_data = true;
+            }
         }
         say("read %zu rows x %zu assets (unparseable %zu, unknown tickers %zu); %zu fills, %zu options\n", in.feed.lines, n,
             in.feed.bad_rows, in.feed.unknown_rows, in.fills.size(), in.options.size());
@@ -287,7 +304,8 @@ int main(int argc, char** argv) {
         const SessionSpec& ss = res.session;
         say("session: first bar closes %02d:%02d, %d-minute bars, %d bars/day; %zu sessions, window %d days%s\n",
             ss.close_minute(0) / 60, ss.close_minute(0) % 60, ss.bar_minutes, ss.bars_per_day, res.sessions,
-            opt.replay.window_days, opt.window_given ? "" : " (automatic: half of the sessions, at most 60)");
+            opt.replay.window_days,
+            opt.window_given ? "" : short_data ? " (default 40 does not fit: half of the sessions)" : " (default)");
         const EngineConfig& ec = opt.replay.engine;
         say("models: lambda %s, nu %s, diurnal profile %s, overnight %s, data-quality layer %s\n",
             ec.estimate_lambda ? "estimated daily" : "fixed", ec.estimate_nu ? "estimated daily" : "fixed",
@@ -306,7 +324,9 @@ int main(int argc, char** argv) {
             const bool self = same_file(opt.truth, opt.prices);
             ReplayInput clean = self ? ReplayInput{} : load_inputs(opt, opt.truth);
             const FeedFile& clean_feed = self ? in.feed : clean.feed;
-            if (res.dq) detection = evaluate_detection(clean_feed, in.feed, ss, res.ingest.cell_flags);
+            // detection needs an independent clean file: a feed compared with itself has no truth
+            if (res.dq && !self)
+                detection = evaluate_detection(clean_feed, in.feed, ss, res.ingest.cell_flags, opt.replay.dq_cfg.lateness_bars);
             if (!self) {  // the same market through a clean feed (DQ layer on)
                 ReplayConfig rc = opt.replay;
                 rc.dq = true;

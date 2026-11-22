@@ -52,13 +52,13 @@ additional CLI arguments to both runs.
 | `--data FOLDER --ticker SYMBOL` | existing shared 15m dataset, one instrument | seeded 5s simulation |
 | `--prices FILE` | 5s `timestamp,price` CSV, or alternate 15m CSV with `--data` | built-in simulation / `prices_15m.csv` |
 | `--out FOLDER` | output folder | `results/synthetic` |
-| `--window-days N` | initial and rolling training sessions in shared mode | half the sessions, capped at 60 |
+| `--window-days N` | initial and rolling training sessions in shared mode | 40 (half the sessions if fewer) |
 | `--refit once\|daily` | common calibration schedule for all models | daily shared; once high frequency |
 | `--exposure E` | signed monetary exposure, negative for shorts | 100000 |
 | `--confidence C` | confidence in (.5, 1) | .99 |
 | `--lambda L` | fixes the EWMA decay in (0, 1) | estimated at each calibration |
 | `--diurnal on\|off` | shared mode: baselines on returns divided by the U profile | on |
-| `--caviar-only` | disable the matched baselines | all three models |
+| `--caviar-only` | disable the matched baselines | all four models |
 | `--reset-on-gap` | explicit restart of 5s features after missing samples/session gaps | reject gaps |
 
 Invalid values and incompatible options fail explicitly. Real high-frequency
@@ -86,8 +86,11 @@ non-overlapping targets. The state-size metric includes all five filters.
 Shared mode uses the existing loader and return conventions: first bar
 `log(close/open)`, then intraday close-to-close. The full asset grid is loaded,
 but only the selected instrument is modeled. No target crosses the session
-close. Incomplete feature windows are skipped; a missing future target does
-not suppress an observed feature update. Baselines process every available
+close. A missing price inside the feature hour merges the two returns around it
+(the squared returns of any partition of the hour add up to an unbiased realized
+variance), so one missing bar no longer removes four forecasts; a window with
+more than one missing price, or without the price at its start or end, is
+skipped. A missing future target does not suppress an observed feature update. Baselines process every available
 bar, including session warmup, and missing grid slots advance GARCH by its
 conditional expectation. GARCH uses zero-mean standardized t innovations; no
 EVT. These are single-instrument baselines, not the enriched portfolio outputs
@@ -144,8 +147,9 @@ dynamics.
 
 `run_comparison.bat` / `run_comparison.sh` build, test, and run
 `tools/compare_all.py`: one replay per stock of `data/synthetic` and
-`data/b3_real` with the estimation window **fixed** at 60 and 30 sessions (the
-default, half of the sessions, would depend on the length of the file), then
+`data/b3_real` with the estimation window **fixed** at 40 sessions, the same in
+every engine (a window derived from the file's length would make a forecast
+depend on how many sessions follow it), then
 consolidated tables in the versioned folder `comparison/`:
 
 | File | Content |
@@ -154,11 +158,12 @@ consolidated tables in the versioned folder `comparison/`:
 | `summary.csv` | per dataset and model: exceptions pooled over the stocks, Kupiec / CC rejections, mean pinball, stocks with the lowest loss, latency, state size |
 | `by_stock.csv` | the backtest of every stock and model |
 | `by_hour.csv` | exceptions per hour of the target start, pooled over the stocks |
-| `diebold_mariano.csv` | every pair of models, per stock and pooled: mean pinball-loss difference, DM statistic, p-value |
+| `diebold_mariano.csv` | every pair of models, per stock and pooled: mean pinball-loss difference, DM statistic, p-value and Holm-adjusted p-value |
 
 Diebold-Mariano tests whether two models have the same expected pinball loss,
 with a Newey-West variance (Bartlett weights, lag `4 (n/100)^(2/9)`); p-values
-are asymptotic. The pooled test uses, at each target time, the mean loss
+are asymptotic and are also reported Holm-adjusted for multiple comparisons
+(families: the six pooled pairs of a dataset; the 15 stocks of a pair). The pooled test uses, at each target time, the mean loss
 difference over the stocks, so the common market moves are not counted as
 independent evidence. The raw runs stay in `results/comparison/` (not versioned).
 `--confidence C` and `--jobs N` are passed through.

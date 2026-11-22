@@ -302,15 +302,20 @@ struct ReplaySession::State {
         }
         last_net = net;
         bool refitted = false;
+        double rebalance_us = 0.0;  // tail re-calibration after a trade, timed apart from the bar update
         if (eod) {
             refitted = refit(panel, t);
         } else if (traded && engine->ready()) {
+            const auto r0 = std::chrono::steady_clock::now();
             engine->recalibrate_tail(expo.data());
+            rebalance_us = std::chrono::duration<double, std::micro>(std::chrono::steady_clock::now() - r0).count();
+            res.rebalance_us.push_back(rebalance_us);
         }
         const int next_slot = (slot[t] + 1) % K;
         engine->compute(next_slot, expo.data(), risk);
-        const double us = std::chrono::duration<double, std::micro>(std::chrono::steady_clock::now() - t0).count();
-        res.engine_seconds += us * 1e-6;
+        const double us =
+            std::chrono::duration<double, std::micro>(std::chrono::steady_clock::now() - t0).count() - rebalance_us;
+        res.engine_seconds += (us + rebalance_us) * 1e-6;
         if (!refitted && engine->ready()) res.latency_us.push_back(us);
 
         have_fc = engine->ready();

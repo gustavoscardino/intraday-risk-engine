@@ -1,6 +1,7 @@
 #include "rcaviar/shared_data.hpp"
 #include "garcht/math.hpp"
 #include <algorithm>
+#include <array>
 #include <cctype>
 #include <cmath>
 #include <filesystem>
@@ -14,21 +15,41 @@ std::vector<Window> make_bar_windows(const garcht::BarPanel& panel, std::size_t 
     std::vector<double> returns;
     std::vector<int> slots;
     garcht::bar_returns(panel,session,returns,slots);
-    auto valid_close=[&](std::size_t i) { const double p=panel.at(panel.close,i,asset); return std::isfinite(p) && p>0; };
+    const std::size_t n=panel.num_assets();
+    auto price=[&](const std::vector<double>& m,std::size_t i) { const double p=panel.at(m,i,asset); return std::isfinite(p) && p>0 ? p : std::nan(""); };
+    auto valid_close=[&](std::size_t i) { return std::isfinite(price(panel.close,i)); };
     std::vector<Window> windows;
-    for (std::size_t i=3; i<panel.num_bars(); ++i) {
-        bool valid=true;
-        double aggregate=0,rv=0;
-        for (std::size_t j=i-3; j<=i; ++j) {
-            const double r=returns[j*panel.num_assets()+asset];
-            if (panel.date[j]!=panel.date[i] || slots[j]<0 || !std::isfinite(r) || !valid_close(j)) valid=false;
-            if (j>i-3 && (slots[j]!=slots[j-1]+1 || panel.time_key[j]-panel.time_key[j-1]!=900000)) valid=false;
-            // Exclude returns spanning a missing price, including one just
-            // before the feature window. Slot zero uses the session open.
-            if (slots[j]>0 && (j==0 || panel.date[j-1]!=panel.date[j] || slots[j-1]!=slots[j]-1 || !valid_close(j-1))) valid=false;
-            if (j<=i) { aggregate+=r; rv+=r*r; }
+    for (std::size_t i=0; i<panel.num_bars(); ++i) {
+        const int s=slots[i];
+        if (s<3 || s>=session.bars_per_day-1 || !valid_close(i)) continue;
+        // The hour before the forecast: the price at its start (close of slot s-4, or the session
+        // open for s = 3) and the closes of slots s-3 .. s of the same session.
+        std::array<std::size_t,5> at; at.fill(panel.num_bars());  // panel row of slots s-4 .. s
+        for (std::size_t j=i+1; j-- > 0;) {
+            if (panel.date[j]!=panel.date[i]) break;
+            if (slots[j]>=s-4 && slots[j]<=s) at[static_cast<std::size_t>(slots[j]-(s-4))]=j;
+            if (slots[j]>=0 && slots[j]<s-4) break;
         }
-        if (!valid || slots[i]>=session.bars_per_day-1) continue;
+        auto have=[&](std::size_t k) { return at[k]<panel.num_bars(); };
+        const double start=s==3 ? (have(1) ? price(panel.open,at[1]) : std::nan(""))
+                                : (have(0) ? price(panel.close,at[0]) : std::nan(""));
+        if (!std::isfinite(start)) continue;
+        // R and RV from the returns between consecutive available prices. Their squares add up to an
+        // unbiased realized variance for any partition of the hour, so one missing interior price
+        // only merges two returns. A window with more than one missing price is dropped.
+        int missing=0;
+        double aggregate=0,rv=0,prev=start;
+        bool prev_is_last=true;  // the previous available price is the one just before (no merge)
+        for (std::size_t k=1; k<=4; ++k) {
+            const double c=have(k) ? price(panel.close,at[k]) : std::nan("");
+            if (!std::isfinite(c)) { ++missing; prev_is_last=false; continue; }
+            // the engines' single-bar return when nothing is missing in between (bit-identical
+            // features on complete data), the log-ratio across a missing price otherwise
+            const double r=prev_is_last ? returns[at[k]*n+asset] : std::log(c/prev);
+            aggregate+=r; rv+=r*r;
+            prev=c; prev_is_last=true;
+        }
+        if (missing>1 || !std::isfinite(aggregate) || !std::isfinite(rv)) continue;
         // Forecast existence depends on observed features, never future data.
         // A missing next bar has an unscorable target but still updates q.
         double target=std::nan("");
@@ -56,7 +77,8 @@ SharedData read_shared_data(const std::string& folder, const std::string& ticker
     const auto panel=garcht::load_bars_csv(prices_path.empty()?(std::filesystem::path(folder)/"prices_15m.csv").string():prices_path,tickers);
     std::vector<int> dates;
     for (int date:panel.date) if (dates.empty() || date!=dates.back()) dates.push_back(date);
-    const auto days=window_days==0?std::min<std::size_t>(60,dates.size()/2):static_cast<std::size_t>(window_days);
+    // default: 40 sessions, the same window in every engine (half of the sessions if fewer)
+    const auto days=window_days==0?(dates.size()>40?std::size_t{40}:dates.size()/2):static_cast<std::size_t>(window_days);
     if (days==0 || days>=dates.size()) throw std::invalid_argument("training window must leave out-of-sample sessions");
     std::int64_t cutoff=0;
     for (std::size_t i=0;i<panel.num_bars();++i) if (panel.date[i]==dates[days-1]) cutoff=panel.time_key[i]/1000;

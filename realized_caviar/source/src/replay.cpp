@@ -478,7 +478,7 @@ void write_results(const ReplayInput& in,const ReplayConfig& cfg,const ReplayRes
         << "; GARCH: zero-mean Student-t; baselines " << (result.diurnal?"deseasonalized by the U profile of each training window (r / s_slot)":"without diurnal adjustment") << ".\n"
         << "Evaluated targets start between " << clock_text(first_tod) << " and " << clock_text(last_tod)
         << " (exchange clock); CAViaR's feature warm-up excludes earlier targets of each session, so every model is scored on those only.\n"
-        << (in.shared?"Baselines: one filter each, raw 15m returns, exact next-bar targets.\n"
+        << (in.shared?std::string("Baselines: one filter each, on 15m returns")+(result.diurnal?" divided by the U profile":" (no diurnal adjustment)")+", exact next-bar targets.\n"
             :"Baselines: five staggered filters each, non-overlapping 5m returns per phase, exact next 5m targets; no variance scaling approximation.\n")
         << "Latency: per forecast, model update(s) + return quantile + monetary VaR, timed in batches of " << cfg.benchmark_batch
         << " over the out-of-sample sequence (clock overhead spread over the batch); prepared inputs, no CSV/features/scoring/refit.\n"

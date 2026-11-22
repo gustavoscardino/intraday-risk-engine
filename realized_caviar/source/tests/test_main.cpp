@@ -103,8 +103,19 @@ int main() {
         close(future_windows[0].observation.aggregate_return,shared[0].observation.aggregate_return);
         close(future_windows[0].observation.realized_variance,shared[0].observation.realized_variance);
         require(future_windows[0].observation.target_return!=shared[0].observation.target_return,"future target unchanged");
+        // One missing price (day 0, slot 3): no forecast at that bar; the three later windows of the
+        // day whose hour contains it merge the two returns around it (sum of squares of a coarser
+        // partition, still unbiased); every bar return here is .001, so the merged one is .002.
         auto missing_panel=panel; missing_panel.close[3]=std::nan("");
-        require(rcaviar::make_bar_windows(missing_panel,0).size()==4,"missing price window accepted");
+        const auto merged=rcaviar::make_bar_windows(missing_panel,0);
+        require(merged.size()==7,"a window with one missing price must be kept");
+        require(merged[0].forecast_time==shared[1].forecast_time,"no forecast at the missing bar");
+        close(merged[0].observation.aggregate_return,.004);
+        close(merged[0].observation.realized_variance,2*1e-6+4e-6,1e-15);
+        auto two_missing=missing_panel; two_missing.close[5]=std::nan("");
+        // day 0 keeps only the window ending at slot 4 (one missing price); slots 3 and 5 have no
+        // forecast and the window ending at slot 6 has two missing prices in its hour
+        require(rcaviar::make_bar_windows(two_missing,0).size()==1+4,"a window with two missing prices must be dropped");
         auto missing_target=panel; missing_target.close[4]=std::nan("");
         const auto unscored=rcaviar::make_bar_windows(missing_target,0);
         require(unscored[0].forecast_time==shared[0].forecast_time && std::isnan(unscored[0].observation.target_return),"missing future target suppressed observed features");

@@ -100,7 +100,9 @@ struct ReplayResult {
     std::vector<OvernightRecord> overnight;
     std::vector<ParamRecord> params;
     std::vector<DailyRecord> daily;
-    std::vector<double> latency_us, refit_ms;
+    // latency_us: bar update (fills, filters, correlations, VaR/ES) of bars without a refit;
+    // rebalance_us: tail re-calibration after a trade (timed apart: it runs on trade bars only).
+    std::vector<double> latency_us, refit_ms, rebalance_us;
     size_t bars = 0, sessions = 0, off_grid = 0, fills_applied = 0, fills_unknown = 0;
     size_t unscored = 0;            // forecasts whose target bar never printed (halts, gaps)
     size_t unscored_overnight = 0;  // overnight forecasts followed by a late opening

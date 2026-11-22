@@ -14,7 +14,7 @@ echo ====================================================================
 if errorlevel 1 goto :failed
 echo.
 echo ====================================================================
-echo  2/2  Real B3 data: 15 stocks, 60 sessions
+echo  2/2  Real B3 data: 15 stocks, 87 sessions
 echo ====================================================================
 "bin\intraday_risk.exe" --data b3_real
 if errorlevel 1 goto :failed

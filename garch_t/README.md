@@ -107,8 +107,9 @@ for each 15-minute bar:
 at the end: backtest of all forecasts + report
 ```
 
-The first sessions are used only for the first estimation (the **window**: half of the available
-sessions, at most 60). Forecasts start after it and are always **out of sample**.
+The first sessions are used only for the first estimation (the **window**: 40 sessions, the same in
+every engine of the repository; half of the sessions if the file has fewer). Forecasts start after
+it and are always **out of sample**; the window then rolls, one session a day.
 
 ### Concepts in one line
 
@@ -166,7 +167,7 @@ themselves: `--data synthetic` becomes `data/synthetic`. Results go to
 | `--data NAME\|FOLDER` | dataset: `synthetic`, `b3_real` or any folder | `synthetic` |
 | `--out FOLDER` | where to write the results | `results/<name>` |
 | `--prices FILE` | another price file of the same dataset (e.g. the degraded one) | `prices_15m.csv` |
-| `--window-days N` | estimation window, in trading sessions | half of the sessions, at most 60 |
+| `--window-days N` | estimation window, in trading sessions | 40 (half of the sessions if fewer) |
 | `--options FILE` / `--no-options` | option book / ignore options | `options.csv`, if present |
 | `--mc N` | scenarios of the options Monte Carlo | 10000 |
 | `--z-clip Z` | caps shocks at Z standard deviations (protects against bad ticks) | off |

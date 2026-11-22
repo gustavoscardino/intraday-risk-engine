@@ -77,7 +77,9 @@ ewma/
     └── tests/               automated tests + reference/scipy_reference.py (SciPy values)
 ```
 
-The implementation is independent of `garch_t`: no code is shared, only the `data/` folder.
+The engine is built on its own (namespace `ewmar`, its own build and programs) and does not link
+`garch_t`; some infrastructure was adapted from it (the `paths.hpp` / `cli.hpp` helpers, the UTF-8
+manifest, the B3 holiday table and parts of the CSV reader), and both read the same `data/` folder.
 
 ---
 
@@ -101,7 +103,8 @@ at the end: backtest of all forecasts + report
 ```
 
 The window, the first forecast and the scoring are the same as in `garch_t`: the first sessions
-(half of them, at most 60) are used only for estimation, and every forecast is **out of sample**.
+(40, the same window in every engine; half of the sessions if the file has fewer) are used only for
+estimation, and every forecast is **out of sample**.
 
 ### Concepts in one line
 
@@ -145,7 +148,7 @@ On Linux/macOS: `./bin/ewma_risk` and forward slashes.
 | `--data NAME\|FOLDER` | dataset: `synthetic`, `b3_real` or any folder in the `data/` format | `synthetic` |
 | `--prices FILE` | another price file of the dataset (e.g. the degraded one) | `prices_15m.csv` |
 | `--out FOLDER` | where to write the results | `results/<name>[_degraded][_nodq]` |
-| `--window-days N` | estimation window, in sessions | half of the sessions, 20 to 60 |
+| `--window-days N` | estimation window, in sessions | 40 (half of the sessions if fewer) |
 | `--lambda L` | fixes the λ of EWMA-N / EWMA-t | estimated every day |
 | `--nu N` | fixes the ν of EWMA-t | estimated every day |
 | `--diurnal pooled\|per-asset\|off` | U profile common to all stocks, one per stock, or none | `pooled` |
@@ -248,7 +251,7 @@ Each stock has its own watermark (newest bar received). Rules:
 | `SPIKE` | \|z\| > 6 against the forecast σ: the EWMA is updated with the value capped at ±6σ. If the next bar takes the price back (less than 25% of the move left), it was a bad tick: the price is excluded and the bar re-fed. If not, the shock is real and is re-fed in full (`SHOCK_KEPT`). If several stocks jump at the same bar, it is a market move and is kept at once | — |
 
 `dq_score` = Σ wᵢ qᵢ, wᵢ = |exposure|ᵢ / Σ|exposure|, qᵢ = 1 minus the penalties of the stock's flags
-(GAP, STALE, SPIKE: 1; OUT_OF_ORDER: 0.1; DUPLICATE: 0.05). Modes, with hysteresis (a better mode
+(GAP, STALE, SUSPECT, SPIKE: 1; OUT_OF_ORDER: 0.1; DUPLICATE: 0.05). Modes, with hysteresis (a better mode
 only after 3 bars that qualify for it):
 
 | Mode | dq_score | What happens |

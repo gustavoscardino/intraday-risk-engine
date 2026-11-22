@@ -36,6 +36,10 @@ using namespace garcht;
 
 namespace {
 
+// Default estimation window (sessions), the same in every engine of the repository: fixed, so that
+// a forecast never depends on how many sessions follow it in the file.
+constexpr int kDefaultWindow = 40;
+
 struct Options {
     std::string data = "synthetic", prices, out, options;  // data: dataset name or folder
     std::string live;                                      // HOST:PORT of a live feed
@@ -56,7 +60,7 @@ void usage() {
                  "  --data NAME|DIR   dataset: a name searched as data/NAME next to garch_t (default\n"
                  "                    synthetic; also b3_real) or any folder with assets.csv and prices_15m.csv\n"
                  "  --out DIR         output folder (default garch_t/results/NAME)\n"
-                 "  --window-days N   estimation window (default: half of the sessions, at most 60)\n"
+                 "  --window-days N   estimation window in sessions (default 40; half of the sessions if fewer)\n"
                  "  --options FILE    option book (default: options.csv of the dataset, if present)\n"
                  "  --corr-lambda L   fixed EWMA correlation decay (default: estimated at each refit)\n"
                  "  --session         HH:MM = session open (local time), bar minutes, bars per session\n"
@@ -323,11 +327,16 @@ int main(int argc, char** argv) {
             say("live feed %s: the history is the dataset before %d-%02d-%02d (%zu bars)\n", opt.live.c_str(),
                 first_live_date / 10000, first_live_date / 100 % 100, first_live_date % 100, k);
         }
-        if (!opt.window_given) {  // half of the sessions, between 20 and 60 days
+        bool short_data = false;
+        if (!opt.window_given) {  // a fixed window, so the forecasts do not depend on the file's length
+            opt.replay.window_days = kDefaultWindow;
             std::vector<int> days(in.bars.date.begin(), in.bars.date.end());
             std::sort(days.begin(), days.end());
             const int sessions = static_cast<int>(std::unique(days.begin(), days.end()) - days.begin());
-            opt.replay.window_days = std::clamp(sessions / 2, 20, 60);
+            if (!feed && sessions <= kDefaultWindow) {  // too short a file: half of it
+                opt.replay.window_days = std::max(5, sessions / 2);
+                short_data = true;
+            }
         }
         say("loaded %zu bars x %zu assets from %s in %.2f s (rows %zu, duplicates %zu, bad %zu, unknown %zu)\n",
                     in.bars.num_bars(), n, paths::display(opt.prices).c_str(), load_s, in.bars.rows_read, in.bars.duplicates,
@@ -368,7 +377,7 @@ int main(int argc, char** argv) {
         say("session: first bar closes %02d:%02d, %d-minute bars, %d bars/day; %zu sessions, window %d days%s\n",
                     (ss.open_minute + ss.bar_minutes) / 60, (ss.open_minute + ss.bar_minutes) % 60, ss.bar_minutes,
                     ss.bars_per_day, res.sessions, opt.replay.window_days,
-                    opt.window_given ? "" : " (automatic: half of the sessions, at most 60)");
+                    opt.window_given ? "" : short_data ? " (default 40 does not fit: half of the sessions)" : " (default)");
         {   // protection against a faulty feed, so a report says how its numbers were produced
             std::string prot;
             if (opt.replay.engine.z_clip > 0.0) {
@@ -609,6 +618,9 @@ int main(int argc, char** argv) {
                     percentile(res.latency_us, 1.0));
         say("  end-of-day refit (GARCH fits + correlation dynamics + tails + overnight): p50 %.1f ms, p95 %.1f ms, max %.1f ms\n",
                     percentile(res.refit_ms, 0.5), percentile(res.refit_ms, 0.95), percentile(res.refit_ms, 1.0));
+        if (!res.rebalance_us.empty())
+            say("  tail re-calibration after a trade (%zu trade bars, not in the per-bar figures): p50 %.1f us, max %.1f us\n",
+                res.rebalance_us.size(), percentile(res.rebalance_us, 0.5), percentile(res.rebalance_us, 1.0));
         if (book) {
             std::vector<double> mcu;
             for (const ForecastRecord& r : res.forecasts) mcu.push_back(r.mc_us / 1000.0);

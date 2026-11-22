@@ -78,6 +78,8 @@ FitResult fit(const std::vector<Observation>& rows, const FitOptions& opt) {
     // Always retain the empirical constant quantile as a valid candidate.
     Point best{initial/scale, 0, 0, 0};
     double best_loss = objective(best);
+    bool any_converged = false;  // reported when no simplex beats the constant candidate
+    bool from_simplex = false;
     for (int start = 0; start < opt.starts; ++start) {
         const double persistence = .15 + .8*static_cast<double>(start%6)/5.0;
         const double shock = .02 + .03*static_cast<double>(start%3);
@@ -117,10 +119,13 @@ FitResult fit(const std::vector<Observation>& rows, const FitOptions& opt) {
                 }
             }
         }
+        any_converged = any_converged || converged;
         for (const auto& vertex : simplex) if (vertex.loss < best_loss) {
-            best = vertex.x; best_loss = vertex.loss; result.converged = converged;
+            best = vertex.x; best_loss = vertex.loss; result.converged = converged; from_simplex = true;
         }
     }
+    // The constant quantile kept as the best candidate is a valid optimum, not a failed search.
+    if (!from_simplex) result.converged = any_converged;
     result.params = decode(best, scale);
     result.mean_loss = best_loss*scale;
     Filter filter(result.params, initial);

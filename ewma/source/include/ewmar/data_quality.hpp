@@ -111,7 +111,11 @@ struct DetectionRow {
     size_t injected = 0, detected = 0, other = 0;  // other = flags on cells without that fault
     double recall = kNaN;
 };
+// DELAY / OUT_OF_ORDER truth comes from the arrival order of the received file: a row that arrives
+// after the feed moved more than lateness_bars past its bar is late; one that arrives after a newer
+// row of its stock (and is not late) is out of order.
 std::vector<DetectionRow> evaluate_detection(const FeedFile& clean, const FeedFile& received, const SessionSpec& s,
-                                             const std::unordered_map<long long, std::uint16_t>& cell_flags);
+                                             const std::unordered_map<long long, std::uint16_t>& cell_flags,
+                                             int lateness_bars = 1);
 
 }  // namespace ewmar

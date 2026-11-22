@@ -26,7 +26,7 @@ int main(int argc,char** argv) {
             if (arg=="--help") {
                 std::cout << "realized_caviar [--prices timestamp_price.csv | --data folder --ticker SYMBOL]\n"
                     << "  --out folder             output folder\n"
-                    << "  --window-days N          initial/rolling training sessions (shared mode)\n"
+                    << "  --window-days N          initial/rolling training sessions (shared mode; default 40)\n"
                     << "  --refit once|daily       default: daily for shared data, once for 5s data\n"
                     << "  --exposure E             signed monetary exposure (default 100000)\n"
                     << "  --confidence C           VaR confidence in (.5,1), default .99\n"

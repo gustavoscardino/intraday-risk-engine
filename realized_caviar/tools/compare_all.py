@@ -34,7 +34,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 MODULE = HERE.parent
 REPO = MODULE.parent
-WINDOWS = {"synthetic": 60, "b3_real": 30}  # sessions; synthetic has 150, B3 60 (half, at most 60)
+WINDOWS = {"synthetic": 40, "b3_real": 40}  # sessions: the same window in every engine (synthetic has 150, b3_real 87)
 ORDER = ["Realized-CAViaR", "EWMA-N", "EWMA-t", "GARCH-t"]
 
 
