@@ -24,7 +24,7 @@ from common import RESULTS, UTILITY_TREE, Section, read_all_measurements, read_c
 from engines import ENGINES, VARIANTS
 
 ENGINE_ORDER = ["ewma", "garch_t", "realized_caviar"]
-PARTS = ["correctness", "comparability", "robustness", "performance", "modifiability"]
+PARTS = ["correctness", "comparability", "robustness", "faults", "performance", "modifiability"]
 
 
 # ----------------------------------------------------------------------------- data access
@@ -161,7 +161,7 @@ def _f_same_pipeline(m: M):
     v = default_variant("ewma")
     if m[v, "baseline_mismatches_same_policy"] == 0:
         return Finding("non-risk", "N3", "The portfolio engines read the market identically on clean data",
-                       "With the same data-quality policy, the EWMA(0.94) baseline that EWMA and GARCH-t both compute "
+                       "With both data protections off, the EWMA(0.94) baseline that EWMA and GARCH-t both compute "
                        "is identical forecast by forecast on the synthetic market: the two pipelines read, align "
                        "and return the market in the same way.", ["Cp1"])
 
@@ -221,7 +221,7 @@ def _f_window_from_file(m: M):
         left = (" (the " + ", ".join(f"{tw[v]:.0f} rows of {lab(v)}" for v in rest) + " that remain are R-2)"
                 if rest else "")
         return Finding("risk", "R-1", "The default estimation window depends on how much data follows",
-                       f"{names(vs)} set the estimation window to half of the sessions in the file (at most 60). Cut "
+                       f"{names(vs)} derive the default estimation window from the length of the file. Cut "
                        "the feed at T, as a live feed is, and earlier forecasts change ("
                        + ", ".join(f"{lab(v)}: {tr[v] - tw[v]:,.0f} values and rows" for v in vs)
                        + "). With --window-days fixed these changes vanish" + left
@@ -232,8 +232,8 @@ def _f_end_of_data(m: M):
     vs = [v for v in defaults() if m[v, "c1_truncation_fixed_window_changed"] > 0]
     if vs:
         return Finding("risk", "R-2", "The end of the data is taken as the end of the session",
-                       "The portfolio replays mark the last bar of the file as a session close (batch assumption: "
-                       "ewma replay.cpp:78, garch_t replay.cpp:94). With a fixed window, a feed cut at the first bar "
+                       "The replay marks the last bar of the file as a session close (a batch assumption). With a "
+                       "fixed window, a feed cut at the first bar "
                        "of a session still changes " + ", ".join(
                            f"{m[v, 'c1_truncation_fixed_window_changed']:.0f} rows in {lab(v)}" for v in vs)
                        + ": the pending overnight forecast is replaced by a record whose target is its own issue "
@@ -243,12 +243,13 @@ def _f_end_of_data(m: M):
 def _f_dq_policy(m: M):
     v = default_variant("ewma")
     if m[v, "baseline_mismatches"] > 0:
-        return Finding("risk", "R-3", "The engines do not apply the same data-quality policy by default",
-                       f"EWMA runs its data-quality layer by default and GARCH-t and Realized-CAViaR have none, so "
-                       f"the shared baseline of the portfolio engines differs in {m[v, 'baseline_mismatches']:.0f} "
-                       f"forecasts on the synthetic market and {m[v, 'baseline_mismatches_b3_default']:.0f} on the "
-                       "B3 data. Every statistical comparison must run the engines under one declared policy.",
-                       ["Cp1"])
+        return Finding("risk", "R-3", "The engines do not apply the same data protection by default",
+                       "By default EWMA runs its data-quality layer, GARCH-t its jump filter and Realized-CAViaR "
+                       "none, so the shared baseline of the portfolio engines differs in "
+                       f"{m[v, 'baseline_mismatches']:.0f} forecasts on the synthetic market and "
+                       f"{m[v, 'baseline_mismatches_b3_default']:.0f} on the B3 data (with both protections off: "
+                       f"{m[v, 'baseline_mismatches_same_policy']:.0f} and {m[v, 'baseline_mismatches_b3_same_policy']:.0f}). "
+                       "Every statistical comparison must state the policy it runs under.", ["Cp1"])
 
 
 def _f_no_dq_in_comparison(m: M):
@@ -258,8 +259,9 @@ def _f_no_dq_in_comparison(m: M):
         return Finding("risk", "R-6", "The comparison engine has no data-quality layer",
                        f"On the faulty feed {m[v, 'degraded_share_dev5_pct']:.1f}% of {lab(v)}'s single-stock "
                        f"forecasts move more than 5% ({m.detail(v, 'degraded_share_dev5_pct')}): a bad tick enters "
-                       "|R| and RV directly. Moving the EWMA data-quality rule into the shared loader (garch_t "
-                       "market_data, compiled by all engines) would protect every model at once.", ["R1"])
+                       "|R| and RV directly. The garch_t jump filter (data_quality.cpp, causal, one stock at a "
+                       "time) could be compiled into realized_caviar like the other garch_t sources it reuses, which "
+                       "would protect the single-stock models as well.", ["R1", "R3"])
 
 
 def _f_boundaries(m: M):
@@ -324,8 +326,8 @@ def _f_missing_policy(m: M):
                        f"missing return from the observed ones. On the B3 data, bars with up to "
                        f"{m[v, 'b3_partial_bar_max_missing']:.0f} {m.detail(v, 'b3_partial_bar_max_missing')} missing "
                        f"make {m[v, 'baseline_mismatches_b3_same_policy']:.0f} forecasts differ (up to "
-                       f"{m[v, 'b3_same_policy_max_diff_pct']:.1f}% of the baseline VaR), with the same data-quality "
-                       "policy. Real feeds make this a comparability risk the synthetic market cannot show.", ["Cp1"])
+                       f"{m[v, 'b3_same_policy_max_diff_pct']:.1f}% of the baseline VaR), with both data protections "
+                       "off. Real feeds make this a comparability risk the synthetic market cannot show.", ["Cp1"])
 
 
 def _f_fill_recalibration(m: M):
@@ -385,26 +387,53 @@ def _dq_cost_text(m: M) -> str:
 
 
 def _f_clip_tradeoff(m: M):
-    if m.has(("garch_t", "degraded_share_dev5_pct"), ("garch_t_zclip6", "degraded_share_dev5_pct"),
-             ("garch_t_zclip6", "shock_min_ratio"), ("ewma", "degraded_share_dev5_pct"), ("ewma", "r2_max_effect_pct")):
-        better = (m["ewma", "degraded_share_dev5_pct"] < m["garch_t_zclip6", "degraded_share_dev5_pct"]
-                  and m["ewma", "r2_max_effect_pct"] < m["garch_t_zclip6", "r2_max_effect_pct"])
-        return Finding("trade-off", "T-2", "Stateless clipping: half the protection, and it dampens real shocks",
-                       f"Clipping standardized shocks at 6 sd cuts the faulty-feed damage of GARCH-t from "
-                       f"{m['garch_t', 'degraded_share_dev5_pct']:.1f}% to "
-                       f"{m['garch_t_zclip6', 'degraded_share_dev5_pct']:.1f}% of forecasts, but it also clips genuine "
-                       f"shocks (lowest VaR ratio at a shock {m['garch_t_zclip6', 'shock_min_ratio']:.3f}, "
-                       f"{m['garch_t_zclip6', 'r2_bars_affected']:.0f} bars affected)."
-                       + (" In these runs the stateful rule of the EWMA engine, which confirms a suspect move with the "
-                          "next bar, does better on both sides; the engines also differ in model, so this is "
-                          "indicative (porting the rule to GARCH-t would settle it)." if better else ""),
-                       ["R1", "R2"])
+    keys = ("garch_t", "garch_t_nojump", "garch_t_zclip6")
+    if not all(m.has((k, "degraded_share_dev5_pct"), (k, "shock_min_ratio")) for k in keys if k != "garch_t_nojump"):
+        return None
+    if not m.has(("garch_t_nojump", "degraded_share_dev5_pct")):
+        return None
+    r3 = "" if not all(m.has((k, "r3_damaged_pct")) for k in keys) else (
+        f" With every recoverable fault together (R3): {m['garch_t_nojump', 'r3_damaged_pct']:.1f}% unprotected, "
+        f"{m['garch_t_zclip6', 'r3_damaged_pct']:.1f}% clipped, {m['garch_t', 'r3_damaged_pct']:.1f}% filtered.")
+    return Finding("trade-off", "T-2", "GARCH-t: a stateful jump filter against stateless clipping",
+                   f"On the faulty feed, {m['garch_t_nojump', 'degraded_share_dev5_pct']:.1f}% of the unprotected "
+                   f"GARCH-t forecasts stray more than 5%; clipping shocks at 6 sd leaves "
+                   f"{m['garch_t_zclip6', 'degraded_share_dev5_pct']:.1f}% and the jump filter (default) "
+                   f"{m['garch_t', 'degraded_share_dev5_pct']:.2f}%." + r3 + " On genuine shocks clipping keeps a "
+                   f"lowest VaR ratio of {m['garch_t_zclip6', 'shock_min_ratio']:.3f} for "
+                   f"{m['garch_t_zclip6', 'r2_bars_affected']:.0f} bars, the filter "
+                   f"{m['garch_t', 'shock_min_ratio']:.3f} for {m['garch_t', 'r2_bars_affected']:.0f} bars: it delays a "
+                   "move confined to one stock by one bar, then lets it in at full size, while clipping shrinks "
+                   "every large shock for as long as it is in the variance.", ["R1", "R2", "R3"])
+
+
+def _f_fault_catalogue(m: M):
+    vs = [v for v in defaults() if m.has((v, "r3_damaged_pct"))]
+    if not vs:
+        return None
+    _, tree = read_csv(UTILITY_TREE)
+    row = next((r for r in tree if r["metric"] == "r3_damaged_pct"), None)
+    if row is None:
+        return None
+    limit = float(row["threshold"])
+    bad = [v for v in vs if m[v, "r3_damaged_pct"] > limit]
+    listing = "; ".join(f"{lab(v)}: {m.detail(v, 'r3_damaged_pct')}" for v in vs)
+    if bad:
+        return Finding("risk", "R-9", "Moderate doses of every recoverable fault still move the VaR",
+                       f"On faulty copies of both datasets with missing, duplicated, out-of-order and late rows, halts, "
+                       f"frozen quotes, bad ticks, corrupt values and early-ending sessions together ({listing}), "
+                       f"{names(bad)} stay above {limit:.0f}% of forecasts more than 5% away from the clean run. "
+                       "atam/results/faults/ shows which fault does it, one kind at a time: missing data is the "
+                       "residual problem (no protection can recover a print that never arrives).", ["R3"])
+    return Finding("non-risk", "N7", "Every engine absorbs the fault catalogue",
+                   f"With every recoverable fault together ({listing}), no engine moves more than {limit:.0f}% of its "
+                   "forecasts more than 5% away from the clean run.", ["R3"])
 
 
 FINDING_RULES = [_f_hidden_shock, _f_no_value_lookahead, _f_deterministic, _f_same_pipeline, _f_matched, _f_latency_ok, _f_model_cost,
                  _f_window_from_file, _f_end_of_data, _f_dq_policy, _f_no_interface, _f_grid, _f_no_dq_in_comparison,
                  _f_boundaries, _f_missing_policy, _f_fill_recalibration, _f_opening_hour, _f_reuse, _f_dq_tradeoff,
-                 _f_clip_tradeoff]
+                 _f_clip_tradeoff, _f_fault_catalogue]
 
 
 # ----------------------------------------------------------------------------- trade-off map
@@ -412,7 +441,7 @@ FINDING_RULES = [_f_hidden_shock, _f_no_value_lookahead, _f_deterministic, _f_sa
 
 def tradeoff_rows(m: M) -> tuple[list[str], list[tuple[str, str, dict]]]:
     """Architectural decisions x quality attributes: (sign, short evidence) per affected attribute."""
-    attrs = ["Robustness\n(R1)", "Shock reaction\n(R2)", "Comparability\n(Cp1)", "Correctness\n(C1)", "Latency\n(P1)",
+    attrs = ["Robustness\n(R1, R3)", "Shock reaction\n(R2)", "Comparability\n(Cp1)", "Correctness\n(C1)", "Latency\n(P1)",
              "Scope / scale\n(P2)", "Modifiability\n(M1, M2)"]
     R1, R2, CP, C1, P1, P2, MO = attrs
     g, e, c = default_variant("garch_t"), default_variant("ewma"), default_variant("realized_caviar")
@@ -424,8 +453,12 @@ def tradeoff_rows(m: M) -> tuple[list[str], list[tuple[str, str, dict]]]:
             R2: ("~", f"{m['ewma', 'r2_max_effect_pct']:.1f}% off for\n{m['ewma', 'r2_bars_affected']:.0f} bar"),
             CP: ("-", f"{m[e, 'baseline_mismatches']:.0f} / {m[e, 'baseline_mismatches_b3_default']:.0f} forecasts\ndiffer"),
             P1: ("~", dq_cost_cell)}),
+        ("Jump filter: isolated jump held\none bar (default)", "GARCH-t", {
+            R1: ("+", f"{m['garch_t_nojump', 'degraded_share_dev5_pct']:.1f}% -> {m[g, 'degraded_share_dev5_pct']:.2f}%\noff >5%"),
+            R2: ("~", f"x{m[g, 'shock_min_ratio']:.3f}, {m[g, 'r2_bars_affected']:.0f}\nbar(s) affected"),
+            CP: ("-", "a policy of its\nown (R-3)")}),
         ("Stateless clipping of shocks\nat 6 sd (option)", "GARCH-t", {
-            R1: ("+", f"{m['garch_t', 'degraded_share_dev5_pct']:.1f}% -> {m['garch_t_zclip6', 'degraded_share_dev5_pct']:.1f}%\noff >5%"),
+            R1: ("+", f"{m['garch_t_nojump', 'degraded_share_dev5_pct']:.1f}% -> {m['garch_t_zclip6', 'degraded_share_dev5_pct']:.1f}%\noff >5%"),
             R2: ("-", f"x{m['garch_t_zclip6', 'shock_min_ratio']:.3f}, {m['garch_t_zclip6', 'r2_bars_affected']:.0f}\nbars affected")}),
         ("No data-quality layer\n(loader only)", "Realized-CAViaR", {
             R1: ("-", f"{m[c, 'degraded_share_dev5_pct']:.1f}% of stock\nforecasts off >5%"),
@@ -440,12 +473,18 @@ def tradeoff_rows(m: M) -> tuple[list[str], list[tuple[str, str, dict]]]:
             CP: ("~", "opening hour\nnot evaluated"),
             **({R2: ("-", f"{m[c, 'r2_hidden_shocks']:.0f} shock before a halt\nnever enters")}
                if m[c, "r2_hidden_shocks"] > 0 else {})}),
-        ("Window = half of the sessions\nin the file", "all three", {
-            C1: ("-", f"{sum(m[v, 'c1_truncation_changed'] for v in defaults()):,.0f} values\nchange when cut")}),
-        ("End of data = end of session", "EWMA, GARCH-t", {
-            C1: ("-", f"{m[e, 'c1_truncation_fixed_window_changed']:.0f} EWMA overnight\nrows replaced")}),
-        ("Tail recalibration on fills\ninside the bar cycle", "GARCH-t", {
-            P1: ("-", f"up to {m[g, 'latency_max_us']:,.0f} us\nvs {m[g, 'latency_p50_us']:.0f} us median")}),
+    ]
+    # decisions that the evidence of this run still shows (a fixed one drops out of the map)
+    if sum(m[v, "c1_truncation_changed"] - m[v, "c1_truncation_fixed_window_changed"] for v in defaults()) > 0:
+        rows.append(("Window derived from the\nlength of the file", "engines", {
+            C1: ("-", f"{sum(m[v, 'c1_truncation_changed'] for v in defaults()):,.0f} values\nchange when cut")}))
+    if any(m[v, "c1_truncation_fixed_window_changed"] > 0 for v in defaults()):
+        rows.append(("End of data = end of session", "replays", {
+            C1: ("-", f"{max(m[v, 'c1_truncation_fixed_window_changed'] for v in defaults()):.0f} rows replaced\nwhen cut")}))
+    if m[g, "latency_max_us"] > 3 * m[g, "latency_max_without_fill_bars_us"]:
+        rows.append(("Tail recalibration on fills\ninside the bar cycle", "GARCH-t", {
+            P1: ("-", f"up to {m[g, 'latency_max_us']:,.0f} us\nvs {m[g, 'latency_p50_us']:.0f} us median")}))
+    rows += [
         ("Compiles ewma and garch_t\nsources", "Realized-CAViaR", {
             CP: ("+", "same loader and\nestimators"),
             MO: ("-", f"{m[c, 'reused_sibling_sources']:.0f} foreign files,\nsilent coupling")}),

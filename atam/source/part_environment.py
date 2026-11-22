@@ -60,7 +60,7 @@ def run(fresh: bool = False):
         if not e.enabled:
             s.add(f"  {e.label}: not evaluated yet ({e.note})")
             continue
-        for prog in (e.program, e.benchmark):
+        for prog in [p for p in (e.program, e.benchmark) if p]:  # no separate benchmark: listed once
             exe = e.exe(prog)
             s.add(f"  {rel(exe)}  sha256 {sha256(exe)[:16]}  {exe.stat().st_size / 1e6:.2f} MB")
     write_text(RESULTS / "environment.txt", s.text())

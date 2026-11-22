@@ -33,7 +33,8 @@ DEV_LIMIT = 5.0  # % deviation from the clean-feed VaR counted as damaged
 DATASETS = {"synthetic": "XPET3", "b3_real": "PETR4"}  # dataset -> a stock (unused: every stock is run)
 FEEDS = WORK / "faults"  # faulty datasets written by inject_faults.py (not versioned)
 OUT = RESULTS / "faults"
-VARIANT_KEYS = ["ewma", "ewma_nodq", "garch_t", "garch_t_zclip6", "garch_t_jump", "realized_caviar"]
+VARIANT_KEYS = ["ewma", "ewma_nodq", "garch_t", "garch_t_nojump", "garch_t_zclip6", "realized_caviar"]
+SCORED = "everything"  # the scenario behind the R3 measure: moderate doses of every recoverable fault
 JOBS = 3
 
 
@@ -131,12 +132,15 @@ def run(fresh: bool = False) -> list[Measurement]:
             runs[(v, ds, tag.split(f"faults_{ds}_", 1)[1])] = outs
 
     rows, ms = [], []
+    clean_rate: dict[tuple[str, str], float] = {}  # exception rate of the whole clean run
     for ds in DATASETS:
         for v in variants:
             clean_outs = runs[(v, ds, "clean")]
             if status(clean_outs) != "ok":
                 raise RuntimeError(f"{v} failed on the clean {ds} dataset: {status(clean_outs)}")
             clean = series(clean_outs, v)
+            scored = [x for x in clean.values() if x[0] > 0 and math.isfinite(x[1])]
+            clean_rate[(ds, v)] = 100 * sum(pnl < -var for var, pnl in scored) / len(scored) if scored else math.nan
             for s in names:
                 outs = runs[(v, ds, s)]
                 row = {"dataset": ds, "scenario": s, "variant": v, "status": status(outs)}
@@ -155,6 +159,20 @@ def run(fresh: bool = False) -> list[Measurement]:
     header = ["dataset", "scenario", "variant", "status", "compared", "lost_pct", "damaged_pct", "median_dev_pct",
               "max_dev_pct", "exc_rate_clean_pct", "exc_rate_faulty_pct", "detected_pct", "detected_by_fault"]
     write_csv(OUT / "by_scenario.csv", header, rows)
+
+    # R3 (utility tree): damage on the scenario with every recoverable fault together, worst dataset
+    for v in variants:
+        got = {r["dataset"]: r for r in rows if r["variant"] == v and r["scenario"] == SCORED}
+        vals = {ds: r["damaged_pct"] for ds, r in got.items() if not r["status"].startswith("failed")}
+        if len(vals) < len(got) or not vals:
+            ms.append(Measurement("R3", v, "r3_damaged_pct", 100.0, "%", f"the run failed on the {SCORED} scenario"))
+            continue
+        worst = max(vals, key=vals.get)
+        unit = "single-stock forecasts, every stock pooled" if ENGINES[VARIANTS[v].engine].per_ticker else "portfolio forecasts"
+        ms.append(Measurement("R3", v, "r3_damaged_pct", vals[worst], "%",
+                              "; ".join(f"{ds} {x:.1f}%" for ds, x in vals.items())
+                              + f" of the {unit} off by more than {DEV_LIMIT:.0f}% (worst: {worst}); lost: "
+                              + "; ".join(f"{ds} {got[ds]['lost_pct']:.1f}%" for ds in vals)))
 
     def cell(r, key, fmt="{:.1f}"):
         x = r.get(key)
@@ -178,8 +196,7 @@ def run(fresh: bool = False) -> list[Measurement]:
         sec.lines += table(["scenario", *[VARIANTS[v].label for v in variants]], trows)
         sec.add("")
         sec.add(f"{ds}: exception rate % at 99% against the true outcome, faulty run (clean run in the first line)")
-        trows = [["clean data"] + [cell(next(r for r in rows if r["dataset"] == ds and r["variant"] == v), "exc_rate_clean_pct", "{:.2f}")
-                                   for v in variants]]
+        trows = [["clean data"] + [f"{clean_rate[(ds, v)]:.2f}" for v in variants]]
         for s in names:
             by_v = {r["variant"]: r for r in rows if r["dataset"] == ds and r["scenario"] == s}
             trows.append([s] + [cell(by_v[v], "exc_rate_faulty_pct", "{:.2f}") for v in variants])

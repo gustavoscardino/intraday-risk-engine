@@ -79,7 +79,7 @@ ENGINES: dict[str, Engine] = {
     ),
     "garch_t": Engine(
         key="garch_t", label="GARCH-t", folder="garch_t", program="intraday_risk", benchmark="benchmark",
-        model="GARCH(1,1)-t", var99="var_99", unprotected="garch_t",
+        model="GARCH(1,1)-t", var99="var_99", unprotected="garch_t_nojump",
         baseline_sigma="ewma_sigma", baseline_var99="ewma_var_99",
         calibration_files=(("daily_summary.csv", ("date",), "date", "date"),
                            ("garch_params_daily.csv", ("date", "ticker"), "date", "date")),
@@ -101,12 +101,13 @@ VARIANTS: dict[str, Variant] = {
                     "data-quality layer with SPIKE rule confirmed on the next bar (default)"),
     "ewma_nodq": Variant("ewma_nodq", "ewma", "EWMA (DQ off)", ("--no-dq",), False,
                          "data-quality layer switched off (plain loader)"),
-    "garch_t": Variant("garch_t", "garch_t", "GARCH-t", (), True,
-                       "no data-quality layer; duplicates dropped by the loader (default)"),
-    "garch_t_zclip6": Variant("garch_t_zclip6", "garch_t", "GARCH-t (clip 6 sd)", ("--z-clip", "6"), False,
-                              "stateless clipping of standardized shocks at 6 sd"),
-    "garch_t_jump": Variant("garch_t_jump", "garch_t", "GARCH-t (jump filter)", ("--jump-filter",), False,
-                            "isolated price jumps held one bar: dropped if they revert, kept otherwise"),
+    "garch_t": Variant("garch_t", "garch_t", "GARCH-t (filter on)", (), True,
+                       "jump filter: an isolated price jump is held one bar, dropped if it reverts, "
+                       "kept one bar late otherwise (default)"),
+    "garch_t_nojump": Variant("garch_t_nojump", "garch_t", "GARCH-t (filter off)", ("--no-jump-filter",), False,
+                              "jump filter switched off: every print enters the model"),
+    "garch_t_zclip6": Variant("garch_t_zclip6", "garch_t", "GARCH-t (clip 6 sd)", ("--no-jump-filter", "--z-clip", "6"),
+                              False, "stateless clipping of standardized shocks at 6 sd instead of the jump filter"),
     "realized_caviar": Variant("realized_caviar", "realized_caviar", "Realized-CAViaR", (), True,
                                "no data-quality layer; one instrument, three matched models (default)"),
 }

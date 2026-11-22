@@ -7,7 +7,7 @@ engine is one architecture:
 | Engine | Folder | Architecture in one line |
 |---|---|---|
 | EWMA | `ewma/` | portfolio engine in layers, with a data-quality layer (NORMAL / DEGRADED / FREEZE) |
-| GARCH-t | `garch_t/` | portfolio engine: GARCH per asset, dynamic correlation, EVT tail, options by Monte Carlo |
+| GARCH-t | `garch_t/` | portfolio engine: GARCH per asset, dynamic correlation, EVT tail, options by Monte Carlo, jump filter on the input |
 | Realized-CAViaR | `realized_caviar/` | single-instrument engine; CAViaR plus matched EWMA-N and GARCH-t baselines on the same targets |
 
 The evaluation follows the four ATAM steps asked for the project:
@@ -19,6 +19,19 @@ The evaluation follows the four ATAM steps asked for the project:
    artifact, environment, response, response measure).
 4. **Evaluation**: `source/` runs the engines, measures every scenario, and writes the scorecard,
    the risks, non-risks, sensitivity points and trade-off points to `results/`.
+
+How the nine steps of the method (Kazman, Klein and Clements, 2000) map to this folder:
+
+| ATAM step | Where |
+|---|---|
+| 1-2. Present the method and the business drivers | this README; `SLIDES.md` |
+| 3. Present the architectures | `architecture/` (diagrams of the three engines) and the table above |
+| 4. Identify the architectural approaches | `ENGINES` and `VARIANTS` in `source/engines.py`: each variant switches one decision |
+| 5. Generate the utility tree | `utility_tree.csv` (priorities set by the team) |
+| 6. Analyse the approaches | the parts in `source/`; findings in `results/report.txt` |
+| 7. Brainstorm and prioritize scenarios with the stakeholders | open: the utility tree and its thresholds are to be validated with the advisor (questions in `SLIDES.md`) |
+| 8. Analyse again with the new priorities | rerun `run.bat` after editing `utility_tree.csv`: thresholds are data |
+| 9. Present the results | `results/report.txt`, `results/figures/`, `results/latex/`, `SLIDES.md` |
 
 Every number in `results/` is produced by `run.bat` / `run.sh`; nothing is typed by hand.
 
@@ -46,7 +59,9 @@ atam\run.bat --only robustness,scorecard   :: some parts only
 (`requirements.txt`, installed by the scripts when missing), CMake and a C++20 compiler. EWMA and
 GARCH-t use their versioned programs in `bin/`; Realized-CAViaR is built from source
 (`realized_caviar/build.bat` the first time, an incremental rebuild afterwards, because it compiles
-sources of ewma and garch_t). A full run takes about 10 minutes; a cached rerun a few seconds.
+sources of ewma and garch_t). A full run takes about an hour on the reference laptop, most of it the
+fault catalogue (every engine on 30 faulty copies, Realized-CAViaR once per stock); a cached rerun
+takes a few seconds.
 
 ## What it produces
 
@@ -65,7 +80,8 @@ results/
 |---|---|---|
 | `correctness` | C1, Rp1 | prices after a cut time are replaced (perturbation) or removed (truncation): nothing issued before the cut may change; three identical runs compared cell by cell |
 | `comparability` | Cp1 | the EWMA(0.94) baseline that EWMA and GARCH-t both compute, forecast by forecast, on synthetic and B3 data; the shared targets of Realized-CAViaR's three models |
-| `robustness` | R1, R2 | the faulty feed against the clean one; the VaR at scripted genuine shocks with and without each engine's protection |
+| `robustness` | R1, R2 | the faulty feed against the clean one; the VaR at scripted genuine shocks with and without each engine's protection (Realized-CAViaR, which has none: whether the shock reaches its features) |
+| `faults` | R3 | faulty copies of both datasets written by `data/tools/inject_faults.py`, one kind of fault per copy plus all of them together, each engine against its own clean run; the faults flagged by the EWMA data-quality layer against the list of every fault injected |
 | `performance` | P1-P4 | per-bar latency from the replays, the benchmark programs, refit times, model-state size |
 | `modifiability` | M1, M2 | static analysis of the sources: files touched to add a model, hard-wired time-grid decisions, reuse |
 | `scorecard` | all | joins the measurements with the utility tree; writes findings, figures and LaTeX |

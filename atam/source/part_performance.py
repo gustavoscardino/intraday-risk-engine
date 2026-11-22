@@ -268,7 +268,13 @@ def run(fresh: bool = False) -> list[Measurement]:
                            f"daily refit in the replay: p50 {agg['refit_p50']:.2f} ms, max {agg['refit_max']:.2f} ms "
                            f"({per_run[0]['refits']} refits, median of {len(runs)} runs)"),
                Measurement("P3", v.key, "refit_p50_ms", agg["refit_p50"], "ms"),
-               Measurement("P1", v.key, "latency_max_us", agg["max"], "us")]
+               Measurement("P1", v.key, "latency_max_us", agg["max"], "us"),
+               # P4 asks for a constant state per instrument: a portfolio engine keeps the estimation
+               # window of every stock and an n x n correlation, so its state is not one
+               Measurement("P4", v.key, "state_bytes_per_asset", math.nan, "n/a",
+                           "portfolio engine: the state per stock grows with the estimation window (40 sessions of "
+                           "returns kept for the daily refit) and with the book (a row of the n x n correlation); "
+                           "the per-instrument filter states are compared in the matched model-stage benchmark")]
         ms += _spread(v.key, per_run)
     # the non-default variants: the latency cost of switching a decision on or off (same three runs)
     for v in VARIANTS.values():

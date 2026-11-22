@@ -5,9 +5,11 @@ The two scenarios pull in opposite directions, which is the trade-off this part 
       must not move the forecasts away from those of the clean feed;
   R2  genuine extreme moves of the clean feed must enter the risk estimate at once, so the VaR
       issued at the shock bar is compared with the same engine without protection.
-Each engine is run with and without its protection (EWMA: data-quality layer; GARCH-t: clipping of
-standardized shocks at 6 sd). The events come from data/synthetic/scenario.csv, so a regenerated
-market needs no code change here.
+Each engine is run with and without its protection (EWMA: data-quality layer; GARCH-t: jump filter,
+and clipping of standardized shocks at 6 sd as the alternative). An engine with no protection to
+switch off (Realized-CAViaR) is checked in absolute terms instead: does the shock reach the model's
+features? The events come from data/synthetic/scenario.csv, so a regenerated market needs no code
+change here.
 """
 from __future__ import annotations
 

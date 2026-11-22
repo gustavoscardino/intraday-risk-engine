@@ -6,10 +6,11 @@ exposure and realized P&L of every forecast) must coincide forecast by forecast.
 points to an input-handling decision that makes the model comparison unfair.
 
 Pairs compared, on the synthetic market and on the real B3 data:
-  default configurations      EWMA (data-quality layer on) vs GARCH-t;
-  same data-quality policy    EWMA (layer off) vs GARCH-t.
-Differences are attributed to the EWMA data-quality layer when its dq_events.csv logs an event for
-the bar at which the forecast was issued.
+  default configurations      EWMA (data-quality layer on) vs GARCH-t (jump filter on);
+  same data policy            EWMA (layer off) vs GARCH-t (filter off): every print enters both.
+The two pairs differ only by the data protections, so a default-pair difference that the same-policy
+pair does not show is attributed to them; the differences left with the same policy come from the
+pipelines' missing-data policies (the bar of the last partial print before the forecast is cited).
 """
 from __future__ import annotations
 
@@ -24,7 +25,8 @@ from engines import run as run_engine
 
 TOL = 0.006  # values are printed with at least two decimals: half a cent plus rounding
 FIELDS = ("baseline_var99", "baseline_sigma", "net_exposure", "realized_pnl")
-PAIRS = (("ewma", "garch_t", "default configurations"), ("ewma_nodq", "garch_t", "same data-quality policy"))
+PAIRS = (("ewma", "garch_t", "default configurations"), ("ewma_nodq", "garch_t_nojump", "same data policy"))
+PROTECTION = "data protection"  # cause of a difference due to the EWMA data-quality layer or the GARCH-t jump filter
 
 
 def _col(variant: str, field: str) -> str:
@@ -49,6 +51,8 @@ def compare_pair(a_key: str, a_out: Path, b_key: str, b_out: Path, partial: dict
     for out in (a_out, b_out):
         if (out / "dq_events.csv").is_file():
             dq_bars |= {r["time"] for r in read_csv(out / "dq_events.csv")[1]}
+        if (out / "jump_events.csv").is_file():
+            dq_bars |= {r["time"] for r in read_csv(out / "jump_events.csv")[1]}
     partial_times = sorted(partial)
     mismatch, series = [], []
     for t in common:
@@ -135,14 +139,14 @@ def _figure(results: dict, events: dict, partials: dict) -> str:
     fig.subplots_adjust(left=0.085, right=0.985, top=0.775, bottom=0.07, hspace=0.42)
     heading(fig, "Cp1 - Comparability: the two pipelines differ only in two input policies",
             "Shared EWMA(0.94) baseline VaR 99%, EWMA engine vs GARCH-t engine, forecast by forecast. Differences come "
-            "from the EWMA data-quality layer (blue)\nand, on real data, from how a bar with missing assets updates "
-            "the covariance (gray: same data-quality policy in both engines)")
+            "from the data protections (blue: EWMA data-quality layer,\nGARCH-t jump filter) and, on real data, from how "
+            "a bar with missing assets updates the covariance (gray: both protections off)")
     for ax, ds in zip(axes[:, 0], datasets):
         aligned, default = results[ds]["ewma_nodq"], results[ds]["ewma"]
         xs = [x for x, _ in aligned["series"]]
         ys = [y for _, y in aligned["series"]]
         ax.plot(xs, ys, color=MUTED, linewidth=1.4,
-                label=f"same data-quality policy: {len(aligned['mismatch'])} of {aligned['common']} differ")
+                label=f"same data policy: {len(aligned['mismatch'])} of {aligned['common']} differ")
         pts = [(x, y) for x, y in default["series"] if abs(y) > 1e-9]
         ax.scatter([x for x, _ in pts], [y for _, y in pts], s=40, color=ENGINE_COLOR["ewma"], zorder=4,
                    edgecolors=SURFACE, linewidths=1.5,
@@ -165,7 +169,7 @@ def _figure(results: dict, events: dict, partials: dict) -> str:
                         arrowprops={"arrowstyle": "-", "color": MUTED, "linewidth": 0.8})
         ax.axhline(0, color=MUTED, linewidth=0.6)
         ax.set_title({"synthetic": "Synthetic market (150 sessions, 15 stocks)",
-                      "b3_real": "Real B3 data (60 sessions, 15 stocks)"}.get(ds, ds),
+                      "b3_real": "Real B3 data (87 sessions, 15 stocks)"}.get(ds, ds),
                      fontsize=11.5, fontweight="normal", color=INK_2)
         ax.set_ylabel("difference of\nbaseline VaR 99% (%)")
         lim = max([abs(y) for _, y in default["series"]] + [1.0]) * 1.4
@@ -179,8 +183,9 @@ def _figure(results: dict, events: dict, partials: dict) -> str:
 def run(fresh: bool = False) -> list[Measurement]:
     sources = {"synthetic": SYNTHETIC, "b3_real": B3_REAL}
     datasets = {
-        "synthetic": {k: clean_runs(k, fresh, reps=1)[0] for k in ("ewma", "ewma_nodq", "garch_t")},
-        "b3_real": {k: run_engine(k, "b3_real", B3_REAL, fresh=fresh) for k in ("ewma", "ewma_nodq", "garch_t")},
+        "synthetic": {k: clean_runs(k, fresh, reps=1)[0] for k in ("ewma", "ewma_nodq", "garch_t", "garch_t_nojump")},
+        "b3_real": {k: run_engine(k, "b3_real", B3_REAL, fresh=fresh)
+                    for k in ("ewma", "ewma_nodq", "garch_t", "garch_t_nojump")},
     }
     s = Section("Cp1 - comparability (shared EWMA(0.94) baseline, exposure and realized P&L, forecast by forecast)")
     rows, results, events, partials = [], {}, {}, {}
@@ -198,12 +203,12 @@ def run(fresh: bool = False) -> list[Measurement]:
               + (": " + ", ".join(f"{t} ({k} missing)" for t, k in sorted(partial.items())[:4]) if partial else ""))
         for a, b, _ in PAIRS:
             results[ds][a] = compare_pair(a, outs[a], b, outs[b], partial)
-        # differential attribution: the two pairs differ only by the EWMA data-quality layer, so a
+        # differential attribution: the two pairs differ only by the data protections, so a
         # default-pair difference that the same-policy pair also shows comes from the pipelines'
-        # missing-data policies, and any other one from the data-quality layer
+        # missing-data policies, and any other one from the protections
         same_policy = {m["forecast_time"]: m["cause"] for m in results[ds]["ewma_nodq"]["mismatch"]}
         for m in results[ds]["ewma"]["mismatch"]:
-            m["cause"] = same_policy.get(m["forecast_time"], "data-quality layer")
+            m["cause"] = same_policy.get(m["forecast_time"], PROTECTION)
         for a, b, label in PAIRS:
             res = results[ds][a]
             s.add(f"  {VARIANTS[a].label} vs {VARIANTS[b].label} ({label}): {len(res['mismatch'])} of {res['common']} "
@@ -223,7 +228,7 @@ def run(fresh: bool = False) -> list[Measurement]:
 
     syn, b3 = results["synthetic"], results["b3_real"]
     detail = (f"synthetic: {len(syn['ewma']['mismatch'])} of {syn['ewma']['common']} differ ({_causes(syn['ewma'])}); "
-              f"same data-quality policy: {len(syn['ewma_nodq']['mismatch'])}. B3 real data: "
+              f"same data policy: {len(syn['ewma_nodq']['mismatch'])}. B3 real data: "
               f"{len(b3['ewma']['mismatch'])} of {b3['ewma']['common']} default, {len(b3['ewma_nodq']['mismatch'])} "
               f"same policy ({_causes(b3['ewma_nodq'])})")
     ms = []
