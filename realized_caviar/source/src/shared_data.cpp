@@ -8,13 +8,17 @@
 #include <stdexcept>
 
 namespace rcaviar {
-std::vector<Window> make_bar_windows(const garcht::BarPanel& panel, std::size_t asset) {
+using garcht::JumpFilterConfig;
+std::vector<Window> make_bar_windows(const garcht::BarPanel& panel, std::size_t asset,
+                                     const garcht::BarPanel* printed, const std::vector<double>* view_returns) {
     if (asset>=panel.num_assets()) throw std::invalid_argument("asset index out of range");
-    const auto session=garcht::detect_session(panel);
+    const auto session=garcht::detect_session(printed?*printed:panel);
     if (session.bar_minutes!=15) throw std::invalid_argument("shared-data mode requires 15-minute bars");
-    std::vector<double> returns;
+    std::vector<double> returns, printed_returns;
     std::vector<int> slots;
     garcht::bar_returns(panel,session,returns,slots);
+    if (view_returns) returns=*view_returns;
+    if (printed) garcht::bar_returns(*printed,session,printed_returns,slots);
     const std::size_t n=panel.num_assets();
     auto price=[&](const std::vector<double>& m,std::size_t i) { const double p=panel.at(m,i,asset); return std::isfinite(p) && p>0 ? p : std::nan(""); };
     auto valid_close=[&](std::size_t i) { return std::isfinite(price(panel.close,i)); };
@@ -54,15 +58,21 @@ std::vector<Window> make_bar_windows(const garcht::BarPanel& panel, std::size_t 
         if (missing>2 || !std::isfinite(aggregate) || !std::isfinite(rv)) continue;
         // Forecast existence depends on observed features, never future data.
         // A missing next bar has an unscorable target but still updates q.
+        const bool next_bar=i+1<panel.num_bars() && panel.date[i+1]==panel.date[i] && slots[i+1]==slots[i]+1
+            && panel.time_key[i+1]-panel.time_key[i]==900000;
         double target=std::nan("");
-        if (i+1<panel.num_bars() && panel.date[i+1]==panel.date[i] && slots[i+1]==slots[i]+1
-            && panel.time_key[i+1]-panel.time_key[i]==900000 && valid_close(i+1))
-            target=returns[(i+1)*panel.num_assets()+asset];
-        windows.push_back({panel.time_key[i]/1000,panel.time_key[i]/1000+900,{aggregate,rv,target}});
+        if (next_bar && valid_close(i+1)) target=returns[(i+1)*n+asset];
+        Window w{panel.time_key[i]/1000,panel.time_key[i]/1000+900,{aggregate,rv,target}};
+        if (printed) {  // the same target as printed: what the forecast is scored on
+            const double c=printed->at(printed->close,i+1<panel.num_bars()?i+1:i,asset);
+            w.scored_return=next_bar && std::isfinite(c) && c>0 ? printed_returns[(i+1)*n+asset] : std::nan("");
+        }
+        windows.push_back(w);
     }
     return windows;
 }
-SharedData read_shared_data(const std::string& folder, const std::string& ticker, int window_days, const std::string& prices_path) {
+SharedData read_shared_data(const std::string& folder, const std::string& ticker, int window_days, const std::string& prices_path,
+                            bool jump_filter) {
     if (window_days<0) throw std::invalid_argument("window-days must be positive");
     const auto csv=garcht::read_csv((std::filesystem::path(folder)/"assets.csv").string());
     const int column=csv.column("ticker");
@@ -76,7 +86,35 @@ SharedData read_shared_data(const std::string& folder, const std::string& ticker
     const auto found=std::find(tickers.begin(),tickers.end(),upper(ticker));
     if (found==tickers.end()) throw std::invalid_argument("ticker absent from assets.csv: "+ticker);
     const auto asset=static_cast<std::size_t>(found-tickers.begin());
-    const auto panel=garcht::load_bars_csv(prices_path.empty()?(std::filesystem::path(folder)/"prices_15m.csv").string():prices_path,tickers);
+    const auto raw=garcht::load_bars_csv(prices_path.empty()?(std::filesystem::path(folder)/"prices_15m.csv").string():prices_path,tickers);
+    const auto session=garcht::detect_session(raw);
+    // the models' view: the jump filter decides every stock's bars in time order (causal). A bad tick
+    // never enters. A held print that the next bar confirms is genuine: it is put back at its own bar,
+    // so the features and the baselines' returns are those of the prices as printed, but the window
+    // of that bar becomes a catch-up window (emit=false): the CAViaR recursion takes its update when
+    // the confirmation arrives, before the next bar's, and no forecast is issued at the held bar. A
+    // recursion fed one update less would carry the shock one step less than the unprotected model.
+    garcht::BarPanel panel=raw;
+    std::vector<double> returns; std::vector<int> slots;
+    garcht::JumpFilter filter(raw.num_assets(),session);
+    std::vector<char> catch_up(panel.num_bars(),0);  // bars of a confirmed held print of `asset`
+    if (jump_filter) {
+        for (std::size_t t=0;t<panel.num_bars();++t) {
+            filter.apply(panel,t);
+            if (t+1==panel.num_bars() || panel.date[t+1]!=panel.date[t]) filter.end_session();
+        }
+        std::vector<std::size_t> held(panel.num_assets(),panel.num_bars());  // last held bar per stock
+        for (const auto& e:filter.events()) {
+            if (e.action=="HELD") held[e.asset]=e.bar;
+            else if (e.action=="SHOCK_ACCEPTED" && held[e.asset]<panel.num_bars()) {
+                const std::size_t k=held[e.asset]*panel.num_assets()+e.asset;
+                panel.close[k]=raw.close[k];  // the genuine print, back at its bar
+                if (e.asset==asset) catch_up[held[e.asset]]=1;
+                held[e.asset]=panel.num_bars();
+            }
+        }
+    }
+    garcht::bar_returns(panel,session,returns,slots);
     std::vector<int> dates;
     for (int date:panel.date) if (dates.empty() || date!=dates.back()) dates.push_back(date);
     // default: 40 sessions, the same window in every engine (half of the sessions if fewer)
@@ -84,13 +122,25 @@ SharedData read_shared_data(const std::string& folder, const std::string& ticker
     if (days==0 || days>=dates.size()) throw std::invalid_argument("training window must leave out-of-sample sessions");
     std::int64_t cutoff=0;
     for (std::size_t i=0;i<panel.num_bars();++i) if (panel.date[i]==dates[days-1]) cutoff=panel.time_key[i]/1000;
-    auto windows=make_bar_windows(panel,asset);
+    auto windows=make_bar_windows(panel,asset,jump_filter?&raw:nullptr,&returns);
     if (windows.empty()) throw std::invalid_argument("no complete intraday windows for ticker");
-    SharedData result{std::move(windows),cutoff,dates.size(),days,panel.bad_rows,panel.duplicates,{},{},{},{},0};
-    std::vector<double> returns; std::vector<int> slots;
-    const auto session=garcht::detect_session(panel);
+    for (auto& w:windows) {  // forecast time = close of the window's bar
+        const auto it=std::lower_bound(panel.time_key.begin(),panel.time_key.end(),w.forecast_time*1000);
+        if (it!=panel.time_key.end() && *it==w.forecast_time*1000 && catch_up[static_cast<std::size_t>(it-panel.time_key.begin())])
+            w.emit=false;
+    }
+    SharedData result{std::move(windows),cutoff,dates.size(),days,raw.bad_rows,raw.duplicates,{},{},{},{},0,{},{}};
     result.bars_per_day=session.bars_per_day;
-    garcht::bar_returns(panel,session,returns,slots);
+    if (jump_filter) {
+        const auto c=filter.counts();
+        result.jump_events=filter.events();
+        result.protection="jump filter (z "+std::to_string(static_cast<int>(JumpFilterConfig{}.z))+", every stock): isolated jumps held "
+            +std::to_string(c.held)+" (bad ticks removed "+std::to_string(c.bad_ticks)+", genuine moves accepted one bar late "
+            +std::to_string(c.accepted)+", held at a session's last bar "+std::to_string(c.undecided)+"), market moves kept "
+            +std::to_string(c.market_moves);
+    } else {
+        result.protection="data protection: none";
+    }
     for (std::size_t i=0;i<panel.num_bars();++i) {
         const auto time=panel.time_key[i]/1000;
         if (i==0 || panel.date[i]!=panel.date[i-1]) result.session_starts.push_back(time);

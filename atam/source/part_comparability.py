@@ -6,11 +6,13 @@ exposure and realized P&L of every forecast) must coincide forecast by forecast.
 points to an input-handling decision that makes the model comparison unfair.
 
 Pairs compared, on the synthetic market and on the real B3 data:
-  default configurations      EWMA (data-quality layer on) vs GARCH-t (jump filter on);
+  default configurations      EWMA (data-quality layer and the shared jump filter) vs GARCH-t (the
+                              shared jump filter);
   same data policy            EWMA (layer off) vs GARCH-t (filter off): every print enters both.
-The two pairs differ only by the data protections, so a default-pair difference that the same-policy
-pair does not show is attributed to them; the differences left with the same policy come from the
-pipelines' missing-data policies (the bar of the last partial print before the forecast is cited).
+The baseline is one implementation in both engines (common/, RiskMetricsModel), so a difference comes
+from the inputs: a default-pair difference that the same-policy pair does not show is attributed to
+the data protections; the differences left with the same policy come from the pipelines' handling of
+missing prints (the bar of the last partial print before the forecast is cited).
 """
 from __future__ import annotations
 
@@ -137,10 +139,12 @@ def _figure(results: dict, events: dict, partials: dict) -> str:
     datasets = list(results)
     fig, axes = plt.subplots(len(datasets), 1, figsize=SLIDE, squeeze=False)
     fig.subplots_adjust(left=0.085, right=0.985, top=0.775, bottom=0.07, hspace=0.42)
-    heading(fig, "Cp1 - Comparability: the two pipelines differ only in two input policies",
-            "Shared EWMA(0.94) baseline VaR 99%, EWMA engine vs GARCH-t engine, forecast by forecast. Blue: default "
-            "configurations, whose data\nprotections differ (EWMA data-quality layer, GARCH-t jump filter); gray: both "
-            "protections off, where only the missing-data policies differ")
+    differ = sum(len(results[ds]["ewma"]["mismatch"]) + len(results[ds]["ewma_nodq"]["mismatch"]) for ds in results)
+    heading(fig, "Cp1 - Comparability: " + ("the two pipelines give the shared baseline the same inputs" if differ == 0
+                                             else "where the two pipelines still give the baseline different inputs"),
+            "Shared EWMA(0.94) baseline VaR 99% (one implementation, common/), EWMA engine vs GARCH-t engine, forecast "
+            "by forecast. Blue: default\nconfigurations (the shared jump filter in both; EWMA also its data-quality "
+            "layer); gray: both protections off")
     for ax, ds in zip(axes[:, 0], datasets):
         aligned, default = results[ds]["ewma_nodq"], results[ds]["ewma"]
         xs = [x for x, _ in aligned["series"]]

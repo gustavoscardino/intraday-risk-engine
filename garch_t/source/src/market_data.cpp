@@ -405,8 +405,46 @@ BarPanel build_panel(const std::vector<BarRow>& rows, const std::vector<std::str
     return p;
 }
 
+std::vector<BarRow> resample_rows(const std::vector<BarRow>& rows, const SessionSpec& s) {
+    if (s.bar_minutes <= 0 || s.bars_per_day <= 0) throw std::invalid_argument("resample: invalid grid");
+    std::vector<size_t> order(rows.size());
+    for (size_t r = 0; r < order.size(); ++r) order[r] = r;
+    std::stable_sort(order.begin(), order.end(), [&](size_t a, size_t b) { return rows[a].time.key() < rows[b].time.key(); });
+    const long long open_ms = s.open_minute * 60000LL, bar_ms = s.bar_minutes * 60000LL;
+    const long long close_ms = open_ms + s.bars_per_day * bar_ms;
+    std::map<std::pair<long long, std::string>, size_t> cell;  // (bar close key, ticker) -> output row
+    std::vector<BarRow> out;
+    for (size_t r : order) {
+        const BarRow& row = rows[r];
+        const long long tau = row.time.minute * 60000LL + row.time.millis;  // ms since midnight
+        TimePoint close = row.time;
+        if (tau > open_ms && tau <= close_ms) {  // on the session: the bar that contains it
+            const long long c = open_ms + ((tau - open_ms + bar_ms - 1) / bar_ms) * bar_ms;
+            close.minute = static_cast<int>(c / 60000);
+            close.millis = 0;
+        }
+        const std::string tk = upper(trim(row.ticker));
+        const auto key = std::make_pair(close.key(), tk);
+        const auto it = cell.find(key);
+        if (it == cell.end()) {
+            cell.emplace(key, out.size());
+            BarRow b = row;
+            b.time = close;
+            if (!std::isfinite(b.open)) b.open = row.close;
+            out.push_back(b);
+            continue;
+        }
+        BarRow& b = out[it->second];
+        if (std::isfinite(row.high)) b.high = std::isfinite(b.high) ? std::max(b.high, row.high) : row.high;
+        if (std::isfinite(row.low)) b.low = std::isfinite(b.low) ? std::min(b.low, row.low) : row.low;
+        if (std::isfinite(row.close)) b.close = row.close;
+        if (std::isfinite(row.volume)) b.volume = std::isfinite(b.volume) ? b.volume + row.volume : row.volume;
+    }
+    return out;
+}
+
 BarPanel load_bars_csv(const std::string& path, const std::vector<std::string>& tickers,
-                       int exchange_utc_offset_min) {
+                       int exchange_utc_offset_min, const SessionSpec* resample) {
     const CsvTable csv = read_csv(path);
     int c_ts = csv.column("timestamp");
     if (c_ts < 0) c_ts = csv.column("datetime");
@@ -440,7 +478,7 @@ BarPanel load_bars_csv(const std::string& path, const std::vector<std::string>& 
         b.ticker = field(row, c_tk);
         rows.push_back(std::move(b));
     }
-    BarPanel p = build_panel(rows, tickers);
+    BarPanel p = build_panel(resample ? resample_rows(rows, *resample) : rows, tickers);
     p.rows_read += bad;
     p.bad_rows += bad;
     return p;
@@ -478,62 +516,56 @@ SessionSpec detect_session(const BarPanel& p) {
     return spec;
 }
 
+ReturnStream::ReturnStream(size_t assets) : a_(assets) {}
+
+void ReturnStream::step(int date, int slot, const double* open, const double* close, double* ret, double* gap) {
+    auto valid = [](double v) { return std::isfinite(v) && v > 0.0; };
+    const bool first_bar = date != day_;
+    day_ = date;
+    for (size_t i = 0; i < a_.size(); ++i) {
+        Asset& a = a_[i];
+        ret[i] = gap[i] = kNaN;
+        // a session that does not open at slot 0 (late opening) has no clean gap: the move from the
+        // previous close would include unobserved intraday trading
+        if (first_bar && slot == 0 && valid(open[i]) && valid(a.last_close)) gap[i] = std::log(open[i] / a.last_close);
+        if (first_bar) {  // new session: start from this bar's opening price
+            a.ref = open[i];
+            a.ref_slot = slot - 1;
+        }
+        const double c = close[i];
+        if (!valid(c)) continue;
+        if (valid(a.ref)) {
+            // spans counted in grid slots: a return over k bars is scaled by 1/sqrt(k)
+            const int span = std::max(1, slot - a.ref_slot);
+            ret[i] = std::log(c / a.ref) / std::sqrt(static_cast<double>(span));
+        } else if (valid(open[i])) {  // fall back to the bar's own open
+            ret[i] = std::log(c / open[i]);
+        }
+        a.ref = c;
+        a.ref_slot = slot;
+        a.last_close = c;
+    }
+}
+
 void bar_returns(const BarPanel& p, const SessionSpec& session, std::vector<double>& ret,
                  std::vector<int>& slot) {
     const size_t T = p.num_bars(), n = p.num_assets();
     ret.assign(T * n, kNaN);
     slot.assign(T, -1);
     for (size_t t = 0; t < T; ++t) slot[t] = bar_slot(p.minute[t], session);
-
-    auto valid = [](double v) { return std::isfinite(v) && v > 0.0; };
-    for (size_t i = 0; i < n; ++i) {
-        double ref = kNaN;  // last valid on-grid price of the current session
-        int ref_slot = -1;  // slot whose close `ref` is (-1 = the session open)
-        int day = -1;
-        for (size_t t = 0; t < T; ++t) {
-            if (slot[t] < 0) continue;  // off-grid rows carry no bar return
-            if (p.date[t] != day) {     // new session: start from this bar's opening price
-                day = p.date[t];
-                ref = p.at(p.open, t, i);
-                ref_slot = slot[t] - 1;
-            }
-            const double c = p.at(p.close, t, i);
-            if (!valid(c)) continue;
-            if (valid(ref)) {
-                // spans counted in grid slots: a return over k bars is scaled by 1/sqrt(k)
-                const int span = std::max(1, slot[t] - ref_slot);
-                ret[t * n + i] = std::log(c / ref) / std::sqrt(static_cast<double>(span));
-            } else {
-                const double o = p.at(p.open, t, i);  // fall back to the bar's own open
-                if (valid(o)) ret[t * n + i] = std::log(c / o);
-            }
-            ref = c;
-            ref_slot = slot[t];
-        }
-    }
+    ReturnStream rs(n);
+    std::vector<double> gap(n);
+    for (size_t t = 0; t < T; ++t)  // off-grid rows carry no bar return
+        if (slot[t] >= 0) rs.step(p.date[t], slot[t], &p.open[t * n], &p.close[t * n], &ret[t * n], gap.data());
 }
 
 void overnight_returns(const BarPanel& p, const std::vector<int>& slot, std::vector<double>& gaps) {
     const size_t T = p.num_bars(), n = p.num_assets();
     gaps.assign(T * n, kNaN);
-    std::vector<double> last_close(n, kNaN);
-    auto valid = [](double v) { return std::isfinite(v) && v > 0.0; };
-    int day = -1;
-    for (size_t t = 0; t < T; ++t) {
-        if (slot[t] < 0) continue;  // off-grid rows are ignored (as in bar_returns)
-        const bool first_bar = p.date[t] != day;
-        if (first_bar) day = p.date[t];
-        for (size_t i = 0; i < n; ++i) {
-            // a session that does not open at slot 0 (late opening) has no clean gap: the
-            // move from the previous close would include unobserved intraday trading
-            if (first_bar && slot[t] == 0) {
-                const double o = p.at(p.open, t, i);
-                if (valid(o) && valid(last_close[i])) gaps[t * n + i] = std::log(o / last_close[i]);
-            }
-            const double c = p.at(p.close, t, i);
-            if (valid(c)) last_close[i] = c;
-        }
-    }
+    ReturnStream rs(n);
+    std::vector<double> ret(n);
+    for (size_t t = 0; t < T; ++t)  // off-grid rows are ignored (as in bar_returns)
+        if (slot[t] >= 0) rs.step(p.date[t], slot[t], &p.open[t * n], &p.close[t * n], ret.data(), &gaps[t * n]);
 }
 
 }  // namespace garcht

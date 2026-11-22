@@ -91,6 +91,15 @@ FeedFile load_feed(const std::string& path, const std::vector<std::string>& tick
 // Grid inferred from the data: most common spacing between bars and most common first / last bar.
 SessionSpec detect_session(const std::vector<RawRow>& rows);
 
+// Samples finer than the bar grid (e.g. 5-second prices) aggregated into the bars of `grid`: a row
+// stamped at instant tau belongs to the bar closing at the first grid time >= tau. Per (bar, asset):
+// open of the earliest sample, highest high, lowest low, close of the latest sample, summed volume,
+// stamped at the bar close. The aggregated row takes the file position of the last sample of its
+// bar (when the bar was complete), so the arrival rules of the data-quality layer still apply. Rows
+// outside the session keep their stamp. With it the engine runs on any grid: for a 5-minute VaR
+// every minute, five runs on 5-minute grids opening one minute apart (see the README).
+FeedFile resample_feed(const FeedFile& feed, const SessionSpec& grid);
+
 // ---------------------------------------------------------------- panel
 
 // Bars on a common time grid, row-major [bar][asset], NaN = no row.

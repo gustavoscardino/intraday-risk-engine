@@ -33,13 +33,6 @@ struct Pending {
     double option_value = 0.0;
 };
 
-// A price whose |z| exceeded the limit, decided with the next bar.
-struct Suspect {
-    size_t asset = 0;
-    double r_orig = 0.0, ref_px = 0.0, close = 0.0, mark_before = kNaN;
-    ReturnState rs_before;
-};
-
 }  // namespace
 
 ReplayResult run_replay(const ReplayInput& in, const ReplayConfig& cfg) {
@@ -84,7 +77,12 @@ ReplayResult run_replay(const ReplayInput& in, const ReplayConfig& cfg) {
     ecfg.bars_per_day = K;
     ecfg.window_bars = cfg.window_days * K;
     EwmaEngine eng(n, ecfg);
+    res.var_models = eng.models();
+    res.main_model = eng.main_model();
+    const size_t main = res.main_model;
     ModeController modes(dqc);
+    const bool filter_on = cfg.dq && dqc.jump_filter;
+    riskcommon::JumpFilter jumps(in.tickers, K, dqc.jump);
 
     std::map<std::string, size_t> tix;
     for (size_t i = 0; i < n; ++i) tix[upper(in.tickers[i])] = i;
@@ -107,78 +105,58 @@ ReplayResult run_replay(const ReplayInput& in, const ReplayConfig& cfg) {
     std::vector<double> qty = in.initial_quantity;
     qty.resize(n, 0.0);
     std::vector<ReturnState> rs(n);
-    std::vector<double> mark(n, kNaN);                 // last clean close (exposures)
+    std::vector<double> mark(n, kNaN);                 // last validated close (exposures)
     std::vector<double> pnl_px(n, kNaN);               // P&L reference, lagging one bar
     std::vector<int> pnl_date(n, -1);
-    std::vector<double> x(n, 0.0), xbook(n, 0.0), r(n), gap(n), ref_used(n);
+    std::vector<double> x(n, 0.0), xbook(n, 0.0), r(n), gap(n), view(n);
+    std::vector<size_t> held_at(n, 0);  // bar of each stock's last held print
     const std::vector<double> nan_row(n, kNaN);
-    std::vector<ReturnState> rs_before(n);
     std::deque<Pending> queue;
-    std::vector<Suspect> suspects;
-    std::vector<double> fed_prev(n, kNaN);
-    int fed_prev_slot = 0;
-    bool fed_prev_frozen = false;
     bool have_on = false;
     int on_date = -1;
     OvernightRecord on;
     std::vector<double> on_qty(n, 0.0);
     PortfolioRisk risk, last_valid, book_risk;
-    size_t next_fill = 0;
+    size_t next_fill = 0, seen_events = 0;
     int cur_date = -1, cur_slot = -1;
     auto add_event = [&](size_t bar, size_t asset, std::uint16_t f, const std::string& detail) {
         res.ingest.cell_flags[cell_key(P.key[bar], static_cast<int>(asset))] |= f;
         flags[bar * n + asset] |= f;
         res.events.push_back({P.stamp[bar], in.tickers[asset], flag_name(f), detail});
     };
+    // the jump filter's decisions at bar t, as DQ flags on the cells they concern
+    auto record_jumps = [&](size_t t) {
+        const std::vector<riskcommon::JumpEvent>& ev = jumps.events();
+        for (; seen_events < ev.size(); ++seen_events) {
+            const riskcommon::JumpEvent& e = ev[seen_events];
+            const size_t a = e.asset, u = held_at[a];
+            if (e.action == "HELD") {
+                held_at[a] = t;
+                ++res.suspects;
+                add_event(t, a, kSuspect, fmt("jump of %+.2f%% (|z| = %.1f): held, decided by the next bar", 100.0 * e.ret, e.z));
+            } else if (e.action == "BAD_TICK") {
+                ++res.spikes;
+                add_event(u, a, kSpike, fmt("bad tick: move of %+.2f%% undone by the next bar: price excluded", 100.0 * e.ret));
+                res.alerts.push_back({P.stamp[u], "warning", "BAD_TICK",
+                                      in.tickers[a] + fmt(" price excluded (move of %+.2f%% undone)", 100.0 * e.ret)});
+            } else if (e.action == "SHOCK_ACCEPTED") {
+                ++res.shocks_kept;
+                add_event(u, a, kShockKept, fmt("move of %+.2f%% confirmed by the next bar: real shock, let in one bar late",
+                                                100.0 * e.ret));
+            } else if (e.action == "MARKET_MOVE") {
+                ++res.market_wide;
+                add_event(t, a, kShockKept, fmt("move of %+.2f%% (|z| = %.1f) with other stocks jumping together: market "
+                                                "move, kept", 100.0 * e.ret, e.z));
+            } else if (e.action == "UNDECIDED") {
+                ++res.unresolved;
+                res.events.push_back({P.stamp[u], in.tickers[a], "SUSPECT",
+                                      "held at the session's last print: never entered the models"});
+            }
+        }
+    };
 
     for (size_t t = 0; t <= T; ++t) {
-        // ---- 1. decide the suspicious prices of bar t-1 with this bar's close
-        if (!suspects.empty()) {
-            const size_t u = t - 1;
-            std::vector<double> row = fed_prev;
-            bool refeed = false;
-            for (const Suspect& s : suspects) {
-                const size_t a = s.asset;
-                const double c = t < T ? P.at(P.close, t, a) : kNaN;
-                if (!valid_price(c)) {
-                    ++res.unresolved;
-                    res.events.push_back({P.stamp[u], in.tickers[a], "SUSPECT",
-                                          "no next print to confirm: winsorized value kept"});
-                    continue;
-                }
-                const double move = std::log(s.close / s.ref_px), after = std::log(c / s.ref_px);
-                if (std::fabs(after) < dqc.revert_fraction * std::fabs(move)) {  // reverted: bad tick
-                    ++res.spikes;
-                    add_event(u, a, kSpike,
-                              fmt("bad tick: move of %+.2f%% reverted by the next bar (%+.2f%% left): price excluded",
-                                  100.0 * move, 100.0 * after));
-                    res.alerts.push_back({P.stamp[u], "warning", "BAD_TICK",
-                                          in.tickers[a] + fmt(" price excluded (move of %+.2f%% reverted)", 100.0 * move)});
-                    P.at(P.close, u, a) = kNaN;
-                    rs[a] = s.rs_before;  // bar t-1 replayed without its close
-                    rs[a].step(P.ymd[u], P.slot[u], P.at(P.open, u, a), kNaN);
-                    mark[a] = s.mark_before;
-                    row[a] = kNaN;
-                } else {
-                    ++res.shocks_kept;
-                    add_event(u, a, kShockKept,
-                              fmt("move of %+.2f%% confirmed by the next bar (%+.2f%%): real shock, kept", 100.0 * move,
-                                  100.0 * after));
-                    row[a] = s.r_orig;
-                }
-                refeed = true;
-            }
-            if (refeed && !fed_prev_frozen) {
-                if (eng.undo_last_bar()) {
-                    eng.on_bar(fed_prev_slot, row.data());
-                } else {  // a refit closed bar t-1: the correction reaches the next refit
-                    for (const Suspect& s : suspects) eng.amend_last_bar(s.asset, row[s.asset]);
-                }
-            }
-            suspects.clear();
-        }
-
-        // ---- 2. score the outcome of bar t-1
+        // ---- 1. score the outcome of bar t-1
         if (t >= 1) {
             const size_t u = t - 1;
             const bool new_sess = u == 0 || P.ymd[u] != P.ymd[u - 1];
@@ -245,7 +223,7 @@ ReplayResult run_replay(const ReplayInput& in, const ReplayConfig& cfg) {
         }
         if (t == T) break;
 
-        // ---- 3. the new bar
+        // ---- 2. the new bar
         ++res.bars;
         res.last_time = P.stamp[t];
         const auto t0 = std::chrono::steady_clock::now();
@@ -261,12 +239,16 @@ ReplayResult run_replay(const ReplayInput& in, const ReplayConfig& cfg) {
             qty[it->second] += f.quantity;
             ++res.fills_applied;
         }
-        for (size_t i = 0; i < n; ++i) {
-            rs_before[i] = rs[i];
-            const double o = P.at(P.open, t, i);
-            ref_used[i] = ymd != rs[i].day || !valid_price(rs[i].ref) ? o : rs[i].ref;
-            r[i] = rs[i].step(ymd, slot, o, P.at(P.close, t, i), &gap[i]);
+        // the models' view of this bar: the jump filter holds an isolated jump until the next bar
+        for (size_t i = 0; i < n; ++i) view[i] = P.at(P.close, t, i);
+        const size_t accepted_before = jumps.accepted().size();
+        if (filter_on) {
+            jumps.apply(t, P.stamp[t], ymd, slot, &P.open[t * n], view.data());
+            record_jumps(t);
         }
+        for (size_t i = 0; i < n; ++i) r[i] = rs[i].step(ymd, slot, P.at(P.open, t, i), view[i], &gap[i]);
+        // a move let in one bar late happened in one bar: its whole size, not spread over the held one
+        for (size_t k = accepted_before; k < jumps.accepted().size(); ++k) r[jumps.accepted()[k].asset] = jumps.accepted()[k].ret;
         // slots that never printed advance the filters with missing rows
         if (new_session) {
             if (cur_date >= 0)
@@ -277,50 +259,9 @@ ReplayResult run_replay(const ReplayInput& in, const ReplayConfig& cfg) {
             for (int k = cur_slot + 1; k < slot; ++k) eng.on_bar(k, nan_row.data());
         }
 
-        // SPIKE rule against the forecast sigma of each asset
         std::uint16_t* ft = &flags[t * n];
-        std::vector<double> fed = r;
-        if (cfg.dq && eng.ready() && modes.mode() != DqMode::Freeze) {
-            std::vector<size_t> cand;
-            std::vector<double> sds;
-            for (size_t i = 0; i < n; ++i) {
-                if (!std::isfinite(r[i]) || !valid_price(ref_used[i])) continue;
-                const double sd = eng.asset_sigma(i, slot);
-                if (!(sd > 0.0) || std::fabs(r[i]) <= dqc.spike_z * sd) continue;
-                cand.push_back(i);
-                sds.push_back(sd);
-            }
-            const double market_min = std::max<double>(dqc.market_wide_assets, dqc.market_wide_share * static_cast<double>(n));
-            if (!cand.empty() && static_cast<double>(cand.size()) >= market_min) {
-                for (size_t c = 0; c < cand.size(); ++c) {  // a market move: real, kept at once
-                    ++res.market_wide;
-                    add_event(t, cand[c], kShockKept,
-                              fmt("|z| = %.1f with %.0f assets jumping together: market move, kept",
-                                  std::fabs(r[cand[c]]) / sds[c], static_cast<double>(cand.size())));
-                }
-            } else {
-                for (size_t c = 0; c < cand.size(); ++c) {
-                    const size_t i = cand[c];
-                    Suspect s;
-                    s.asset = i;
-                    s.r_orig = r[i];
-                    s.ref_px = ref_used[i];
-                    s.close = P.at(P.close, t, i);
-                    s.mark_before = mark[i];
-                    s.rs_before = rs_before[i];
-                    suspects.push_back(s);
-                    ++res.suspects;
-                    fed[i] = (r[i] > 0.0 ? 1.0 : -1.0) * dqc.spike_z * sds[c];
-                    add_event(t, i, kSuspect,
-                              fmt("|z| = %.1f above the limit: update winsorized, decided with the next bar",
-                                  std::fabs(r[i]) / sds[c]));
-                }
-            }
-        }
-        for (size_t i = 0; i < n; ++i) {
-            const double c = P.at(P.close, t, i);
-            if (valid_price(c) && !(ft[i] & kSuspect)) mark[i] = c;
-        }
+        for (size_t i = 0; i < n; ++i)
+            if (valid_price(view[i])) mark[i] = view[i];
         double net = 0.0, gross = 0.0;
         for (size_t i = 0; i < n; ++i) {
             x[i] = std::isfinite(mark[i]) ? qty[i] * mark[i] : 0.0;
@@ -349,15 +290,12 @@ ReplayResult run_replay(const ReplayInput& in, const ReplayConfig& cfg) {
         const bool frozen = mode == DqMode::Freeze;
 
         // engine update (FREEZE: the bar enters the history as missing; filters unchanged)
-        const std::vector<double>& feed_row = frozen ? nan_row : fed;
-        eng.on_bar(slot, feed_row.data());
-        fed_prev = feed_row;
-        fed_prev_slot = slot;
-        fed_prev_frozen = frozen;
+        eng.on_bar(slot, frozen ? nan_row.data() : r.data());
         cur_date = ymd;
         cur_slot = slot;
 
         bool refitted = false;
+        if (eod[t] && filter_on) jumps.end_session();  // the filter's scales, with the end-of-day work
         if (eod[t] && eng.history_size() >= static_cast<size_t>(ecfg.window_bars)) {
             const RefitReport rep = eng.refit(x.data());
             refitted = rep.ready;
@@ -381,13 +319,7 @@ ReplayResult run_replay(const ReplayInput& in, const ReplayConfig& cfg) {
             rec.target_slot = next_slot;
             rec.net = net;
             rec.gross = gross;
-            rec.sigma_ref = pub.ref.sigma;
-            rec.sigma = pub.normal.sigma;
-            rec.lambda = pub.lambda;
-            rec.nu = pub.nu;
-            rec.ref = pub.ref.m;
-            rec.normal = pub.normal.m;
-            rec.student = pub.student.m;
+            rec.models = pub.models;
             rec.dq_score = score;
             rec.mode = mode;
             rec.frozen = frozen;
@@ -409,8 +341,8 @@ ReplayResult run_replay(const ReplayInput& in, const ReplayConfig& cfg) {
                     f.option_value += option_value(bo, S, ymd, P.minute[t]);
                 }
                 eng.compute(next_slot, xbook.data(), book_risk);
-                rec.book_sigma = book_risk.student.sigma;
-                rec.book = book_risk.student.m;
+                rec.book_sigma = book_risk.models[main].sigma;
+                rec.book = book_risk.models[main].measures;
             }
             queue.push_back(std::move(f));
         }
@@ -428,6 +360,7 @@ ReplayResult run_replay(const ReplayInput& in, const ReplayConfig& cfg) {
         }
     }
     res.unscored += queue.size() > 0 ? queue.size() - 1 : 0;  // the last forecast has no outcome
+    if (filter_on) res.jump_events = jumps.events();
 
     res.quantity = qty;
     res.last_price = mark;
@@ -454,11 +387,6 @@ BacktestReport evaluate_backtest(const ReplayResult& r, const std::vector<double
     auto group = [&](int slot) { return slot < 3 ? 0 : (slot >= bpd - 3 ? 2 : 1); };
     const double inf = std::numeric_limits<double>::infinity();
 
-    struct Model {
-        const char* name;
-        int kind;  // 0 ref, 1 normal, 2 student
-    };
-    const Model models[] = {{"EWMA-N (ref)", 0}, {"EWMA-N", 1}, {"EWMA-t", 2}};
     std::vector<double> x;
     std::vector<int> slots;
     std::vector<const ForecastRecord*> fr;
@@ -468,27 +396,27 @@ BacktestReport evaluate_backtest(const ReplayResult& r, const std::vector<double
         slots.push_back(f.target_slot);
         fr.push_back(&f);
     }
-    for (const Model& m : models) {
+    for (size_t m = 0; m < r.var_models.size(); ++m) {  // every model, in registration order
+        const std::string& name = r.var_models[m].name;
         std::vector<DistForecast> dist;
         std::vector<double> pit;
         for (size_t t = 0; t < fr.size(); ++t) {
-            const ForecastRecord& f = *fr[t];
+            const riskcommon::ModelForecast& f = fr[t]->models[m];
             DistForecast d;
-            d.sigma = m.kind == 0 ? f.sigma_ref : f.sigma;
-            d.nu = m.kind == 2 ? f.nu : inf;
+            d.sigma = f.sigma;
+            d.nu = std::isfinite(f.shape.nu) ? f.shape.nu : inf;
             dist.push_back(d);
             pit.push_back(forecast_cdf(d, x[t]));
         }
-        rep.berkowitz.push_back({m.name, berkowitz_test(pit)});
+        rep.berkowitz.push_back({name, berkowitz_test(pit)});
         for (size_t k = 0; k < confs.size(); ++k) {
             ModelBacktest mb;
-            mb.model = m.name;
+            mb.model = name;
             mb.confidence = confs[k];
             std::vector<int> hits, seg[3];
             double loss = 0.0, es = 0.0;
             for (size_t t = 0; t < fr.size(); ++t) {
-                const ForecastRecord& f = *fr[t];
-                const RiskMeasure& rm = m.kind == 0 ? f.ref[k] : (m.kind == 1 ? f.normal[k] : f.student[k]);
+                const RiskMeasure& rm = fr[t]->models[m].measures[k];
                 const int h = -x[t] > rm.var;
                 hits.push_back(h);
                 seg[group(slots[t])].push_back(h);
@@ -538,7 +466,7 @@ BacktestReport evaluate_backtest(const ReplayResult& r, const std::vector<double
         }
     }
 
-    // option book, delta-linear (EWMA-t)
+    // option book, delta-linear (main model)
     if (r.has_book)
         for (size_t k = 0; k < confs.size(); ++k) {
             ModelBacktest mb;

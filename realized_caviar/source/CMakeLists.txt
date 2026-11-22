@@ -10,9 +10,13 @@ endif()
 set(GARCH_SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/../../garch_t/source")
 add_library(rcaviar_statistics STATIC
   ${GARCH_SOURCE}/src/math.cpp ${GARCH_SOURCE}/src/optimize.cpp ${GARCH_SOURCE}/src/garch.cpp ${GARCH_SOURCE}/src/risk.cpp ${GARCH_SOURCE}/src/backtest.cpp ${GARCH_SOURCE}/src/market_data.cpp
+  ${GARCH_SOURCE}/src/data_quality.cpp
   ../../ewma/source/src/math.cpp ../../ewma/source/src/ewma.cpp ../../ewma/source/src/seasonality.cpp)
 target_include_directories(rcaviar_statistics PUBLIC ${GARCH_SOURCE}/include)
 target_include_directories(rcaviar_statistics PUBLIC ../../ewma/source/include)
+# the code shared by the three engines (model interface, jump filter)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../../common ${CMAKE_BINARY_DIR}/riskcommon)
+target_link_libraries(rcaviar_statistics PUBLIC riskcommon)
 add_library(rcaviar STATIC src/model.cpp src/data.cpp src/shared_data.cpp src/replay.cpp)
 target_include_directories(rcaviar PUBLIC include)
 target_link_libraries(rcaviar PUBLIC rcaviar_statistics)

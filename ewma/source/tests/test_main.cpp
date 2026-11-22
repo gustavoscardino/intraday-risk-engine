@@ -8,6 +8,7 @@
 #include <vector>
 
 #include "ewmar/ewmar.hpp"
+#include "riskcommon/riskmetrics.hpp"
 
 using namespace ewmar;
 
@@ -403,7 +404,7 @@ TEST(ewma_covariance_psd_with_missing) {
     CHECK_NEAR(A(0, 1), 0.5 * std::sqrt(0.9), 1e-15, 0);
 }
 
-TEST(engine_forecast_and_undo) {
+TEST(engine_models_behind_the_common_interface) {
     // iid returns with a known sigma: after a refit the EWMA-N sigma is close to it
     const size_t n = 3;
     const int K = 28;
@@ -419,25 +420,42 @@ TEST(engine_forecast_and_undo) {
         eng.on_bar(t % K, r.data());
     }
     const double x[3] = {1e6, 0.0, 0.0};
-    const RefitReport rep = eng.refit(x);
-    CHECK(rep.ready && eng.ready());
     PortfolioRisk pr;
     eng.compute(0, x, pr);
-    CHECK_NEAR(pr.normal.sigma, 1e3, 0, 0.25);
-    CHECK_NEAR(pr.ref.sigma, 1e3, 0, 0.35);
-    CHECK_NEAR(pr.normal.m[2].var / pr.normal.sigma, 2.3263478740408408, 1e-12, 0);
-    CHECK(pr.student.m[2].es / pr.student.m[2].var > pr.normal.m[2].es / pr.normal.m[2].var - 1e-9);
-    CHECK_NEAR(pr.contrib[0], pr.normal.sigma, 1e-9, 1e-9);
-    // undo restores the filters exactly
-    const double before = pr.normal.sigma;
+    CHECK(!pr.ready && std::isnan(pr.models[1].sigma));  // no forecast before the first refit
+    const RefitReport rep = eng.refit(x);
+    CHECK(rep.ready && eng.ready());
+    // the registry: names, column prefixes and the main model come from the models themselves
+    const std::vector<riskcommon::ModelInfo>& mi = eng.models();
+    CHECK(mi.size() == 3 && mi[0].name == "EWMA-N (ref)" && mi[1].name == "EWMA-N" && mi[2].name == "EWMA-t");
+    CHECK(mi[0].prefix == "ref_" && mi[1].prefix == "n_" && mi[2].prefix == "t_" && eng.main_model() == 2);
+    eng.compute(0, x, pr);
+    const riskcommon::ModelForecast &ref = pr.models[0], &nf = pr.models[1], &tf = pr.models[2];
+    CHECK_NEAR(nf.sigma, 1e3, 0, 0.25);
+    CHECK_NEAR(ref.sigma, 1e3, 0, 0.35);
+    CHECK_NEAR(nf.measures[2].var / nf.sigma, 2.3263478740408408, 1e-12, 0);
+    CHECK(tf.sigma == nf.sigma && std::isfinite(tf.shape.nu) && std::isinf(nf.shape.nu));
+    CHECK(tf.measures[2].es / tf.measures[2].var > nf.measures[2].es / nf.measures[2].var - 1e-9);
+    CHECK(nf.parameters.size() == 1 && nf.parameters[0] == eng.lambda());
+    CHECK_NEAR(pr.contrib[0], nf.sigma, 1e-9, 1e-9);
+    // the baseline is the RiskMetrics model shared with garch_t: the same numbers from the same window
+    riskcommon::RiskMetricsModel rm(n, cfg.confidences);
+    riskcommon::HistoryRing ring(30 * K, n);
+    math::Rng rng2(4);
+    for (int t = 0; t < 30 * K; ++t) {
+        for (size_t i = 0; i < n; ++i) r[i] = 0.001 * rng2.normal();
+        ring.push(t % K, r.data());
+    }
+    rm.refit(ring.view(), x);
+    riskcommon::ModelForecast mf;
+    rm.forecast(0, x, mf);
+    CHECK(mf.sigma == ref.sigma && mf.measures[2].var == ref.measures[2].var);
+    // a shock moves every model; the forecast stays generic
+    const double n_before = nf.sigma, ref_before = ref.sigma;  // pr is overwritten below
     const double shock[3] = {0.05, -0.05, 0.02};
     eng.on_bar(0, shock);
     eng.compute(1, x, pr);
-    CHECK(pr.normal.sigma > 2 * before);
-    CHECK(eng.undo_last_bar());
-    eng.compute(0, x, pr);
-    CHECK_NEAR(pr.normal.sigma, before, 0, 1e-14);
-    CHECK(!eng.undo_last_bar());
+    CHECK(pr.models[1].sigma > 2 * n_before && pr.models[0].sigma > 2 * ref_before);
 }
 
 // ================================================================== 6. EWMA-t
@@ -545,9 +563,10 @@ TEST(dq_score_and_modes) {
     CHECK(m.update(0.95) == DqMode::Normal);
 }
 
-TEST(dq_spike_rule_in_replay) {
+TEST(dq_jump_filter_in_replay) {
     // bad tick on A0 (reverted next bar) and a real -10% jump on A1 (not reverted)
     SimMarket m = simulate_market(3, 26, 28, 77);
+    const SimMarket clean = m;
     const int bad_day = m.days[23], jump_day = m.days[24];
     double jump_mult = 1.0;
     for (RawRow& r : m.feed.rows) {
@@ -567,6 +586,7 @@ TEST(dq_spike_rule_in_replay) {
     const ReplayResult res = run_replay(in, cfg);
     CHECK(res.spikes == 1);
     CHECK(res.shocks_kept >= 1);
+    CHECK(res.jump_events.size() >= 4);  // two held prints and their decisions
     TimePoint tb, tj;
     tb.ymd = bad_day;
     tb.minute = 600 + 15 * 11;
@@ -574,17 +594,41 @@ TEST(dq_spike_rule_in_replay) {
     tj.minute = 600 + 15 * 6;
     const auto bad = res.ingest.cell_flags.find(cell_key(tb.key(), 0));
     const auto jump = res.ingest.cell_flags.find(cell_key(tj.key(), 1));
-    CHECK(bad != res.ingest.cell_flags.end() && (bad->second & kSpike));
+    CHECK(bad != res.ingest.cell_flags.end() && (bad->second & kSpike) && (bad->second & kSuspect));
     CHECK(jump != res.ingest.cell_flags.end() && (jump->second & kShockKept) && !(jump->second & kSpike));
-    // the bad tick did not reach the realized P&L of its bar
-    for (const ForecastRecord& f : res.forecasts)
-        if (f.target_time == tb.str()) CHECK(std::fabs(f.pnl) < 0.05 * 1000 * 25);
+
+    // the bad tick never reaches the models: the VaR after it is the VaR of the clean feed (up to the
+    // other bars it shifted by one), while without the filter it jumps
+    ReplayInput cin = in;
+    for (RawRow& r : cin.feed.rows)
+        if (r.time.ymd == bad_day && r.time.minute == 600 + 15 * 11 && r.asset == 0) r.close /= 1.08;
+    cfg.dq_cfg.jump_filter = true;
+    const ReplayResult cr = run_replay(cin, cfg);
+    ReplayConfig off = cfg;
+    off.dq_cfg.jump_filter = false;
+    const ReplayResult raw_tick = run_replay(in, off);
+    const size_t main = res.main_model;
+    double dev_on = 0.0, dev_off = 0.0;
+    for (size_t i = 0; i < res.forecasts.size() && i < cr.forecasts.size() && i < raw_tick.forecasts.size(); ++i) {
+        const ForecastRecord &a = res.forecasts[i], &c = cr.forecasts[i], &o = raw_tick.forecasts[i];
+        if (a.forecast_time.substr(0, 10) != tb.str().substr(0, 10) || a.forecast_time < tb.str()) continue;
+        const double vc = c.models[main].measures[2].var;
+        dev_on = std::max(dev_on, std::fabs(a.models[main].measures[2].var / vc - 1.0));
+        dev_off = std::max(dev_off, std::fabs(o.models[main].measures[2].var / vc - 1.0));
+    }
+    CHECK(dev_on < 0.01 && dev_off > 0.05);
+    // the filter shapes the models' view only: the forecasts are scored on the same P&L
+    bool same_pnl = res.forecasts.size() == raw_tick.forecasts.size();
+    for (size_t i = 0; same_pnl && i < res.forecasts.size(); ++i)
+        same_pnl = res.forecasts[i].pnl == raw_tick.forecasts[i].pnl;
+    CHECK(same_pnl);
 
     // without the DQ layer nothing is flagged, and the forecasts start at the same bar
     cfg.dq = false;
     const ReplayResult raw = run_replay(in, cfg);
-    CHECK(raw.spikes == 0 && raw.suspects == 0);
+    CHECK(raw.spikes == 0 && raw.suspects == 0 && raw.jump_events.empty());
     CHECK(!raw.forecasts.empty() && raw.forecasts.front().forecast_time == res.forecasts.front().forecast_time);
+    (void)clean;
 }
 
 TEST(replay_first_forecast_and_window) {
@@ -612,6 +656,63 @@ TEST(replay_first_forecast_and_window) {
         threw = true;
     }
     CHECK(threw);
+}
+
+TEST(resampled_finer_samples_reach_any_grid) {
+    // every 15-minute row split into three 5-minute samples (5 s apart from the bar edges does not
+    // matter: a sample belongs to the first grid close at or after it) and resampled back to the
+    // 15-minute grid gives the same rows, in an order the arrival rules accept, and the same replay
+    SimMarket m = simulate_market(3, 26, 28, 91);
+    FeedFile fine = m.feed;
+    fine.rows.clear();
+    for (const RawRow& r : m.feed.rows) {
+        double prev = r.open;
+        for (int j = 0; j < 3; ++j) {
+            RawRow s = r;
+            const double c = j == 2 ? r.close : r.open + (r.close - r.open) * (j + 1) / 3.0;
+            s.open = prev;
+            s.close = c;
+            s.high = std::max(prev, c);
+            s.low = std::min(prev, c);
+            s.volume = r.volume / 3.0;
+            s.time.minute = r.time.minute - 15 + 5 * (j + 1);
+            if (j < 2) s.time.second = 0;
+            prev = c;
+            fine.rows.push_back(s);
+        }
+    }
+    const SessionSpec grid{600, 15, 28};
+    const FeedFile back = resample_feed(fine, grid);
+    bool same = back.rows.size() == m.feed.rows.size();
+    for (size_t k = 0; same && k < back.rows.size(); ++k) {
+        const RawRow &a = back.rows[k], &b = m.feed.rows[k];
+        same = a.time.key() == b.time.key() && a.asset == b.asset && a.open == b.open && a.close == b.close &&
+               std::fabs(a.volume - b.volume) < 1e-9 && a.high == std::max(b.open, b.close);
+    }
+    CHECK(same);
+    ReplayInput in, rin;
+    in.tickers = rin.tickers = m.feed.tickers;
+    in.feed = m.feed;
+    rin.feed = back;
+    in.initial_quantity = rin.initial_quantity = {1000, 1000, 1000};
+    ReplayConfig cfg;
+    cfg.window_days = 20;
+    const ReplayResult a = run_replay(in, cfg), b = run_replay(rin, cfg);
+    bool same_var = a.forecasts.size() == b.forecasts.size() && !a.forecasts.empty();
+    for (size_t k = 0; same_var && k < a.forecasts.size(); ++k)
+        same_var = a.forecasts[k].models[1].measures[2].var == b.forecasts[k].models[1].measures[2].var &&
+                   a.forecasts[k].pnl == b.forecasts[k].pnl;
+    CHECK(same_var);
+    // 5-second samples into 1-minute bars: first open, last close, summed volume
+    FeedFile ticks;
+    ticks.tickers = {"A0"};
+    for (int k = 1; k <= 24; ++k) ticks.rows.push_back(row(20260302, 600 + (5 * k) / 60, 0, 10.0 + 0.01 * k, 10.0 + 0.01 * k, 1.0, 0));
+    for (int k = 1; k <= 24; ++k) ticks.rows[static_cast<size_t>(k - 1)].time.second = (5 * k) % 60;
+    const FeedFile bars = resample_feed(ticks, SessionSpec{600, 1, 420});
+    CHECK(bars.rows.size() == 2 && bars.rows[0].time.minute == 601 && bars.rows[1].time.minute == 602);
+    CHECK_NEAR(bars.rows[0].open, 10.01, 1e-12, 0);
+    CHECK_NEAR(bars.rows[0].close, 10.12, 1e-12, 0);
+    CHECK(bars.rows[0].volume == 12.0 && bars.rows[1].volume == 12.0);
 }
 
 TEST(replay_cut_inside_a_session) {

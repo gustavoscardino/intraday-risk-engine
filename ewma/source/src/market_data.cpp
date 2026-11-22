@@ -11,6 +11,7 @@
 #include <map>
 #include <sstream>
 #include <stdexcept>
+#include <tuple>
 #include <unordered_map>
 
 namespace ewmar {
@@ -482,6 +483,57 @@ double ReturnState::step(int ymd, int slot, double open, double close, double* g
     ref_slot = slot;
     last_close = close;
     return r;
+}
+
+FeedFile resample_feed(const FeedFile& feed, const SessionSpec& s) {
+    if (s.bar_minutes <= 0 || s.bars_per_day <= 0) throw std::invalid_argument("resample: invalid grid");
+    const int open_s = s.open_minute * 60, bar_s = s.bar_minutes * 60, close_s = open_s + s.bars_per_day * bar_s;
+    struct Cell {
+        RawRow row;
+        long long first_key = 0, last_key = 0;  // sample times of the open and of the close
+        size_t last_pos = 0;                    // file position of the bar's last sample
+    };
+    std::map<std::tuple<int, int, int>, size_t> index;  // (ymd, close second of day, asset) -> cell
+    std::vector<Cell> cells;
+    for (size_t pos = 0; pos < feed.rows.size(); ++pos) {
+        const RawRow& r = feed.rows[pos];
+        const int tau = r.time.minute * 60 + r.time.second;
+        TimePoint close = r.time;
+        if (tau > open_s && tau <= close_s) {  // on the session: the bar that contains it
+            const int c = open_s + ((tau - open_s + bar_s - 1) / bar_s) * bar_s;
+            close.minute = c / 60;
+            close.second = 0;
+        }
+        const auto key = std::make_tuple(close.ymd, close.minute * 60 + close.second, r.asset);
+        const long long k = r.time.key();
+        const auto it = index.find(key);
+        if (it == index.end()) {
+            index.emplace(key, cells.size());
+            Cell c{r, k, k, pos};
+            c.row.time = close;
+            if (!std::isfinite(c.row.open)) c.row.open = r.close;
+            cells.push_back(c);
+            continue;
+        }
+        Cell& c = cells[it->second];
+        c.last_pos = pos;
+        if (k < c.first_key && std::isfinite(r.open)) {  // an earlier sample arriving late
+            c.first_key = k;
+            c.row.open = r.open;
+        }
+        if (k >= c.last_key && std::isfinite(r.close)) {
+            c.last_key = k;
+            c.row.close = r.close;
+        }
+        if (std::isfinite(r.high)) c.row.high = std::isfinite(c.row.high) ? std::max(c.row.high, r.high) : r.high;
+        if (std::isfinite(r.low)) c.row.low = std::isfinite(c.row.low) ? std::min(c.row.low, r.low) : r.low;
+        if (std::isfinite(r.volume)) c.row.volume = std::isfinite(c.row.volume) ? c.row.volume + r.volume : r.volume;
+    }
+    std::stable_sort(cells.begin(), cells.end(), [](const Cell& a, const Cell& b) { return a.last_pos < b.last_pos; });
+    FeedFile out = feed;
+    out.rows.clear();
+    for (const Cell& c : cells) out.rows.push_back(c.row);
+    return out;
 }
 
 void panel_returns(const Panel& p, std::vector<double>& ret, std::vector<double>& gaps) {

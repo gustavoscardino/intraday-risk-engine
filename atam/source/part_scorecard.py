@@ -242,68 +242,96 @@ def _f_end_of_data(m: M):
 
 def _f_dq_policy(m: M):
     v = default_variant("ewma")
+    if not m.has((v, "baseline_mismatches")):
+        return None
     if m[v, "baseline_mismatches"] > 0:
-        return Finding("risk", "R-3", "The engines do not apply the same data protection by default",
-                       "By default EWMA runs its data-quality layer, GARCH-t its jump filter and Realized-CAViaR "
-                       "none, so the shared baseline of the portfolio engines differs in "
+        return Finding("risk", "R-3", "The engines do not give the shared baseline the same inputs by default",
+                       "With the default configurations, the shared baseline of the portfolio engines differs in "
                        f"{m[v, 'baseline_mismatches']:.0f} forecasts on the synthetic market and "
                        f"{m[v, 'baseline_mismatches_b3_default']:.0f} on the B3 data (with both protections off: "
                        f"{m[v, 'baseline_mismatches_same_policy']:.0f} and {m[v, 'baseline_mismatches_b3_same_policy']:.0f}). "
                        "Every statistical comparison must state the policy it runs under.", ["Cp1"])
+    return Finding("non-risk", "N8", "One data protection and one baseline in every engine",
+                   "The jump filter (common/, causal, decided on each bar with the bars before it) runs by default in "
+                   "EWMA, GARCH-t and Realized-CAViaR, and the RiskMetrics baseline is one implementation behind the "
+                   "common model interface in both portfolio engines: the baseline coincides forecast by forecast on "
+                   f"the synthetic market (0 of the forecasts differ; with both protections off "
+                   f"{m[v, 'baseline_mismatches_same_policy']:.0f}), and on the B3 data "
+                   f"{m[v, 'baseline_mismatches_b3_default']:.0f} differ by default, "
+                   f"{m[v, 'baseline_mismatches_b3_same_policy']:.0f} with both off.", ["Cp1"])
 
 
 def _f_no_dq_in_comparison(m: M):
-    vs = [v for v in single_defaults() if m[v, "degraded_share_dev5_pct"] > 1]
-    if vs:
-        v = vs[0]
-        return Finding("risk", "R-6", "The comparison engine has no data-quality layer",
-                       f"On the faulty feed {m[v, 'degraded_share_dev5_pct']:.1f}% of {lab(v)}'s single-stock "
-                       f"forecasts move more than 5% ({m.detail(v, 'degraded_share_dev5_pct')}): a bad tick enters "
-                       "|R| and RV directly. The garch_t jump filter (data_quality.cpp, causal, one stock at a "
-                       "time) could be compiled into realized_caviar like the other garch_t sources it reuses, which "
-                       "would protect the single-stock models as well.", ["R1", "R3"])
+    vs = [v for v in single_defaults() if m.has((v, "degraded_share_dev5_pct")) and m[v, "degraded_share_dev5_pct"] > 1]
+    if not vs:
+        return None
+    v = vs[0]
+    off = ENGINES[VARIANTS[v].engine].unprotected
+    unprot = (f" (without the jump filter: {m[off, 'degraded_share_dev5_pct']:.1f}%)"
+              if off != v and m.has((off, "degraded_share_dev5_pct")) else "")
+    jumps = (f" On {m[v, 'r1_calibration_jump_days_pct']:.0f}% of the stock-days the daily calibration of the two feeds "
+             f"lands on different optima (a beta more than {0.05} apart), and {m[v, 'r1_off_on_calibration_jumps_pct']:.0f}% "
+             "of the forecasts off fall on those days: |R| and RV of the same hour are close substitutes, so the "
+             "pinball loss is nearly flat along a direction of (beta2, beta3) and a few changed observations move the "
+             "optimum, and with it the whole day's VaR. The calibration starts from the previous day's parameters, "
+             "which keeps it when it still fits best; a rule that keeps it unless the new window rejects it froze the "
+             "parameters and made the two feeds diverge more (tested and rejected)."
+             if m.has((v, "r1_calibration_jump_days_pct")) else "")
+    return Finding("risk", "R-6", "The comparison engine's daily calibration amplifies small data changes",
+                   f"On the faulty feed {m[v, 'degraded_share_dev5_pct']:.1f}% of {lab(v)}'s single-stock forecasts "
+                   f"move more than 5%{unprot}." + jumps + " The faults reach the model through its estimates, not its "
+                   "inputs: the protection that works for the portfolio engines is not enough for a model fitted on "
+                   "40 sessions of quantile losses.", ["R1", "R3"])
 
 
 def _f_boundaries(m: M):
     single, port = single_defaults(), portfolio_defaults()
     if single and port and m.has((single[0], "model_stage_p50_us")):
-        g = default_variant("garch_t")
-        mc = (f" The GARCH-t Monte Carlo revaluation of the option book ({m[g, 'mc_revaluation_p50_us'] / 1e3:.1f} ms "
-              "per bar at the median) and the EWMA confirmation of suspect prices run outside their timers."
-              if m.has((g, "mc_revaluation_p50_us")) else "")
-        return Finding("risk", "R-7", "Latency is measured at different boundaries",
-                       f"{names(port)} time a bar cycle of a 15-stock book (fills, data quality, correlations, VaR); "
-                       f"{names(single)} times the model stage of one instrument in batches of 1000, whose "
-                       "percentiles are of batch means." + mc + " The numbers are not comparable across engines: "
-                       "the cost side of the research question must use the matched model-stage benchmark, where the "
-                       "three models share one boundary.", ["P1"])
+        return Finding("risk", "R-7", "The single-instrument engine is timed at a different boundary",
+                       f"{names(port)} time the same bar cycle of a 15-stock book (fills, the shared jump filter, every "
+                       "model, VaR; the option revaluation runs off the bar thread and is reported apart). "
+                       f"{names(single)} times the model stage of one instrument in batches of 1000, whose percentiles "
+                       "are of batch means, so its numbers are not comparable with theirs: the cost side of the "
+                       "research question must use the matched model-stage benchmark, where the three models share "
+                       "one boundary.", ["P1"])
 
 
 def _f_no_interface(m: M):
-    vs = [v for v in defaults() if m[v, "m1_files_outside_model"] > 2]
+    vs = [v for v in defaults() if m.has((v, "m1_files_outside_model")) and m[v, "m1_files_outside_model"] > 2]
     if vs:
-        none = all(m[v, "common_model_interface"] == 0 for v in defaults() if m.has((v, "common_model_interface")))
-        ok = [v for v in defaults() if v not in vs and m.has((v, "m1_files_outside_model"))]
-        tail = (f" {names(ok)} keeps it to {m[ok[0], 'm1_files_outside_model']:.0f} files, its replay orchestrator, "
-                "where the models are selected by position." if ok else "")
         return Finding("risk", "R-4", "No common model interface",
-                       ("None of the engines has a model interface. " if none else "")
-                       + "In " + names(vs) + " the models are named fields of the engine's result, so a new model "
-                       "touches " + " and ".join(f"{m[v, 'm1_files_outside_model']:.0f} files of {lab(v)}" for v in vs)
-                       + " outside the model layer." + tail + " The monograph's NFR05 (one interface for the three "
-                       "models) is not met by the current code.", ["M1"])
+                       "In " + names(vs) + " a new model touches " + " and ".join(
+                           f"{m[v, 'm1_files_outside_model']:.0f} files of {lab(v)}" for v in vs)
+                       + " outside the model layer.", ["M1"])
+    port = [v for v in portfolio_defaults() if m.has((v, "common_model_interface")) and m[v, "common_model_interface"] == 1]
+    if not port:
+        return None
+    single = [v for v in single_defaults() if m.has((v, "m1_files_outside_model"))]
+    tail = (f" {names(single)} keeps its models in one orchestrator, selected by position "
+            f"({m[single[0], 'm1_files_outside_model']:.0f} files to change), outside the class interface: its models "
+            "are univariate quantile filters with another life cycle." if single else "")
+    return Finding("non-risk", "N9", "One model interface for the portfolio engines",
+                   f"In {names(port)} every VaR model implements riskcommon::PortfolioModel and the replay, the backtest "
+                   "and the output files iterate over the registered models: a new model is a class in the model "
+                   "layer plus its registration (" + ", ".join(
+                       f"{lab(v)}: {m[v, 'm1_files_outside_model']:.0f} file(s) outside the layer name a model" for v in port)
+                   + ")." + tail, ["M1"])
 
 
 def _f_grid(m: M):
-    blocked = [v for v in defaults() if m[v, "m2_config_only"] == 0]
-    ok = [v for v in defaults() if m[v, "m2_config_only"] == 1]
+    blocked = [v for v in defaults() if m.has((v, "m2_config_only")) and m[v, "m2_config_only"] == 0]
+    ok = [v for v in defaults() if m.has((v, "m2_config_only")) and m[v, "m2_config_only"] == 1]
     if blocked:
-        return Finding("risk", "R-5", "The target time grid is reachable in one engine only",
-                       f"{names(blocked)} set bars in whole minutes and forecast one bar ahead, so the grid of the "
-                       "project (5-second sampling, a 5-minute VaR issued every minute) needs code there"
-                       + (f"; {names(ok)} implements it in its high-frequency mode. The shared 15-minute data keeps "
-                          "every experiment on 15-minute bars, so the monograph must state which grid it reports."
-                          if ok else "."), ["M2"])
+        return Finding("risk", "R-5", "The target time grid needs code in some engines",
+                       f"{names(blocked)} need code to reach the grid of the project (5-second sampling, a 5-minute "
+                       f"VaR issued every minute): {m.detail(blocked[0], 'm2_config_only')}.", ["M2"])
+    if ok:
+        return Finding("non-risk", "N10", "The target time grid is a configuration in every engine",
+                       "Realized-CAViaR has a high-frequency mode (5-second prices, five 1-minute phases of a 5-minute "
+                       "horizon); the portfolio engines aggregate 5-second samples into the bars of any --session grid "
+                       "(--resample), so a 5-minute VaR every minute is five runs on 5-minute grids opening one minute "
+                       "apart, each with non-overlapping targets as CAViaR's phases. The experiments of the monograph "
+                       "run on the shared 15-minute data, which is the grid they report.", ["M2"])
 
 
 def _f_hidden_shock(m: M):
@@ -320,14 +348,13 @@ def _f_hidden_shock(m: M):
 
 def _f_missing_policy(m: M):
     v = default_variant("ewma")
-    if m[v, "baseline_mismatches_b3_same_policy"] > 0:
-        return Finding("sensitivity", "S-1", "Missing-data policy of the covariance update",
-                       "EWMA keeps a missing asset's variance and shrinks its covariances; GARCH-t imputes the "
-                       f"missing return from the observed ones. On the B3 data, bars with up to "
-                       f"{m[v, 'b3_partial_bar_max_missing']:.0f} {m.detail(v, 'b3_partial_bar_max_missing')} missing "
-                       f"make {m[v, 'baseline_mismatches_b3_same_policy']:.0f} forecasts differ (up to "
-                       f"{m[v, 'b3_same_policy_max_diff_pct']:.1f}% of the baseline VaR), with both data protections "
-                       "off. Real feeds make this a comparability risk the synthetic market cannot show.", ["Cp1"])
+    if m.has((v, "baseline_mismatches_b3_same_policy")) and m[v, "baseline_mismatches_b3_same_policy"] > 0:
+        return Finding("sensitivity", "S-1", "Bars with missing prints still reach the baseline differently",
+                       "The baseline is one implementation in both engines, yet on the B3 data, with both protections "
+                       f"off, {m[v, 'baseline_mismatches_b3_same_policy']:.0f} forecasts differ (up to "
+                       f"{m[v, 'b3_same_policy_max_diff_pct']:.1f}% of the baseline VaR), all after bars with up to "
+                       f"{m[v, 'b3_partial_bar_max_missing']:.0f} {m.detail(v, 'b3_partial_bar_max_missing')} missing: "
+                       "the two pipelines turn a missing print into returns, exposures or P&L differently.", ["Cp1"])
 
 
 def _f_fill_recalibration(m: M):
@@ -354,36 +381,35 @@ def _f_opening_hour(m: M):
 
 
 def _f_reuse(m: M):
-    vs = [v for v in defaults() if m[v, "reused_sibling_sources"] > 0]
+    vs = [v for v in defaults() if m.has((v, "reused_sibling_sources")) and m[v, "reused_sibling_sources"] > 0]
     if vs:
         v = vs[0]
         return Finding("sensitivity", "S-4", "Reuse by compiling the other modules' sources",
-                       f"{lab(v)} compiles {m[v, 'reused_sibling_sources']:.0f} source files of ewma and garch_t "
-                       "(loader, EWMA, GARCH, backtest). It guarantees the same conventions and estimators in the "
-                       "comparison, but couples the modules with no interface or version: a change in ewma or "
-                       "garch_t silently changes the comparison engine. atam/run.bat rebuilds it before every "
+                       f"Besides the shared library common/ (model interface, baseline, jump filter, with its own "
+                       f"tests), {lab(v)} compiles {m[v, 'reused_sibling_sources']:.0f} source files of ewma and garch_t "
+                       "(loader, EWMA, GARCH, backtest, the jump filter's panel adapter). It guarantees the same "
+                       "conventions and estimators in the comparison, but couples the modules with no version: a change "
+                       "in ewma or garch_t silently changes the comparison engine. atam/run.bat rebuilds it before every "
                        "evaluation, so a rerun after such a change is the safeguard.", ["Cp1", "M1"])
 
 
 def _f_dq_tradeoff(m: M):
     if m.has(("ewma", "degraded_share_dev5_pct"), ("ewma_nodq", "degraded_share_dev5_pct"), ("ewma", "r2_max_effect_pct")):
-        return Finding("trade-off", "T-1", "Data-quality layer: robustness vs reaction to genuine shocks",
-                       f"With the layer, {m['ewma', 'degraded_share_dev5_pct']:.2f}% of the faulty-feed forecasts "
-                       f"stray more than 5% from the clean-feed ones (without it: "
+        return Finding("trade-off", "T-1", "Data protection: robustness vs reaction to genuine shocks",
+                       f"With the EWMA data-quality layer and the jump filter, {m['ewma', 'degraded_share_dev5_pct']:.2f}% "
+                       f"of the faulty-feed forecasts stray more than 5% from the clean-feed ones (without them: "
                        f"{m['ewma_nodq', 'degraded_share_dev5_pct']:.2f}%). The price is paid on genuine moves: at a "
                        f"shock bar the VaR moves up to {m['ewma', 'r2_max_effect_pct']:.1f}% away from the unprotected "
-                       f"one, for {m['ewma', 'r2_bars_affected']:.0f} bar, because the suspect stock keeps its last "
-                       "price and a winsorized return until the next bar confirms the move. " + _dq_cost_text(m),
-                       ["R1", "R2", "P1"])
+                       f"one, for {m['ewma', 'r2_bars_affected']:.0f} bar(s), because a move confined to one stock is held "
+                       "until the next bar confirms it. " + _dq_cost_text(m), ["R1", "R2", "P1"])
 
 
 def _dq_cost_text(m: M) -> str:
     diff, real = latency_cost(m, "ewma", "ewma_nodq")
-    note = " Its confirmation step runs before the timer, so part of its cost is not in this figure."
     if real:
-        return f"Timed latency cost: {diff:+.2f} us at the median per bar." + note
-    return (f"Timed latency cost: none measurable (median per bar {m['ewma', 'latency_p50_us']:.2f} us with the layer, "
-            f"{m['ewma_nodq', 'latency_p50_us']:.2f} us without, inside the run-to-run spread)." + note)
+        return f"Timed latency cost: {diff:+.2f} us at the median per bar (the filter runs inside the timed bar)."
+    return (f"Timed latency cost: none measurable (median per bar {m['ewma', 'latency_p50_us']:.2f} us with the "
+            f"protection, {m['ewma_nodq', 'latency_p50_us']:.2f} us without, inside the run-to-run spread).")
 
 
 def _f_clip_tradeoff(m: M):
@@ -448,21 +474,22 @@ def _f_unprinted_bar(m: M):
 
 
 def _f_book_cache(m: M):
-    vs = [v for v in [default_variant("garch_t")] if v and m.has((v, "latency_p99_us_no_book"), (v, "latency_p99_us"))
-          and m[v, "latency_p99_us"] > 2 * m[v, "latency_p99_us_no_book"]]
-    if not vs:
-        return None
     g = default_variant("garch_t")
+    if not (g and m.has((g, "latency_p99_us_no_book"), (g, "latency_p99_us"))):
+        return None
     mc = (f" (the revaluation itself takes {m[g, 'mc_revaluation_p50_us'] / 1e3:.1f} ms per bar at the median)"
           if m.has((g, "mc_revaluation_p50_us")) else "")
-    return Finding("sensitivity", "S-7", "The option revaluation slows down the bar update it is not part of",
-                   "With the option book, the Monte Carlo revaluation runs on the same thread between two bar updates"
-                   + mc + " and evicts the engine's data from the processor caches, so the next update starts cold: "
-                   + "; ".join(f"{lab(v)} p99 {m[v, 'latency_p99_us']:.1f} us with the book, "
-                               f"{m[v, 'latency_p99_us_no_book']:.1f} us without it (p50 {m[v, 'latency_p50_us']:.1f} "
-                               f"vs {m[v, 'latency_p50_us_no_book']:.1f} us)" for v in vs)
-                   + ". Running the revaluation on another core after the VaR is published would keep the bar update "
-                   "at its own cost.", ["P1"])
+    if m[g, "latency_p99_us"] > 2 * m[g, "latency_p99_us_no_book"]:
+        return Finding("sensitivity", "S-7", "The option revaluation slows down the bar update it is not part of",
+                       f"With the option book{mc}, {lab(g)} p99 is {m[g, 'latency_p99_us']:.1f} us against "
+                       f"{m[g, 'latency_p99_us_no_book']:.1f} us without it (p50 {m[g, 'latency_p50_us']:.1f} vs "
+                       f"{m[g, 'latency_p50_us_no_book']:.1f} us).", ["P1"])
+    return Finding("non-risk", "N11", "The option revaluation stays off the bar update",
+                   f"The Monte Carlo revaluation of the option book{mc} runs after the VaR is published, off the bar "
+                   f"thread, so the bar update keeps its own cost: {lab(g)} p99 {m[g, 'latency_p99_us']:.1f} us with the "
+                   f"book, {m[g, 'latency_p99_us_no_book']:.1f} us without it (p50 {m[g, 'latency_p50_us']:.1f} vs "
+                   f"{m[g, 'latency_p50_us_no_book']:.1f} us); its records are the same as with the revaluation on the "
+                   "bar thread (unit test).", ["P1"])
 
 
 FINDING_RULES = [_f_hidden_shock, _f_no_value_lookahead, _f_deterministic, _f_same_pipeline, _f_matched, _f_latency_ok, _f_model_cost,
@@ -482,24 +509,22 @@ def tradeoff_rows(m: M) -> tuple[list[str], list[tuple[str, str, dict]]]:
     g, e, c = default_variant("garch_t"), default_variant("ewma"), default_variant("realized_caviar")
     cost, real = latency_cost(m, "ewma", "ewma_nodq")
     dq_cost_cell = f"{cost:+.1f} us median" if real else "no cost above\nrun-to-run noise"
+    cn = ENGINES["realized_caviar"].unprotected
     rows = [
-        ("Data-quality layer, suspect move\nconfirmed on the next bar", "EWMA", {
-            R1: ("+", f"{m['ewma_nodq', 'degraded_share_dev5_pct']:.1f}% -> {m['ewma', 'degraded_share_dev5_pct']:.2f}%\noff >5%"),
-            R2: ("~", f"{m['ewma', 'r2_max_effect_pct']:.1f}% off for\n{m['ewma', 'r2_bars_affected']:.0f} bar"),
-            CP: ("-", f"{m[e, 'baseline_mismatches']:.0f} / {m[e, 'baseline_mismatches_b3_default']:.0f} forecasts\ndiffer"),
+        ("Shared jump filter: isolated\njump held one bar (default)", "all three", {
+            R1: ("+", f"{m['garch_t_nojump', 'degraded_share_dev5_pct']:.1f}% -> {m[g, 'degraded_share_dev5_pct']:.2f}% (GARCH-t)\n"
+                      f"{m[cn, 'degraded_share_dev5_pct']:.1f}% -> {m[c, 'degraded_share_dev5_pct']:.1f}% (CAViaR)"),
+            R2: ("~", f"x{min(m[g, 'shock_min_ratio'], m[e, 'shock_min_ratio']):.3f}, a move\nheld one bar"),
+            CP: ("+" if m[e, "baseline_mismatches"] == 0 else "-",
+                 f"{m[e, 'baseline_mismatches']:.0f} / {m[e, 'baseline_mismatches_b3_default']:.0f} baseline\nforecasts differ"),
             P1: ("~", dq_cost_cell)}),
-        ("Jump filter: isolated jump held\none bar (default)", "GARCH-t", {
-            R1: ("+", f"{m['garch_t_nojump', 'degraded_share_dev5_pct']:.1f}% -> {m[g, 'degraded_share_dev5_pct']:.2f}%\noff >5%"),
-            R2: ("~", f"x{m[g, 'shock_min_ratio']:.3f}, {m[g, 'r2_bars_affected']:.0f}\nbar(s) affected"),
-            CP: ("-", "a policy of its\nown (R-3)")}),
+        ("EWMA data-quality layer\n(arrival rules, frozen quotes)", "EWMA", {
+            R1: ("+", f"{m['ewma_nodq', 'degraded_share_dev5_pct']:.1f}% -> {m['ewma', 'degraded_share_dev5_pct']:.2f}%\noff >5%")}),
         ("Stateless clipping of shocks\nat 6 sd (option)", "GARCH-t", {
             R1: ("+", f"{m['garch_t_nojump', 'degraded_share_dev5_pct']:.1f}% -> {m['garch_t_zclip6', 'degraded_share_dev5_pct']:.1f}%\noff >5%"),
             R2: ("-", f"x{m['garch_t_zclip6', 'shock_min_ratio']:.3f}, {m['garch_t_zclip6', 'r2_bars_affected']:.0f}\nbars affected")}),
-        ("No data-quality layer\n(loader only)", "Realized-CAViaR", {
-            R1: ("-", f"{m[c, 'degraded_share_dev5_pct']:.1f}% of stock\nforecasts off >5%"),
-            R2: ("+", "real moves enter\nunfiltered")}),
-        ("Missing asset in a bar: keep\nvariance vs impute", "EWMA, GARCH-t", {
-            CP: ("-", f"{m[e, 'baseline_mismatches_b3_same_policy']:.0f} B3 forecasts\ndiffer")}),
+        ("Daily CAViaR calibration on\n40 sessions of pinball losses", "Realized-CAViaR", {
+            R1: ("-", f"{m[c, 'degraded_share_dev5_pct']:.1f}% of stock\nforecasts off >5%")}),
         ("One instrument per run,\nthree matched models", "Realized-CAViaR", {
             CP: (("+", "returns = shared\nconvention") if m[c, "baseline_mismatches"] == 0
                  else ("-", f"{m[c, 'baseline_mismatches']:.0f} targets off the\nshared convention")),
@@ -509,6 +534,9 @@ def tradeoff_rows(m: M) -> tuple[list[str], list[tuple[str, str, dict]]]:
             **({R2: ("-", f"{m[c, 'r2_hidden_shocks']:.0f} shock before a halt\nnever enters")}
                if m[c, "r2_hidden_shocks"] > 0 else {})}),
     ]
+    if m.has((e, "baseline_mismatches_b3_same_policy")) and m[e, "baseline_mismatches_b3_same_policy"] > 0:
+        rows.append(("Missing prints turned into\nreturns and P&L", "EWMA, GARCH-t", {
+            CP: ("-", f"{m[e, 'baseline_mismatches_b3_same_policy']:.0f} B3 forecasts\ndiffer")}))
     # decisions that the evidence of this run still shows (a fixed one drops out of the map)
     if sum(m[v, "c1_truncation_changed"] - m[v, "c1_truncation_fixed_window_changed"] for v in defaults()) > 0:
         rows.append(("Window derived from the\nlength of the file", "engines", {
@@ -519,22 +547,24 @@ def tradeoff_rows(m: M) -> tuple[list[str], list[tuple[str, str, dict]]]:
     if m[g, "latency_max_us"] > 3 * m[g, "latency_max_without_fill_bars_us"]:
         rows.append(("Tail recalibration on fills\ninside the bar cycle", "GARCH-t", {
             P1: ("-", f"up to {m[g, 'latency_max_us']:,.0f} us\nvs {m[g, 'latency_p50_us']:.0f} us median")}))
-    if m.has((g, "latency_p99_us_no_book")) and m[g, "latency_p99_us"] > 2 * m[g, "latency_p99_us_no_book"]:
-        rows.append(("Option revaluation on the\nbar-update thread", "GARCH-t", {
-            P1: ("-", f"p99 {m[g, 'latency_p99_us']:.1f} us vs\n{m[g, 'latency_p99_us_no_book']:.1f} us without")}))
+    if m.has((g, "latency_p99_us_no_book")):
+        on_thread = m[g, "latency_p99_us"] > 2 * m[g, "latency_p99_us_no_book"]
+        rows.append(("Option revaluation off the\nbar thread", "GARCH-t", {
+            P1: ("-" if on_thread else "+", f"p99 {m[g, 'latency_p99_us']:.1f} us vs\n{m[g, 'latency_p99_us_no_book']:.1f} us without")}))
     if m.has((g, "r1_off_after_unprinted")) and m[g, "r1_off_after_unprinted"] > 0:
         rows.append(("Unprinted bar: its variance\nadded to the next forecast", "GARCH-t", {
             R1: ("~", f"{m[g, 'r1_off_after_unprinted']:.0f} forecasts off;\n"
                       f"{m[g, 'r1_share_dev5_other_pct']:.2f}% otherwise")}))
     rows += [
-        ("Compiles ewma and garch_t\nsources", "Realized-CAViaR", {
-            CP: ("+", "same loader and\nestimators"),
-            MO: ("-", f"{m[c, 'reused_sibling_sources']:.0f} foreign files,\nsilent coupling")}),
-        ("Models as named fields /\nselected by position", "all three", {
-            MO: ("-", f"{m[e, 'm1_files_outside_model']:.0f} / {m[g, 'm1_files_outside_model']:.0f} / "
-                      f"{m[c, 'm1_files_outside_model']:.0f} files\nto add a model")}),
-        ("Whole-minute bars, one-bar\nhorizon", "EWMA, GARCH-t", {
-            MO: ("-", "5 s / 1 min / 5 min\nneeds code")}),
+        ("Shared library common/ and\ncompiled ewma, garch_t sources", "Realized-CAViaR", {
+            CP: ("+", "same filter, loader\nand estimators"),
+            MO: ("-", f"{m[c, 'reused_sibling_sources']:.0f} foreign files,\nno version")}),
+        ("Common model interface\n(portfolio engines)", "EWMA, GARCH-t", {
+            MO: ("+" if max(m[e, 'm1_files_outside_model'], m[g, 'm1_files_outside_model']) <= 2 else "-",
+                 f"{m[e, 'm1_files_outside_model']:.0f} / {m[g, 'm1_files_outside_model']:.0f} files\nname a model")}),
+        ("Resampled samples, staggered\ngrids (--resample, --session)", "EWMA, GARCH-t", {
+            MO: ("+" if m[e, "m2_config_only"] == 1 and m[g, "m2_config_only"] == 1 else "-",
+                 "5 s / 1 min / 5 min\nby configuration" if m[e, "m2_config_only"] == 1 else "needs code")}),
     ]
     return attrs, rows
 

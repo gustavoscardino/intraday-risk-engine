@@ -80,10 +80,18 @@ FitResult fit(const std::vector<Observation>& rows, const FitOptions& opt) {
     double best_loss = objective(best);
     bool any_converged = false;  // reported when no simplex beats the constant candidate
     bool from_simplex = false;
-    for (int start = 0; start < opt.starts; ++start) {
+    const bool warm = opt.warm_start && opt.warm_start->valid();
+    if (warm) {  // the previous calibration is a candidate as it stands
+        const Point x{opt.warm_start->beta0/scale, opt.warm_start->beta1, opt.warm_start->beta2, opt.warm_start->beta3};
+        const double loss = objective(x);
+        if (loss < best_loss) { best = x; best_loss = loss; result.converged = true; from_simplex = true; }
+    }
+    for (int start = 0; start < opt.starts + (warm ? 1 : 0); ++start) {
         const double persistence = .15 + .8*static_cast<double>(start%6)/5.0;
         const double shock = .02 + .03*static_cast<double>(start%3);
         Point center{initial/scale*(1-persistence), persistence, -shock, -shock};
+        if (start == opt.starts)  // the extra start: the previous calibration
+            center = {opt.warm_start->beta0/scale, opt.warm_start->beta1, opt.warm_start->beta2, opt.warm_start->beta3};
         struct Vertex { Point x; double loss; };
         std::array<Vertex, 5> simplex;
         simplex[0] = {center, objective(center)};

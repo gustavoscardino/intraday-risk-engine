@@ -21,8 +21,8 @@
 // standardized gap history. Risk "close -> first bar of the next session" combines the gap
 // and the first bar (independent).
 //
-// Baseline (the RiskMetrics method described in the project text): EWMA covariance of raw returns
-// (lambda = 0.94) with Normal quantiles.
+// The RiskMetrics baseline is a separate model (common/include/riskcommon/riskmetrics.hpp); the
+// replay runs both behind the common model interface (garcht/models.hpp).
 //
 // Thread safety: every public member function may be called concurrently from several
 // threads. compute()/compute_overnight()/accessors take a shared lock and run in parallel
@@ -91,7 +91,7 @@ struct EngineConfig {
     double evt_tail_fraction = 0.10;
     int evt_min_exceedances = 50;
     std::vector<double> confidences{0.95, 0.975, 0.99};
-    double ewma_lambda = 0.94;            // RiskMetrics baseline
+    double ewma_lambda = 0.94;            // RiskMetrics baseline model run beside this one (replay)
 
     // Overnight variances: EWMA per session with lambda estimated by predictive (Gaussian
     // quasi-) likelihood over the gap history, pooled across assets; this is the start value.
@@ -128,9 +128,7 @@ struct PortfolioRisk {
     double sigma = 0.0;  // std of the P&L over the next bar (money)
     double nu = 0.0;     // tail parameter used (+inf = Normal)
     ShockDist tail;      // full standardized distribution used for VaR / ES
-    std::vector<RiskMeasure> garch;  // one per configured confidence (money, positive = loss)
-    double ewma_sigma = 0.0;
-    std::vector<RiskMeasure> ewma;       // RiskMetrics baseline
+    std::vector<RiskMeasure> measures;   // one per configured confidence (money, positive = loss)
     std::vector<double> asset_sigma;     // per-asset next-bar return std (fraction); for an asset
                                          // that missed bars since its last print this session,
                                          // the std of its move since that print
@@ -182,8 +180,8 @@ public:
     // Realized P&L of the bar a forecast referred to; feeds the out-of-sample tail calibration.
     void observe_outcome(double realized_pnl, const PortfolioRisk& forecast);
 
-    // Re-estimates diurnal profile, GARCH models, correlations, the portfolio tail and the
-    // baseline on the rolling window. `exposures` = signed money exposures.
+    // Re-estimates diurnal profile, GARCH models, correlations and the portfolio tail on the
+    // rolling window. `exposures` = signed money exposures.
     RefitReport refit(const double* exposures);
 
     // Re-calibrates the portfolio tail for new exposures (after a rebalance). With the
@@ -226,7 +224,6 @@ private:
     bool conditional_outer(const std::vector<double>& C, bool as_corr, const double* v,
                            std::vector<double>& out) const;
     void corr_update(std::vector<double>& Q, const double* z) const;  // NaN entries imputed
-    void baseline_update(const double* r);                            // S_ recursion, idem
     void normalize_corr(const std::vector<double>& Q, std::vector<double>& R) const;
     void estimate_corr_dynamics(RefitReport& rep);
     ShockDist calibrate_tail(const double* exposures) const;
@@ -252,7 +249,6 @@ private:
     size_t win_start_ = 0;       // first window row scored after that burn-in
     double dcc_a_, dcc_b_;
     bool dcc_estimated_ = false;
-    std::vector<double> S_;   // baseline EWMA covariance of raw returns
     TailTable tail_, normal_tail_;
     double nu_p_ = 0.0;  // == tail_.dist().nu
     bool tail_oos_only_ = false;  // current tail fitted on out-of-sample outcomes alone

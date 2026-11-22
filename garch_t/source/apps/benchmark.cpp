@@ -147,7 +147,7 @@ int main(int argc, char** argv) {
                     eng.on_bar(static_cast<int>(t % 28), row.data());
                     eng.compute(static_cast<int>((t + 1) % 28), x.data(), risk);
                     lat.push_back(std::chrono::duration<double>(clk::now() - s0).count());
-                    g_sink = risk.garch[2].var;
+                    g_sink = risk.measures[2].var;
                 }
                 std::sort(lat.begin(), lat.end());
                 const double med = lat[lat.size() / 2];

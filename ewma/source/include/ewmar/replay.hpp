@@ -2,16 +2,18 @@
 // 15-minute cycle, and the backtest of its forecasts.
 //
 // At each bar t:
-//   1. suspicious prices of bar t-1 are decided with the close of bar t (bad tick -> price
-//      excluded and bar re-fed; real shock -> full value re-fed);
-//   2. the outcome of bar t-1 is scored: P&L of the positions held at the forecast, from the
+//   1. the outcome of bar t-1 is scored: P&L of the positions held at the forecast, from the
 //      previous close of the session (first bar: from the open, overnight gap excluded), with
-//      the cleaned prices; at a session's first bar the overnight forecast is scored as well;
-//   3. fills up to the bar time update the positions; returns; SPIKE rule; dq_score and mode;
-//      engine update (FREEZE: no update); end of session: re-estimation;
-//   4. one-bar-ahead sigma / VaR / ES of the three models (FREEZE: the last valid forecast is
-//      kept); with options, the delta-linear book; at the close, the overnight forecast.
-// The windows, the first forecast bar and the scoring are those of the GARCH-t engine.
+//      the prices received (after the arrival rules and the STALE mask); at a session's first bar
+//      the overnight forecast is scored as well;
+//   2. fills up to the bar time update the positions; the jump filter shared by the three
+//      engines decides the bar's prints (SUSPECT / SPIKE / SHOCK_KEPT) and gives the models' view
+//      of the prices; returns of that view; dq_score and mode; update of every model (FREEZE: no
+//      update); end of session: re-estimation;
+//   3. one-bar-ahead sigma / VaR / ES of every model (FREEZE: the last valid forecast is kept);
+//      with options, the delta-linear book; at the close, the overnight forecast.
+// Exposures are marked at the models' view (a held print keeps the last validated close). The
+// windows, the first forecast bar, the conventions and the scoring are those of the GARCH-t engine.
 #pragma once
 
 #include <deque>
@@ -46,14 +48,13 @@ struct ForecastRecord {
     std::string forecast_time, target_time;
     int target_slot = 0;
     double net = 0.0, gross = 0.0;
-    double sigma_ref = kNaN, sigma = kNaN, lambda = kNaN, nu = kNaN;
-    std::vector<RiskMeasure> ref, normal, student;
+    std::vector<riskcommon::ModelForecast> models;  // one per ReplayResult::var_models entry
     double pnl = kNaN;
     double dq_score = 1.0;
     DqMode mode = DqMode::Normal;
     bool frozen = false;  // FREEZE: the last valid forecast was kept
     double update_us = 0.0;
-    double book_sigma = kNaN, book_pnl = kNaN;  // delta-linear option book (EWMA-t)
+    double book_sigma = kNaN, book_pnl = kNaN;  // delta-linear option book (main model)
     std::vector<RiskMeasure> book;
 };
 
@@ -76,6 +77,9 @@ struct ReplayResult {
     size_t sessions = 0, bars = 0, unscored = 0, unscored_overnight = 0, fills_applied = 0, fills_unknown = 0;
     PanelStats panel_stats;  // without the DQ layer
     bool dq = false, has_book = false;
+    std::vector<riskcommon::ModelInfo> var_models;  // the VaR models, in registration order
+    size_t main_model = 0;                          // the one behind the book and the decomposition
+    std::vector<riskcommon::JumpEvent> jump_events;  // decisions of the jump filter (DQ layer on)
     IngestResult ingest;  // with the DQ layer (panel moved out)
     std::vector<DqEvent> events;
     std::vector<DqAlert> alerts;

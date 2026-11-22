@@ -2,6 +2,7 @@
 #pragma once
 
 #include <cstddef>
+#include <limits>
 #include <string>
 #include <vector>
 
@@ -99,7 +100,16 @@ BarPanel build_panel(const std::vector<BarRow>& rows, const std::vector<std::str
 // their parsed time, so the file order does not matter. Duplicated (time, ticker) rows keep
 // the first occurrence; unparseable rows are counted and skipped.
 BarPanel load_bars_csv(const std::string& path, const std::vector<std::string>& tickers,
-                       int exchange_utc_offset_min = -180);
+                       int exchange_utc_offset_min = -180, const SessionSpec* resample = nullptr);
+
+// Samples finer than the bar grid (e.g. 5-second prices) aggregated into the bars of `grid`: a row
+// stamped at instant tau belongs to the bar closing at the first grid time >= tau (bars are stamped
+// at their close). Per (bar, ticker): open of the first sample, highest high, lowest low, close of
+// the last sample, summed volume; the aggregated row is stamped at the bar close. Rows outside the
+// session keep their own minute (off-grid rows are ignored downstream). With load_bars_csv(...,
+// &grid) the 15-minute engines run on any grid: for a 5-minute VaR every minute, five runs on
+// 5-minute grids opening one minute apart (see the README).
+std::vector<BarRow> resample_rows(const std::vector<BarRow>& rows, const SessionSpec& grid);
 
 // Session grid inferred from the data: the most common spacing between consecutive bars of
 // a day and the most common first / last bar times. Falls back to SessionSpec{} if unclear.
@@ -114,6 +124,27 @@ SessionSpec detect_session(const BarPanel& p);
 // `slot` receives the session slot of each bar (-1 if off-grid).
 void bar_returns(const BarPanel& panel, const SessionSpec& session, std::vector<double>& ret,
                  std::vector<int>& slot);
+
+// The same returns and overnight gaps one on-grid bar at a time (bar_returns and
+// overnight_returns run on it, so the numbers are the same by construction): for a live feed or a
+// replay that prepares each bar's input inside its own cycle.
+class ReturnStream {
+public:
+    explicit ReturnStream(size_t assets);
+    // One on-grid bar (slot >= 0), in time order: open / close of the n assets (NaN = missing).
+    // Writes the n bar returns and the n overnight gaps (NaN unless this is the first bar of a
+    // session opening at slot 0).
+    void step(int date, int slot, const double* open, const double* close, double* ret, double* gap);
+
+private:
+    struct Asset {
+        double ref = std::numeric_limits<double>::quiet_NaN();  // last valid price of the session
+        int ref_slot = -1;  // slot whose close `ref` is (slot - 1 = the session open)
+        double last_close = std::numeric_limits<double>::quiet_NaN();  // of any session (gaps)
+    };
+    std::vector<Asset> a_;
+    int day_ = -1;
+};
 
 // Overnight log-returns ln(open of the session's first bar / last on-grid close of the
 // previous session), stored on the row of each session's first on-grid bar (row-major

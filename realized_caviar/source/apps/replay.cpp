@@ -1,5 +1,8 @@
 #include "rcaviar/replay.hpp"
 #include <cmath>
+#include <filesystem>
+#include <fstream>
+#include <iomanip>
 #include <iostream>
 #include <stdexcept>
 #include <string>
@@ -19,7 +22,7 @@ int positive_integer(const std::string& value) {
 int main(int argc,char** argv) {
     try {
         std::string prices,dataset,ticker,output="results/synthetic",refit,diurnal;
-        int window_days=0; bool reset_on_gap=false, caviar_only=false;
+        int window_days=0; bool reset_on_gap=false, caviar_only=false, jump_filter=true;
         rcaviar::ReplayConfig cfg;
         for (int i=1;i<argc;++i) {
             const std::string arg=argv[i];
@@ -34,6 +37,7 @@ int main(int argc,char** argv) {
                     << "  --diurnal on|off         shared mode: baselines on r / U-profile factor (default on)\n"
                     << "                           EWMA is named EWMA-N (ref) with --diurnal off --lambda .94 (RiskMetrics)\n"
                     << "  --caviar-only            disable matched EWMA/GARCH comparison\n"
+                    << "  --no-jump-filter         shared mode: let every isolated price jump into the models\n"
                     << "  --reset-on-gap           5s mode: restart features after gaps, carry quantile\n"
                     << "  --prices FILE            shared mode: alternate 15m CSV; otherwise strict 5s CSV\n"
                     << "Shared: exact one-bar 15m targets. 5s: 5m targets/1m updates, staggered 5m baselines.\n";
@@ -41,6 +45,7 @@ int main(int argc,char** argv) {
             }
             if (arg=="--reset-on-gap") { reset_on_gap=true; continue; }
             if (arg=="--caviar-only") { caviar_only=true; continue; }
+            if (arg=="--no-jump-filter") { jump_filter=false; continue; }
             if (arg!="--prices" && arg!="--data" && arg!="--ticker" && arg!="--window-days" && arg!="--out"
                 && arg!="--refit" && arg!="--exposure" && arg!="--confidence" && arg!="--lambda" && arg!="--diurnal")
                 throw std::invalid_argument("unknown option: "+arg);
@@ -66,11 +71,21 @@ int main(int argc,char** argv) {
         cfg.diurnal=diurnal!="off";
         cfg.refit=(refit=="daily" || (refit.empty() && shared))?rcaviar::RefitSchedule::Daily:rcaviar::RefitSchedule::Once;
         cfg.compare=!caviar_only;
-        auto input=shared?rcaviar::shared_input(rcaviar::read_shared_data(dataset,ticker,window_days,prices))
+        if (!shared && !jump_filter) throw std::invalid_argument("--no-jump-filter applies to shared data");
+        rcaviar::SharedData data;
+        if (shared) data=rcaviar::read_shared_data(dataset,ticker,window_days,prices,jump_filter);
+        auto input=shared?rcaviar::shared_input(data)
             :rcaviar::price_input(prices.empty()?rcaviar::synthetic_prices():rcaviar::read_prices(prices),reset_on_gap);
         input.description+=(shared?"\nDataset: "+dataset+"; ticker: "+ticker:"\nSource: "+(prices.empty()?std::string("seeded high-frequency simulation"):prices));
         const auto result=rcaviar::run_replay(input,cfg);
         rcaviar::write_results(input,cfg,result,output);
+        if (shared && jump_filter) {  // the same file as the portfolio engines write (every stock)
+            std::ofstream ev(std::filesystem::path(output)/"jump_events.csv");
+            ev << "time,ticker,action,return,z\n" << std::fixed;
+            for (const auto& e:data.jump_events)
+                ev << e.time << ',' << e.ticker << ',' << e.action << ',' << std::setprecision(6) << e.ret << ','
+                   << std::setprecision(2) << e.z << '\n';
+        }
         std::cout << "Wrote " << output << ": " << result.summaries.size() << " models, " << result.forecasts.size()
             << " forecast times, " << result.calibrations.size() << " calibrations\n";
         return 0;

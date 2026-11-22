@@ -9,6 +9,7 @@
 #include <vector>
 
 #include "ewmar/market_data.hpp"
+#include "riskcommon/model.hpp"
 
 namespace ewmar {
 
@@ -18,9 +19,7 @@ struct TailFactors {
 TailFactors normal_factors(double confidence);
 TailFactors student_factors(double nu, double confidence);  // nu = inf gives the Normal factors
 
-struct RiskMeasure {
-    double confidence = 0.0, var = kNaN, es = kNaN;
-};
+using RiskMeasure = riskcommon::RiskMeasure;  // confidence, var, es (losses positive)
 
 // Maximum likelihood nu of a unit-variance t fitted to u (scale fixed at 1), by Brent on [lo, hi].
 // Non-finite values are skipped. *loglik receives the maximized log-likelihood when given.

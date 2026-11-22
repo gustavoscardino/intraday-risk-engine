@@ -23,35 +23,48 @@ from common import REPO, RESULTS, Measurement, Section, rel, write_csv, write_te
 from engines import ENGINES, default_variants
 
 # --------------------------------------------------------------------------- edit here when the code changes
-MODEL_LAYER = {"ewma": ("ewma", "risk", "seasonality"), "garch_t": ("garch", "risk", "seasonality"),
+# The model layer of each engine: the files that implement its VaR models. garch_t's portfolio.cpp is
+# the GARCH-t/EVT model itself (the baseline is a separate model since the common interface); its
+# models.cpp and ewma's models.cpp hold the classes behind riskcommon::PortfolioModel and their
+# registration (make_models).
+MODEL_LAYER = {"ewma": ("ewma", "risk", "seasonality", "models"),
+               "garch_t": ("garch", "risk", "seasonality", "portfolio", "models"),
                "realized_caviar": ("model",)}
 HEADER_DIR = {"ewma": "ewmar", "garch_t": "garcht", "realized_caviar": "rcaviar"}
-MODEL_FIELDS = {  # per-model result fields (VaR/ES of one named model)
-    "ewma": [r"(?<!\])\.(?:ref|normal|student)\b(?![_(])",
-             r"\b(?:ModelForecast|std::vector<RiskMeasure>)\s+(?:ref|normal|student)\b"],
-    "garch_t": [r"(?<!\])\.(?:garch|ewma)\b(?![_(])", r"std::vector<RiskMeasure>\s+(?:garch|ewma)\b"],
+MODEL_FIELDS = {  # code outside the model layer that names one specific model (a fourth model would touch it)
+    "ewma": [r"\b(?:EwmaNormalModel|EwmaStudentModel|RiskMetricsModel)\b",  # a model class
+             r"\b(?:models|var_models|berkowitz)(?:\(\))?\s*\[\s*\d+\s*\]",   # a model by its position
+             r"(?<!\])\.(?:ref|normal|student)\s*\.\s*(?:sigma|m)\b"],          # a named result field (old design)
+    "garch_t": [r"\b(?:GarchPortfolioModel|RiskMetricsModel)\b",
+                r"\b(?:models|var_models|berkowitz)(?:\(\))?\s*\[\s*\d+\s*\]",
+                r"(?<!\])\.(?:garch|ewma)\b(?![_(])", r"std::vector<RiskMeasure>\s+(?:garch|ewma)\b"],
     "realized_caviar": [r"\bm\s*==\s*[0-2]\b", r"\bBaseline(?:State|Calibration)\b",
                         r'"(?:EWMA-N|GARCH-t|Realized-CAViaR)'],  # models selected by position in the replay
 }
-COMMON_INTERFACE = r"\bvirtual\b|\bconcept\b|template\s*<\s*(?:class|typename)\s+Model\b"
-M2_BLOCKERS = [  # (pattern, files, meaning)
+COMMON_INTERFACE = (r"\bvirtual\b|\bconcept\b|template\s*<\s*(?:class|typename)\s+Model\b"
+                    r"|riskcommon::PortfolioModel\b")
+M2_BLOCKERS = [  # (pattern, files, meaning, unless): a hard-wired decision, unless the `unless` pattern shows a way
     (r"HH:MM,BAR_MIN,BARS", "source/apps/*.cpp",
-     "bar length is set in whole minutes (--session HH:MM,BAR_MIN,BARS): 5-second sampling needs code"),
-    (r"next_slot\s*=\s*\(\s*slot(?:\[t\])?\s*\+\s*1\s*\)\s*%\s*K", "source/src/replay.cpp",
-     "the forecast horizon is one bar ahead (next_slot = slot + 1): a 5-minute horizon issued every minute "
-     "needs code (overlapping horizons)"),
+     "bar length is set in whole minutes (--session HH:MM,BAR_MIN,BARS): 5-second sampling needs code",
+     r"--resample"),
 ]
 M2_ENABLERS = [  # (pattern, files, meaning): evidence in code that the target grid is built in
     (r"timestamp\s*-\s*prices\[i-1\]\.timestamp\s*!=\s*5\b", "source/src/replay.cpp",
      "high-frequency mode (--prices) takes 5-second prices"),
     (r"/\s*60\s*%\s*5\b", "source/src/replay.cpp",
      "forecasts every minute in five 1-minute phases of a 5-minute horizon"),
+    (r"--resample", "source/apps/*.cpp",
+     "5-second (or any finer) samples are aggregated into the bars of any --session grid (--resample)"),
 ]
 M2_NOTES = [  # hard-wired choices that do not block the target grid but would block another one
     (r"requires 15-minute bars", "source/src/shared_data.cpp", "the shared-data mode accepts 15-minute bars only"),
+    (r"next_slot\s*=\s*\(\s*slot(?:\[t\])?\s*\+\s*1\s*\)\s*%\s*K", "source/src/replay.cpp",
+     "the forecast horizon is one bar: a 5-minute VaR every minute is five runs on 5-minute grids opening one "
+     "minute apart (--session 10:00,5,84 ... 10:04,5,83), each with non-overlapping targets, as CAViaR's phases"),
 ]
 M1_EXCLUDE = ("benchmark",)  # programs that time a model but would not change to add one
 SIBLING_SOURCES = r"(?:\.\./\.\./(?:ewma|garch_t)/source|\$\{GARCH_SOURCE\})/src/(\w+)\.cpp"  # CMakeLists reuse
+COMMON_LIBRARY = r"add_subdirectory\([^)]*\.\./\.\./common\b"  # the shared library (interface, filter)
 # ------------------------------------------------------------------------------------------------------------
 
 
@@ -83,6 +96,12 @@ def code_metrics(engine: str) -> dict:
     return {"modules": modules, "loc": loc, "edges": sorted(edges)}
 
 
+def _code(text: str) -> str:
+    """C++ source without its comments (string literals are kept: they can name a model too)."""
+    text = re.sub(r"/\*.*?\*/", "", text, flags=re.S)
+    return re.sub(r"//[^\n]*", "", text)
+
+
 def m1_files(engine: str) -> tuple[list[str], bool]:
     layer = set(MODEL_LAYER[engine])
     pats = [re.compile(x) for x in MODEL_FIELDS[engine]]
@@ -90,7 +109,7 @@ def m1_files(engine: str) -> tuple[list[str], bool]:
     for p in _sources(engine):
         if "tests" in p.parts:
             continue
-        text = p.read_text(encoding="utf-8", errors="replace")
+        text = _code(p.read_text(encoding="utf-8", errors="replace"))
         interface |= bool(re.search(COMMON_INTERFACE, text))
         if _module(p) in layer or _module(p) in M1_EXCLUDE:
             continue
@@ -102,8 +121,11 @@ def m1_files(engine: str) -> tuple[list[str], bool]:
 def m2_blockers(engine: str) -> list[tuple[str, str]]:
     root = REPO / ENGINES[engine].folder
     found = []
-    for pattern, glob, meaning in M2_BLOCKERS:
-        for p in sorted(root.glob(glob)):
+    for pattern, glob, meaning, unless in M2_BLOCKERS:
+        files = sorted(root.glob(glob))
+        if unless and any(re.search(unless, p.read_text(encoding="utf-8", errors="replace")) for p in files):
+            continue  # the code offers a way around it
+        for p in files:
             text = p.read_text(encoding="utf-8", errors="replace")
             m = re.search(pattern, text)
             if m:
@@ -167,6 +189,10 @@ def run(fresh: bool = False) -> list[Measurement]:
               f"{'no' if config_only == 0 else 'yes' if config_only == 1 else 'unknown (no pattern matched)'}")
         for w, m in blockers + enablers + notes:
             s.add(f"      {w}: {m}")
+        cmake = REPO / e.folder / "source" / "CMakeLists.txt"
+        shared = cmake.is_file() and bool(re.search(COMMON_LIBRARY, cmake.read_text(encoding="utf-8", errors="replace")))
+        s.add(f"  shared library common/ (model interface, RiskMetrics baseline, jump filter): "
+              f"{'built and linked' if shared else 'not used'}")
         if reuse:
             s.add(f"  reuse: compiles {len(reuse)} source files of other modules: {', '.join(reuse)}")
         ms += [Measurement("M1", v.key, "m1_files_outside_model", len(hits), "files",
@@ -177,7 +203,8 @@ def run(fresh: bool = False) -> list[Measurement]:
                            "; ".join(f"{m} [{w}]" for w, m in blockers + enablers + notes)
                            or "no pattern matched: update M2_BLOCKERS / M2_ENABLERS"),
                Measurement("M1", v.key, "reused_sibling_sources", len(reuse), "files",
-                           ", ".join(reuse) or "builds from its own sources only")]
+                           ", ".join(reuse) or "builds from its own sources only"),
+               Measurement("M1", v.key, "uses_common_library", 1 if shared else 0, "yes/no")]
     write_csv(RESULTS / "modifiability" / "code_metrics.csv", list(rows_metrics[0].keys()), rows_metrics)
     write_csv(RESULTS / "modifiability" / "m1_model_specific_files.csv", ["engine", "file"], rows_m1)
     write_csv(RESULTS / "modifiability" / "m2_blockers.csv", ["engine", "where", "blocker"], rows_m2)

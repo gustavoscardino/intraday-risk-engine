@@ -184,7 +184,8 @@ int main(int argc, char** argv) {
     };
     std::map<std::pair<std::string, double>, Agg> agg;
     std::vector<std::string> order;
-    int ok_runs = 0, berk_g = 0, berk_e = 0, berk_o = 0, berk_o_runs = 0;
+    int ok_runs = 0, berk_o = 0, berk_o_runs = 0;
+    std::vector<std::pair<std::string, int>> berk;  // Berkowitz rejections per model, in model order
     double nu_sum = 0.0, a_sum = 0.0, b_sum = 0.0;
     for (const SeedResult& r : results) {
         if (!r.ok) {
@@ -195,8 +196,10 @@ int main(int argc, char** argv) {
         nu_sum += r.mean_nu;
         a_sum += r.mean_dcc_a;
         b_sum += r.mean_dcc_b;
-        berk_g += r.report.berkowitz_garch.p < 0.05;
-        berk_e += r.report.berkowitz_ewma.p < 0.05;
+        for (size_t k = 0; k < r.report.berkowitz.size(); ++k) {
+            if (berk.size() <= k) berk.emplace_back(r.report.berkowitz[k].model, 0);
+            berk[k].second += r.report.berkowitz[k].test.p < 0.05;
+        }
         if (r.report.berkowitz_overnight.n > 10) {
             ++berk_o_runs;
             berk_o += r.report.berkowitz_overnight.p < 0.05;
@@ -275,9 +278,9 @@ int main(int argc, char** argv) {
                 say(" %9.3f%%", 100.0 * static_cast<double>(a.seg_exc[g]) / static_cast<double>(a.seg_n[g]));
             say("\n");
         }
-    say("\nBerkowitz test rejections at 5%%: GARCH %.1f%%, EWMA-N %.1f%%, overnight %.1f%% (of %d markets)\n",
-                100.0 * berk_g / ok_runs, 100.0 * berk_e / ok_runs, berk_o_runs ? 100.0 * berk_o / berk_o_runs : 0.0,
-                ok_runs);
+    say("\nBerkowitz test rejections at 5%%:");
+    for (const auto& b : berk) say(" %s %.1f%%,", b.first.c_str(), 100.0 * b.second / ok_runs);
+    say(" overnight %.1f%% (of %d markets)\n", berk_o_runs ? 100.0 * berk_o / berk_o_runs : 0.0, ok_runs);
     say("Average portfolio nu %.2f; correlation dynamics a %.4f, b %.4f (EWMA: lambda = b)\n", nu_sum / ok_runs,
                 a_sum / ok_runs, b_sum / ok_runs);
     if (!f) return 1;

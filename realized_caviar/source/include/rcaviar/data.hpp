@@ -7,7 +7,12 @@
 #include <optional>
 namespace rcaviar {
 struct Price { std::int64_t timestamp; double price; };
-struct Window { std::int64_t forecast_time, target_time; Observation observation; };
+// observation: what the models see (features, and the target they are fitted on). scored_return:
+// the target as printed, when it differs (shared data with the jump filter); the forecasts are
+// scored on it, as the other engines score on the prices as printed. emit=false: a catch-up window
+// (the bar of a held print that the next bar confirmed): the recursion takes its update, at the
+// next bar, before that bar's own, and no forecast is issued at it.
+struct Window { std::int64_t forecast_time, target_time; Observation observation; std::optional<double> scored_return{}; bool emit=true; };
 // Strict timestamp,price CSV. Integer seconds; contiguous 5-second samples.
 std::vector<Price> read_prices(const std::string& path);
 std::vector<Price> synthetic_prices(std::size_t samples = 120000, unsigned seed = 42);

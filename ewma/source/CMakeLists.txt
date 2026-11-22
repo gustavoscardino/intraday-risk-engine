@@ -14,11 +14,15 @@ add_library(ewmar STATIC
   src/seasonality.cpp
   src/ewma.cpp
   src/risk.cpp
+  src/models.cpp
   src/engine.cpp
   src/data_quality.cpp
   src/backtest.cpp
   src/replay.cpp)
 target_include_directories(ewmar PUBLIC include)
+# the code shared by the three engines (model interface, RiskMetrics baseline, jump filter)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../../common ${CMAKE_BINARY_DIR}/riskcommon)
+target_link_libraries(ewmar PUBLIC riskcommon)
 if(MSVC)
   target_compile_options(ewmar PRIVATE /W4 /permissive-)
   target_compile_definitions(ewmar PUBLIC _CRT_SECURE_NO_WARNINGS)

@@ -7,7 +7,7 @@
 //                 [--dist t|normal] [--corr ewma|dcc|constant] [--corr-lambda L]
 //                 [--tail oos|insample] [--tail-model evt|t] [--diurnal per-asset|pooled] [--no-diurnal] [--z-clip Z] [--threads N]
 //                 [--options FILE] [--no-options] [--mc N] [--no-overnight] [--es-sims N]
-//                 [--session auto|HH:MM,BAR_MIN,BARS] [--utc-offset MIN] [--daily] [--live HOST:PORT]
+//                 [--session auto|HH:MM,BAR_MIN,BARS] [--resample] [--utc-offset MIN] [--daily] [--live HOST:PORT]
 //
 // With no arguments: dataset data/synthetic, results in garch_t/results/synthetic.
 // --live: the bars come from a market-data feed (data/tools/feed_server.py) as they close; the
@@ -43,7 +43,7 @@ constexpr int kDefaultWindow = 40;
 struct Options {
     std::string data = "synthetic", prices, out, options;  // data: dataset name or folder
     std::string live;                                      // HOST:PORT of a live feed
-    bool daily = false, no_options = false, window_given = false, help = false;
+    bool daily = false, no_options = false, window_given = false, help = false, resample = false;
     int es_sims = 2000;
     int utc_offset = -180;
     ReplayConfig replay;
@@ -56,7 +56,7 @@ void usage() {
                  "                     [--tail oos|insample] [--tail-model evt|t] [--diurnal per-asset|pooled] [--no-diurnal] [--z-clip Z] [--threads N]\n"
                  "                     [--options FILE] [--no-options] [--mc N] [--no-overnight] [--es-sims N]\n"
                  "                     [--session auto|HH:MM,BAR_MIN,BARS] [--utc-offset MIN] [--daily] [--live HOST:PORT]\n"
-                 "                     [--no-jump-filter] [--jump-z Z]\n"
+                 "                     [--no-jump-filter] [--jump-z Z] [--resample]\n"
                  "  --data NAME|DIR   dataset: a name searched as data/NAME next to garch_t (default\n"
                  "                    synthetic; also b3_real) or any folder with assets.csv and prices_15m.csv\n"
                  "  --out DIR         output folder (default garch_t/results/NAME)\n"
@@ -64,6 +64,9 @@ void usage() {
                  "  --options FILE    option book (default: options.csv of the dataset, if present)\n"
                  "  --corr-lambda L   fixed EWMA correlation decay (default: estimated at each refit)\n"
                  "  --session         HH:MM = session open (local time), bar minutes, bars per session\n"
+                 "  --resample        the price file has samples finer than the --session grid (e.g. 5 s):\n"
+                 "                    each bar takes the first open, high, low, last close and summed volume\n"
+                 "                    of its samples (needs --session)\n"
                  "  --utc-offset MIN  local offset applied to timestamps that carry a zone (Z, +hh:mm);\n"
                  "                    timestamps without a zone are taken as local time already\n"
                  "  --es-sims N       simulations for the Acerbi-Szekely p-values (0 = statistics only)\n"
@@ -92,6 +95,7 @@ bool parse_args(int argc, char** argv, Options& o) {
         else if (a == "--no-overnight") o.replay.overnight = false;
         else if (a == "--jump-filter") o.replay.jump_filter = true;  // the default
         else if (a == "--no-jump-filter") o.replay.jump_filter = false;
+        else if (a == "--resample") o.resample = true;
         else if (!has_val) {
             std::fprintf(stderr, "error: unknown option or missing value: %s\n", a.c_str());
             return false;
@@ -310,7 +314,9 @@ int main(int argc, char** argv) {
         if (!opt.options.empty()) in.options = load_options_csv(opt.options);
 
         const auto t_load = std::chrono::steady_clock::now();
-        in.bars = load_bars_csv(opt.prices, in.tickers, opt.utc_offset);
+        if (opt.resample && opt.replay.detect_session)
+            throw std::runtime_error("--resample needs the bar grid: pass --session HH:MM,BAR_MIN,BARS");
+        in.bars = load_bars_csv(opt.prices, in.tickers, opt.utc_offset, opt.resample ? &opt.replay.session : nullptr);
         const double load_s = std::chrono::duration<double>(std::chrono::steady_clock::now() - t_load).count();
         std::unique_ptr<TcpLines> feed;
         std::vector<std::string> received;  // the feed's first lines, read to find where the history ends
@@ -372,7 +378,8 @@ int main(int argc, char** argv) {
                 if (std::fabs(confs[k] - 0.99) < 1e-12) k99 = k;
             size_t next = 0;
             LiveStats st;
-            std::printf("waiting for bars (VaR / ES %g%% of the next bar, money of the stock positions)\n", 100 * confs[k99]);
+            std::printf("waiting for bars (VaR / ES %g%% of the next bar, money of the stock positions; one block per "
+                        "model, main model first)\n", 100 * confs[k99]);
             res = run_live(in, opt.replay, [&](std::string& l) {
                 if (next < received.size()) {
                     l = received[next++];
@@ -380,9 +387,12 @@ int main(int argc, char** argv) {
                 }
                 return feed->next(l);
             }, st, [&](const BarPanel& p, size_t t, const ForecastRecord* f) {
-                if (f)
-                    std::printf("  %s  VaR %12.0f  ES %12.0f  sigma %10.0f\n", p.timestamps[t].c_str(), f->garch[k99].var,
-                                f->garch[k99].es, f->sigma);
+                if (f) {  // every model, in the order of the result's var_models
+                    std::printf("  %s", p.timestamps[t].c_str());
+                    for (const riskcommon::ModelForecast& m : f->models)
+                        std::printf("  VaR %12.0f  ES %12.0f  sigma %10.0f", m.measures[k99].var, m.measures[k99].es, m.sigma);
+                    std::printf("\n");
+                }
                 else
                     std::printf("  %s  (calibrating: the window is not full yet)\n", p.timestamps[t].c_str());
                 std::fflush(stdout);
@@ -429,12 +439,11 @@ int main(int argc, char** argv) {
         // ---------------------------------------------------------------- csv outputs
         const bool book = !in.options.empty();
         std::FILE* f = open_out(opt.out + "/risk_15m.csv");
-        std::fprintf(f, "forecast_time,target_time,target_slot,net_exposure,gross_exposure,sigma,nu");
-        for (double c : confs) std::fprintf(f, ",var_%s", tag(c).c_str());
-        for (double c : confs) std::fprintf(f, ",es_%s", tag(c).c_str());
-        std::fprintf(f, ",ewma_sigma");
-        for (double c : confs) std::fprintf(f, ",ewma_var_%s", tag(c).c_str());
-        for (double c : confs) std::fprintf(f, ",ewma_es_%s", tag(c).c_str());
+        std::fprintf(f, "forecast_time,target_time,target_slot,net_exposure,gross_exposure");
+        std::vector<std::string> conf_tags;
+        for (double c : confs) conf_tags.push_back(tag(c));
+        for (const riskcommon::ModelInfo& m : res.var_models)  // one block of columns per model
+            for (const std::string& col : riskcommon::forecast_columns(m, conf_tags)) std::fprintf(f, ",%s", col.c_str());
         std::fprintf(f, ",realized_pnl,models_fitted,update_us");
         if (book) {
             for (double c : confs) std::fprintf(f, ",book_mc_var_%s", tag(c).c_str());
@@ -443,13 +452,10 @@ int main(int argc, char** argv) {
         }
         std::fprintf(f, "\n");
         for (const ForecastRecord& r : res.forecasts) {
-            std::fprintf(f, "%s,%s,%d,%.2f,%.2f,%.4f,%.4f", r.forecast_time.c_str(), r.target_time.c_str(),
-                         r.target_slot, r.net, r.gross, r.sigma, r.nu);
-            for (const auto& m : r.garch) std::fprintf(f, ",%.2f", m.var);
-            for (const auto& m : r.garch) std::fprintf(f, ",%.2f", m.es);
-            std::fprintf(f, ",%.4f", r.ewma_sigma);
-            for (const auto& m : r.ewma) std::fprintf(f, ",%.2f", m.var);
-            for (const auto& m : r.ewma) std::fprintf(f, ",%.2f", m.es);
+            std::fprintf(f, "%s,%s,%d,%.2f,%.2f", r.forecast_time.c_str(), r.target_time.c_str(), r.target_slot, r.net,
+                         r.gross);
+            for (size_t m = 0; m < res.var_models.size(); ++m)
+                std::fputs(riskcommon::format_forecast(res.var_models[m], r.models[m]).c_str(), f);
             std::fprintf(f, ",%.2f,%d,%.2f", r.pnl, r.models_fitted, r.update_us);
             if (book) {
                 for (const auto& m : r.book_mc) std::fprintf(f, ",%.2f", m.var);
@@ -520,15 +526,16 @@ int main(int argc, char** argv) {
             else
                 std::fprintf(f, ",,,,,,\n");
         }
-        std::fprintf(f, "# berkowitz_p: garch %.6f, ewma %.6f, overnight %.6f\n", bt.berkowitz_garch.p,
-                     bt.berkowitz_ewma.p, bt.berkowitz_overnight.p);
+        std::fprintf(f, "# berkowitz_p:");
+        for (const NamedBerkowitz& b : bt.berkowitz) std::fprintf(f, " %s %.6f,", b.model.c_str(), b.test.p);
+        std::fprintf(f, " overnight %.6f\n", bt.berkowitz_overnight.p);
         std::fclose(f);
 
         // last snapshot
         {
             const size_t k99 = confs.size() - 1;
             const PortfolioRisk& lr = res.last_risk;
-            const double var_factor = lr.sigma > 0 ? lr.garch[k99].var / lr.sigma : 0.0;
+            const double var_factor = lr.sigma > 0 ? lr.measures[k99].var / lr.sigma : 0.0;
             f = open_out(opt.out + "/risk_contributions_last.csv");
             std::fprintf(f, "ticker,quantity,price,exposure,bar_sigma_pct,standalone_var_%s,component_var_%s,share_pct\n",
                          tag(confs[k99]).c_str(), tag(confs[k99]).c_str());
@@ -577,10 +584,11 @@ int main(int argc, char** argv) {
                         m.model.c_str(), m.confidence, c.exceptions, 100 * c.rate, 100 * c.rate_lo, 100 * c.rate_hi,
                         100 * c.expected_rate, c.p_uc, c.p_cc, m.es.p2, to_string(c.zone), m.es_ratio);
         }
-        say("  Berkowitz density test (whole distribution): %s p = %.4f (rho %.3f, sd %.3f); EWMA-N p = %.4f "
-                    "(rho %.3f, sd %.3f)\n",
-                    res.model_name.c_str(), bt.berkowitz_garch.p, bt.berkowitz_garch.rho,
-                    bt.berkowitz_garch.sigma, bt.berkowitz_ewma.p, bt.berkowitz_ewma.rho, bt.berkowitz_ewma.sigma);
+        say("  Berkowitz density test (whole distribution):");
+        for (size_t k = 0; k < bt.berkowitz.size(); ++k)
+            say("%s %s p = %.4f (rho %.3f, sd %.3f)", k ? ";" : "", bt.berkowitz[k].model.c_str(), bt.berkowitz[k].test.p,
+                bt.berkowitz[k].test.rho, bt.berkowitz[k].test.sigma);
+        say("\n");
 
         say("\nCoverage by time of day (exception rate, Kupiec p in brackets)\n");
         say("  %-14s %6s %20s %20s %20s\n", "model", "conf", "open (3 bars)", "midday", "close (3 bars)");
@@ -626,13 +634,13 @@ int main(int argc, char** argv) {
                         a.params.half_life(), 100 * std::sqrt(a.params.unconditional_variance() * ss.bars_per_day));
         const size_t k99 = confs.size() - 1;
         say("\nLast forecast (%s -> next bar): sigma %.0f, VaR%s %.0f, ES%s %.0f, nu_p %.2f\n",
-                    res.last_time.c_str(), res.last_risk.sigma, tag(confs[k99]).c_str(), res.last_risk.garch[k99].var,
-                    tag(confs[k99]).c_str(), res.last_risk.garch[k99].es, res.last_risk.nu);
+                    res.last_time.c_str(), res.last_risk.sigma, tag(confs[k99]).c_str(), res.last_risk.measures[k99].var,
+                    tag(confs[k99]).c_str(), res.last_risk.measures[k99].es, res.last_risk.nu);
 
         const int thr = opt.replay.engine.threads > 0 ? opt.replay.engine.threads
                                                       : static_cast<int>(std::max(1u, std::thread::hardware_concurrency()));
         say("\nPerformance (%zu assets, %d threads for refits)\n", n, thr);
-        say("  per-bar update (fills + filters + correlations + VaR/ES): p50 %.2f us, p95 %.2f us, p99 %.2f us, "
+        say("  per-bar update (fills + jump filter + GARCH filters + correlations + VaR/ES of every model): p50 %.2f us, p95 %.2f us, p99 %.2f us, "
                     "max %.2f us\n",
                     percentile(res.latency_us, 0.50), percentile(res.latency_us, 0.95), percentile(res.latency_us, 0.99),
                     percentile(res.latency_us, 1.0));

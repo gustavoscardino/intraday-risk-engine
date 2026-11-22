@@ -5,11 +5,12 @@ The two scenarios pull in opposite directions, which is the trade-off this part 
       must not move the forecasts away from those of the clean feed;
   R2  genuine extreme moves of the clean feed must enter the risk estimate at once, so the VaR
       issued at the shock bar is compared with the same engine without protection.
-Each engine is run with and without its protection (EWMA: data-quality layer; GARCH-t: jump filter,
-and clipping of standardized shocks at 6 sd as the alternative). An engine with no protection to
-switch off (Realized-CAViaR) is checked in absolute terms instead: does the shock reach the model's
-features? The events come from data/synthetic/scenario.csv, so a regenerated market needs no code
-change here.
+Each engine is run with and without its protection (EWMA: data-quality layer with the shared jump
+filter; GARCH-t and Realized-CAViaR: the shared jump filter; GARCH-t also with clipping of standardized
+shocks at 6 sd as the alternative). For Realized-CAViaR R2 also checks in absolute terms that the shock
+reaches the model's features, and R1 separates the deviations that fall on days its daily calibration
+landed on a different optimum. The events come from data/synthetic/scenario.csv, so a regenerated
+market needs no code change here.
 """
 from __future__ import annotations
 
@@ -19,8 +20,19 @@ from pathlib import Path
 
 from common import (DEGRADED_PRICES, RESULTS, SYNTHETIC, Measurement, Section, median, read_csv, to_float,
                     write_csv, write_text)
-from engines import ENGINES, VARIANTS, clean_runs, risk_path
+from engines import ENGINES, VARIANTS, clean_runs, epoch_to_iso, risk_path
 from engines import run as run_engine
+
+JUMP = 0.05  # a daily CAViaR calibration "jumps" when a beta differs by more than this between two runs
+
+
+def calibration_days(out: Path) -> dict[str, tuple[float, ...]]:
+    """Realized-CAViaR: date -> (beta1, beta2, beta3) of the calibration in force that day."""
+    f = out / "params_daily.csv"
+    if not f.is_file():
+        return {}
+    return {epoch_to_iso(r["effective_time"])[:10]: tuple(to_float(r[k]) for k in ("beta1", "beta2", "beta3"))
+            for r in read_csv(f)[1] if r["model"] == "Realized-CAViaR"}
 
 DEV_LIMIT = 5.0  # % deviation from the clean-feed forecast counted by R1
 FALSE_ALARM = 5.0  # % below the unprotected VaR counted as a hidden move on the clean feed
@@ -207,12 +219,20 @@ def run(fresh: bool = False) -> list[Measurement]:
     for v in variants:
         e = ENGINES[v.engine]
         pairs, unmatched, per_time = [], 0, {}
+        jump_days, off_on_jumps, days_total = 0, 0, 0
         for tk in (tickers if e.per_ticker else [None]):  # single-instrument engines: every stock of the book
             c = clean_series(v.key, tk)
-            d = _var(run_engine(v.key, "synthetic_degraded", SYNTHETIC, prices=DEGRADED_PRICES, fresh=fresh,
-                                ticker=tk), e.var99)
+            d_out = run_engine(v.key, "synthetic_degraded", SYNTHETIC, prices=DEGRADED_PRICES, fresh=fresh, ticker=tk)
+            d = _var(d_out, e.var99)
             ser = deviation(c, d)
             pairs += [(t, x, tk) for t, x in ser]
+            if e.per_ticker:  # did the daily calibration land on another optimum that day?
+                pc = calibration_days(clean_runs(v.key, fresh, reps=1, ticker=tk)[0])
+                pd = calibration_days(d_out)
+                jumped = {day for day in pc if day in pd and any(abs(a - b) > JUMP for a, b in zip(pc[day], pd[day]))}
+                jump_days += len(jumped)
+                days_total += len(set(pc) & set(pd))
+                off_on_jumps += sum(1 for t, x in ser if not (x <= DEV_LIMIT) and t[:10] in jumped)
             unmatched += len(set(c) ^ set(d))
             for t, x in ser:
                 per_time[t] = max(per_time.get(t, 0.0), x)
@@ -246,6 +266,17 @@ def run(fresh: bool = False) -> list[Measurement]:
                Measurement("R1", v.key, "r1_share_dev5_other_pct", share5_rest, "%",
                            "share of forecasts off by more than 5% that follow no unprinted bar"),
                Measurement("R1", v.key, "r1_share_dev1_pct", share1, "%")]
+        if e.per_ticker and days_total:
+            off_n = len(off)
+            r1.add(f"{'':<22} daily calibrations that landed on another optimum (a beta {JUMP} away): {jump_days} of "
+                   f"{days_total} stock-days; {off_on_jumps} of the {off_n} forecasts off fall on those days")
+            ms += [Measurement("R1", v.key, "r1_calibration_jump_days_pct", 100 * jump_days / days_total, "%",
+                               f"{jump_days} of {days_total} stock-days: a beta of the daily calibration differs by "
+                               f"more than {JUMP} between the clean and the faulty feed"),
+                   Measurement("R1", v.key, "r1_off_on_calibration_jumps_pct",
+                               100 * off_on_jumps / off_n if off_n else 0.0, "%",
+                               f"{off_on_jumps} of the {off_n} forecasts off by more than {DEV_LIMIT:.0f}% are issued on "
+                               "those days")]
     for v in variants:
         e = ENGINES[v.engine]
         res = []

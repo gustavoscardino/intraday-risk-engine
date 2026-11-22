@@ -9,10 +9,12 @@
 //   GAP           bar printed by other assets but not by this one           -> missing return
 //   STALE         close unchanged with volume 0 for >= 3 bars in a row (volume 0 tells a frozen
 //                 quote from a low-priced stock that just did not move)     -> missing return
-//   SPIKE         |z| > 6 against the forecast sigma: the EWMA is updated with the winsorized
-//                 value. If the next bar reverts the move (less than 25% of it left), it was a
-//                 bad tick: the price is excluded and the bar re-fed. If not, the shock is real
-//                 and is kept (SHOCK_KEPT). Several assets jumping together = a market move, kept
+//   SUSPECT       an isolated jump, decided by the jump filter shared by the three engines
+//                 (common/include/riskcommon/jump_filter.hpp): the print is held (the models see
+//                 the bar as not printed) until the next bar of the stock decides it:
+//   SPIKE           the next close undid the jump: a bad tick, never seen by the models
+//   SHOCK_KEPT      the new level held: a real shock, let in one bar late at full size (or a
+//                   market move: several stocks jumping together, kept at once)
 //
 // The bar's score is dq_score = sum_i w_i q_i, w_i = |exposure_i| / sum |exposure|, q_i = 1 minus
 // the penalties of the asset's active flags. Modes, with hysteresis (a better mode only after
@@ -28,6 +30,7 @@
 #include <vector>
 
 #include "ewmar/market_data.hpp"
+#include "riskcommon/jump_filter.hpp"
 
 namespace ewmar {
 
@@ -38,8 +41,8 @@ enum DqFlag : std::uint16_t {
     kDelay = 1u << 3,
     kStale = 1u << 4,
     kSpike = 1u << 5,      // confirmed bad tick (excluded)
-    kSuspect = 1u << 6,    // |z| above the limit, decision pending (winsorized meanwhile)
-    kShockKept = 1u << 7,  // suspect released: the move was real and was kept
+    kSuspect = 1u << 6,    // isolated jump held, decided by the next bar
+    kShockKept = 1u << 7,  // the move was real and was kept (one bar late, or a market move)
 };
 const char* flag_name(std::uint16_t single_flag);
 std::string flags_to_string(std::uint16_t flags);  // "GAP|STALE"
@@ -52,12 +55,8 @@ struct DqConfig {
     int recover_bars = 3;   // hysteresis: clean bars needed to move to a better mode
     int lateness_bars = 1;  // a bar closes when the feed is this many bars past it
     int stale_bars = 3;
-    double spike_z = 6.0;
-    double revert_fraction = 0.25;  // bad tick if less than this fraction of the move is left next bar
-    // A bad tick is one asset's problem: when at least max(market_wide_assets, market_wide_share * n)
-    // assets jump at the same bar, the move is the market's and is kept at once.
-    int market_wide_assets = 3;
-    double market_wide_share = 0.2;
+    bool jump_filter = true;             // SUSPECT / SPIKE / SHOCK_KEPT (the shared jump filter)
+    riskcommon::JumpFilterConfig jump;  // its thresholds, the same as in garch_t and realized_caviar
     // penalties subtracted from an asset's quality q_i
     double pen_gap = 1.0, pen_stale = 1.0, pen_suspect = 1.0, pen_spike = 1.0;
     double pen_out_of_order = 0.1, pen_duplicate = 0.05;

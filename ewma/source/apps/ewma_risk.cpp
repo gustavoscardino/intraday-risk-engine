@@ -6,8 +6,8 @@
 //
 //   ewma_risk [--data NAME|DIR] [--prices FILE] [--out DIR] [--window-days N]
 //             [--lambda L] [--nu N] [--diurnal pooled|per-asset|off] [--no-overnight]
-//             [--options FILE] [--no-options] [--no-dq] [--dq-thresholds A,B] [--truth FILE]
-//             [--es-sims N] [--session auto|HH:MM,BAR_MIN,BARS] [--utc-offset MIN] [--daily]
+//             [--options FILE] [--no-options] [--no-dq] [--no-jump-filter] [--dq-thresholds A,B] [--truth FILE]
+//             [--es-sims N] [--session auto|HH:MM,BAR_MIN,BARS] [--resample] [--utc-offset MIN] [--daily]
 #include <algorithm>
 #include <cctype>
 #include <cerrno>
@@ -36,7 +36,7 @@ constexpr int kDefaultWindow = 40;
 
 struct Options {
     std::string data = "synthetic", prices, out, options, truth;
-    bool no_options = false, daily = false, help = false, window_given = false, no_truth = false;
+    bool no_options = false, daily = false, help = false, window_given = false, no_truth = false, resample = false;
     int es_sims = 2000, utc_offset = -180;
     ReplayConfig replay;
 };
@@ -45,8 +45,10 @@ void usage() {
     std::fprintf(stderr,
                  "usage: ewma_risk [--data NAME|DIR] [--prices FILE] [--out DIR] [--window-days N]\n"
                  "                 [--lambda L] [--nu N] [--diurnal pooled|per-asset|off] [--no-overnight]\n"
-                 "                 [--options FILE] [--no-options] [--no-dq] [--dq-thresholds A,B] [--truth FILE|none]\n"
-                 "                 [--es-sims N] [--session auto|HH:MM,BAR_MIN,BARS] [--utc-offset MIN] [--daily]\n"
+                 "                 [--options FILE] [--no-options] [--no-dq] [--no-jump-filter] [--dq-thresholds A,B]\n"
+                 "                 [--truth FILE|none]\n"
+                 "                 [--es-sims N] [--session auto|HH:MM,BAR_MIN,BARS] [--resample] [--utc-offset MIN]\n"
+                 "                 [--daily]\n"
                  "  --data NAME|DIR      dataset: data/NAME next to ewma (synthetic, b3_real) or any folder\n"
                  "                       with assets.csv and prices_15m.csv (default synthetic)\n"
                  "  --prices FILE        another price file of the dataset (e.g. prices_15m_degraded.csv)\n"
@@ -55,7 +57,8 @@ void usage() {
                  "  --lambda L           fixes the lambda of EWMA-N / EWMA-t (default: estimated every day)\n"
                  "  --nu N               fixes the nu of EWMA-t (default: estimated every day)\n"
                  "  --diurnal MODE       intraday profile: pooled (default), per-asset or off\n"
-                 "  --no-dq              disables the data-quality layer (plain loader)\n"
+                 "  --no-dq              disables the data-quality layer (plain loader, no jump filter)\n"
+                 "  --no-jump-filter     keeps the layer but lets every isolated jump into the models\n"
                  "  --dq-thresholds A,B  dq_score limits of NORMAL and FREEZE (default 0.9,0.6)\n"
                  "  --truth FILE|none    clean price file for the detection rates and the robustness\n"
                  "                       comparison (default: prices_15m.csv of the dataset, when --prices\n"
@@ -63,6 +66,9 @@ void usage() {
                  "  --no-overnight       skips the overnight risk\n"
                  "  --options FILE       option book (default: options.csv of the dataset, if present);\n"
                  "                       --no-options ignores it\n"
+                 "  --resample           the price file has samples finer than the --session grid (e.g. 5 s):\n"
+                 "                       each bar takes the first open, high, low, last close and summed\n"
+                 "                       volume of its samples (needs --session)\n"
                  "  --session SPEC       auto (default) or HH:MM,BAR_MIN,BARS: session open (local time),\n"
                  "                       minutes per bar and bars per session\n"
                  "  --utc-offset MIN     offset applied to timestamps that carry a zone (default -180)\n"
@@ -84,6 +90,8 @@ bool parse_args(int argc, char** argv, Options& o) {
         else if (a == "--no-options") o.no_options = true;
         else if (a == "--no-overnight") e.overnight = false;
         else if (a == "--no-dq") o.replay.dq = false;
+        else if (a == "--no-jump-filter") o.replay.dq_cfg.jump_filter = false;
+        else if (a == "--resample") o.resample = true;
         else if (!has) {
             std::fprintf(stderr, "error: unknown option or missing value: %s\n", a.c_str());
             return false;
@@ -259,6 +267,10 @@ ReplayInput load_inputs(const Options& o, const std::string& prices) {
     if (fs::exists(o.data + "/fills.csv", ec)) in.fills = load_fills(o.data + "/fills.csv", o.utc_offset);
     if (!o.options.empty()) in.options = load_options(o.options);
     in.feed = load_feed(prices, in.tickers, o.utc_offset);
+    if (o.resample) {
+        if (o.replay.detect_session) throw std::runtime_error("--resample needs the bar grid: pass --session HH:MM,BAR_MIN,BARS");
+        in.feed = resample_feed(in.feed, o.replay.session);
+    }
     return in;
 }
 
@@ -302,6 +314,7 @@ int main(int argc, char** argv) {
         // ---------------------------------------------------------------- replay
         const ReplayResult res = run_replay(in, opt.replay);
         const SessionSpec& ss = res.session;
+        const size_t main = res.main_model;  // the model behind the book, the decomposition and the robustness check
         say("session: first bar closes %02d:%02d, %d-minute bars, %d bars/day; %zu sessions, window %d days%s\n",
             ss.close_minute(0) / 60, ss.close_minute(0) % 60, ss.bar_minutes, ss.bars_per_day, res.sessions,
             opt.replay.window_days,
@@ -333,12 +346,12 @@ int main(int argc, char** argv) {
                 const ReplayResult cr = run_replay(clean, rc);
                 bt_clean = evaluate_backtest(cr, confs, 0);
                 std::map<std::string, double> clean_var;
-                for (const ForecastRecord& f : cr.forecasts) clean_var[f.forecast_time] = f.student[k99].var;
+                for (const ForecastRecord& f : cr.forecasts) clean_var[f.forecast_time] = f.models[main].measures[k99].var;
                 double sum = 0.0;
                 for (const ForecastRecord& f : res.forecasts) {
                     const auto it = clean_var.find(f.forecast_time);
                     if (it == clean_var.end() || !(it->second > 0.0)) continue;
-                    const double d = std::fabs(f.student[k99].var / it->second - 1.0);
+                    const double d = std::fabs(f.models[main].measures[k99].var / it->second - 1.0);
                     sum += d;
                     ++rob_n;
                     if (d > 0.01) ++rob_affected;
@@ -354,14 +367,11 @@ int main(int argc, char** argv) {
 
         // ---------------------------------------------------------------- CSV outputs
         std::FILE* f = open_out(opt.out + "/risk_15m.csv");
-        std::fprintf(f, "forecast_time,target_time,target_slot,net_exposure,gross_exposure,ref_sigma");
-        for (double c : confs) std::fprintf(f, ",ref_var_%s", tag(c).c_str());
-        for (double c : confs) std::fprintf(f, ",ref_es_%s", tag(c).c_str());
-        std::fprintf(f, ",sigma,lambda,nu");
-        for (double c : confs) std::fprintf(f, ",n_var_%s", tag(c).c_str());
-        for (double c : confs) std::fprintf(f, ",n_es_%s", tag(c).c_str());
-        for (double c : confs) std::fprintf(f, ",t_var_%s", tag(c).c_str());
-        for (double c : confs) std::fprintf(f, ",t_es_%s", tag(c).c_str());
+        std::fprintf(f, "forecast_time,target_time,target_slot,net_exposure,gross_exposure");
+        std::vector<std::string> conf_tags;
+        for (double c : confs) conf_tags.push_back(tag(c));
+        for (const riskcommon::ModelInfo& m : res.var_models)  // one block of columns per model
+            for (const std::string& col : riskcommon::forecast_columns(m, conf_tags)) std::fprintf(f, ",%s", col.c_str());
         std::fprintf(f, ",realized_pnl,dq_score,mode,frozen,update_us");
         if (res.has_book) {
             std::fprintf(f, ",book_sigma");
@@ -371,15 +381,10 @@ int main(int argc, char** argv) {
         }
         std::fprintf(f, "\n");
         for (const ForecastRecord& r : res.forecasts) {
-            std::fprintf(f, "%s,%s,%d,%.2f,%.2f,%.4f", r.forecast_time.c_str(), r.target_time.c_str(), r.target_slot, r.net,
-                         r.gross, r.sigma_ref);
-            for (const auto& m : r.ref) std::fprintf(f, ",%.2f", m.var);
-            for (const auto& m : r.ref) std::fprintf(f, ",%.2f", m.es);
-            std::fprintf(f, ",%.4f,%.5f,%.3f", r.sigma, r.lambda, r.nu);
-            for (const auto& m : r.normal) std::fprintf(f, ",%.2f", m.var);
-            for (const auto& m : r.normal) std::fprintf(f, ",%.2f", m.es);
-            for (const auto& m : r.student) std::fprintf(f, ",%.2f", m.var);
-            for (const auto& m : r.student) std::fprintf(f, ",%.2f", m.es);
+            std::fprintf(f, "%s,%s,%d,%.2f,%.2f", r.forecast_time.c_str(), r.target_time.c_str(), r.target_slot, r.net,
+                         r.gross);
+            for (size_t m = 0; m < res.var_models.size(); ++m)
+                std::fputs(riskcommon::format_forecast(res.var_models[m], r.models[m]).c_str(), f);
             std::fprintf(f, ",%.2f,%.4f,%s,%d,%.2f", r.pnl, r.dq_score, to_string(r.mode), r.frozen ? 1 : 0, r.update_us);
             if (res.has_book) {
                 std::fprintf(f, ",%.4f", r.book_sigma);
@@ -457,8 +462,8 @@ int main(int argc, char** argv) {
 
         {
             const PortfolioRisk& lr = res.last_risk;
-            const double sig = lr.student.sigma;
-            const double factor = sig > 0.0 ? lr.student.m[k99].var / sig : 0.0;
+            const double sig = lr.ready ? lr.models[main].sigma : 0.0;
+            const double factor = sig > 0.0 ? lr.models[main].measures[k99].var / sig : 0.0;
             f = open_out(opt.out + "/risk_contributions_last.csv");
             std::fprintf(f, "ticker,quantity,price,exposure,bar_sigma_pct,standalone_var_%s,component_var_%s,share_pct\n",
                          tag(confs[k99]).c_str(), tag(confs[k99]).c_str());
@@ -490,6 +495,13 @@ int main(int argc, char** argv) {
             for (const DqAlert& a : res.alerts)
                 std::fprintf(f, "%s,%s,%s,%s\n", a.time.c_str(), a.severity.c_str(), a.type.c_str(), csv_text(a.message).c_str());
             std::fclose(f);
+            if (opt.replay.dq_cfg.jump_filter) {  // the same file as garch_t writes
+                f = open_out(opt.out + "/jump_events.csv");
+                std::fprintf(f, "time,ticker,action,return,z\n");
+                for (const riskcommon::JumpEvent& e : res.jump_events)
+                    std::fprintf(f, "%s,%s,%s,%.6f,%.2f\n", e.time.c_str(), e.ticker.c_str(), e.action.c_str(), e.ret, e.z);
+                std::fclose(f);
+            }
         }
         if (!detection.empty()) {
             f = open_out(opt.out + "/dq_detection.csv");
@@ -571,10 +583,14 @@ int main(int argc, char** argv) {
             say("  feed rows: %zu accepted, %zu duplicates discarded, %zu out of order (accepted), %zu delayed past the bar "
                 "close (discarded), %zu off-grid\n",
                 g.accepted, g.duplicates, g.out_of_order, g.delayed, g.off_grid);
-            say("  cells: %zu GAP, %zu STALE; jumps with |z| > %.0f: %zu SUSPECT decided by the next bar -> %zu bad ticks "
-                "excluded (SPIKE), %zu real shocks kept, %zu undecided; %zu in market-wide moves (kept at once)\n",
-                g.gaps, g.stale, opt.replay.dq_cfg.spike_z, res.suspects, res.spikes, res.shocks_kept, res.unresolved,
-                res.market_wide);
+            say("  cells: %zu GAP, %zu STALE\n", g.gaps, g.stale);
+            if (opt.replay.dq_cfg.jump_filter)
+                say("  jump filter (z %g, shared with garch_t and realized_caviar): isolated jumps held %zu (bad ticks "
+                    "removed %zu, genuine moves accepted one bar late %zu, held at a session's last bar %zu), market moves "
+                    "kept %zu (jump_events.csv)\n",
+                    opt.replay.dq_cfg.jump.z, res.suspects, res.spikes, res.shocks_kept, res.unresolved, res.market_wide);
+            else
+                say("  jump filter off: every isolated jump enters the models\n");
             say("  modes: NORMAL %zu bars (%.2f%%), DEGRADED %zu (%.2f%%), FREEZE %zu (%.2f%%); %zu forecasts kept frozen\n",
                 res.mode_bars[0], bars ? 100.0 * res.mode_bars[0] / bars : 0.0, res.mode_bars[1],
                 bars ? 100.0 * res.mode_bars[1] / bars : 0.0, res.mode_bars[2], bars ? 100.0 * res.mode_bars[2] / bars : 0.0,
@@ -600,25 +616,27 @@ int main(int argc, char** argv) {
             say("  (other cells: flags where the clean file has no such fault, e.g. bars that never traded)\n");
         }
         if (have_robust) {
-            say("\nRobustness: EWMA-t VaR %s of this run vs the same market with a clean feed\n", tag(confs[k99]).c_str());
+            say("\nRobustness: %s VaR %s of this run vs the same market with a clean feed\n", res.var_models[main].name.c_str(),
+                tag(confs[k99]).c_str());
             say("  %zu forecasts compared: mean deviation %.3f%%, max %.2f%% (at %s), %zu bars off by more than 1%%\n", rob_n,
                 100 * rob_mean, 100 * rob_max, rob_max_time.c_str(), rob_affected);
             for (const ModelBacktest& m : bt_clean.rows)
-                if (m.has_by_time && m.model == "EWMA-t")
-                    say("  clean-feed backtest EWMA-t %.3f: %d exceptions (%.2f%%), zone %s\n", m.confidence,
+                if (m.has_by_time && m.model == res.var_models[main].name)
+                    say("  clean-feed backtest %s %.3f: %d exceptions (%.2f%%), zone %s\n", m.model.c_str(), m.confidence,
                         m.coverage.exceptions, 100 * m.coverage.rate, to_string(m.coverage.zone));
         }
 
         const PortfolioRisk& lr = res.last_risk;
-        if (lr.ready)
-            say("\nLast forecast (%s -> next bar): sigma ref %.0f / EWMA %.0f; VaR%s ref %.0f, N %.0f, t %.0f; ES%s ref %.0f, "
-                "N %.0f, t %.0f (nu %.2f)\n",
-                res.last_time.c_str(), lr.ref.sigma, lr.normal.sigma, tag(confs[k99]).c_str(), lr.ref.m[k99].var,
-                lr.normal.m[k99].var, lr.student.m[k99].var, tag(confs[k99]).c_str(), lr.ref.m[k99].es, lr.normal.m[k99].es,
-                lr.student.m[k99].es, lr.nu);
+        if (lr.ready) {
+            say("\nLast forecast (%s -> next bar), VaR / ES %s:\n", res.last_time.c_str(), tag(confs[k99]).c_str());
+            for (size_t m = 0; m < res.var_models.size(); ++m)
+                say("  %-14s sigma %10.0f  VaR %10.0f  ES %10.0f\n", res.var_models[m].name.c_str(), lr.models[m].sigma,
+                    lr.models[m].measures[k99].var, lr.models[m].measures[k99].es);
+        }
 
         say("\nPerformance (%zu assets)\n", n);
-        say("  per-bar update (fills + DQ + filters + VaR/ES of 3 models): p50 %.2f us, p95 %.2f us, p99 %.2f us, max %.2f us\n",
+        say("  per-bar update (fills + jump filter + DQ score + models + VaR/ES): p50 %.2f us, p95 %.2f us, p99 %.2f us, "
+            "max %.2f us\n",
             percentile(res.latency_us, 0.5), percentile(res.latency_us, 0.95), percentile(res.latency_us, 0.99),
             percentile(res.latency_us, 1.0));
         say("  end-of-day refit (profile + lambda + nu + filters + overnight): p50 %.2f ms, p95 %.2f ms, max %.2f ms\n",

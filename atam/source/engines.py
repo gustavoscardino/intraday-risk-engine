@@ -80,14 +80,14 @@ ENGINES: dict[str, Engine] = {
     "garch_t": Engine(
         key="garch_t", label="GARCH-t", folder="garch_t", program="intraday_risk", benchmark="benchmark",
         model="GARCH(1,1)-t", var99="var_99", unprotected="garch_t_nojump",
-        baseline_sigma="ewma_sigma", baseline_var99="ewma_var_99",
+        baseline_sigma="ref_sigma", baseline_var99="ref_var_99",
         calibration_files=(("daily_summary.csv", ("date",), "date", "date"),
                            ("garch_params_daily.csv", ("date", "ticker"), "date", "date")),
     ),
     "realized_caviar": Engine(
         key="realized_caviar", label="Realized-CAViaR", folder="realized_caviar", program="realized_caviar",
         model="Realized-CAViaR (matched EWMA-N and GARCH-t baselines)", var99="var_99",
-        unprotected="realized_caviar", exe_dirs=("bin", "build", "build/Release"), risk_file="atam_risk.csv",
+        unprotected="realized_caviar_nojump", exe_dirs=("bin", "build", "build/Release"), risk_file="atam_risk.csv",
         forecast_files=("atam_risk.csv",),
         calibration_files=(("params_daily.csv", ("effective_time", "model", "phase"), "effective_time", "epoch"),),
         per_ticker=True, default_ticker="XPET3", window_pattern=r"initial training sessions=(\d+)",
@@ -98,18 +98,23 @@ ENGINES: dict[str, Engine] = {
 
 VARIANTS: dict[str, Variant] = {
     "ewma": Variant("ewma", "ewma", "EWMA (DQ on)", (), True,
-                    "data-quality layer with SPIKE rule confirmed on the next bar (default)"),
+                    "data-quality layer: arrival rules, frozen quotes and the jump filter shared by the three "
+                    "engines (default)"),
     "ewma_nodq": Variant("ewma_nodq", "ewma", "EWMA (DQ off)", ("--no-dq",), False,
-                         "data-quality layer switched off (plain loader)"),
+                         "data-quality layer switched off (plain loader): every print enters the models"),
     "garch_t": Variant("garch_t", "garch_t", "GARCH-t (filter on)", (), True,
-                       "jump filter: an isolated price jump is held one bar, dropped if it reverts, "
+                       "the shared jump filter: an isolated price jump is held one bar, dropped if it reverts, "
                        "kept one bar late otherwise (default)"),
     "garch_t_nojump": Variant("garch_t_nojump", "garch_t", "GARCH-t (filter off)", ("--no-jump-filter",), False,
                               "jump filter switched off: every print enters the model"),
     "garch_t_zclip6": Variant("garch_t_zclip6", "garch_t", "GARCH-t (clip 6 sd)", ("--no-jump-filter", "--z-clip", "6"),
                               False, "stateless clipping of standardized shocks at 6 sd instead of the jump filter"),
-    "realized_caviar": Variant("realized_caviar", "realized_caviar", "Realized-CAViaR", (), True,
-                               "no data-quality layer; one instrument, three matched models (default)"),
+    "realized_caviar": Variant("realized_caviar", "realized_caviar", "Realized-CAViaR (filter on)", (), True,
+                               "the shared jump filter over every stock of the file, then one instrument and "
+                               "its matched models (default)"),
+    "realized_caviar_nojump": Variant("realized_caviar_nojump", "realized_caviar", "Realized-CAViaR (filter off)",
+                                      ("--no-jump-filter",), False,
+                                      "jump filter switched off: every print enters the features"),
 }
 
 

@@ -8,9 +8,13 @@
 //   2. at a session start, the overnight gaps feed the overnight model; the close -> first
 //      bar P&L closes the overnight forecast issued at the previous close;
 //   3. client fills up to the bar time update the positions;
-//   4. engine update (filters, correlations, baseline); end of session: full re-estimation;
-//   5. one-bar-ahead sigma / VaR / ES; with an option book, Monte Carlo full revaluation and
-//      the delta-linear approximation; at the close, the overnight forecast.
+//   4. update of every model (garcht/models.hpp: GARCH-t/EVT, the RiskMetrics baseline); end of
+//      session: full re-estimation;
+//   5. one-bar-ahead sigma / VaR / ES of every model; with an option book, the delta-linear
+//      approximation and the Monte Carlo full revaluation (on a worker thread, after the VaR is
+//      published: it is not part of the bar update); at the close, the overnight forecast.
+// Exposures are marked at the model's view of the prices (with the jump filter, a held print keeps
+// the last validated close); the forecasts are scored on the P&L of the prices as printed.
 #pragma once
 
 #include <cstdint>
@@ -23,8 +27,10 @@
 #include "garcht/backtest.hpp"
 #include "garcht/data_quality.hpp"
 #include "garcht/market_data.hpp"
+#include "garcht/models.hpp"
 #include "garcht/portfolio.hpp"
 #include "garcht/synthetic.hpp"
+#include "riskcommon/model.hpp"
 
 namespace garcht {
 
@@ -38,6 +44,7 @@ struct ReplayConfig {
     std::uint64_t mc_seed = 7;
     bool record_params = true;    // keep per-asset parameters of every refit
     bool jump_filter = false;     // hold isolated price jumps until the next bar (data_quality.hpp)
+    bool mc_async = true;         // option book: Monte Carlo revaluation off the bar thread (see ReplaySession)
     JumpFilterConfig jump;
 };
 
@@ -55,9 +62,7 @@ struct ForecastRecord {
     std::string forecast_time, target_time;
     int target_slot = 0;
     double net = 0.0, gross = 0.0;  // stock exposures at forecast time
-    double mean = 0.0, sigma = 0.0, nu = 0.0, ewma_sigma = 0.0;
-    ShockDist tail;  // standardized distribution behind the GARCH VaR / ES
-    std::vector<RiskMeasure> garch, ewma;
+    std::vector<riskcommon::ModelForecast> models;  // one per ReplayResult::var_models entry
     double pnl = kMissing;  // realized P&L of the stock positions over the target bar
     int models_fitted = 0;
     double update_us = 0.0;
@@ -95,14 +100,15 @@ struct DailyRecord {
 struct ReplayResult {
     SessionSpec session;
     bool student_t = true;
-    std::string model_name;  // "GARCH-t/EVT", "GARCH-t" or "GARCH-N"
+    std::vector<riskcommon::ModelInfo> var_models;  // the VaR models, main model first
+    std::string model_name;  // name of the main model: "GARCH-t/EVT", "GARCH-t" or "GARCH-N"
     std::vector<ForecastRecord> forecasts;  // realized ones (the last forecast has no outcome)
     std::vector<OvernightRecord> overnight;
     std::vector<ParamRecord> params;
     std::vector<DailyRecord> daily;
     // latency_us: bar update (fills, filters, correlations, VaR/ES) of bars without a refit;
     // rebalance_us: tail re-calibration after a trade (timed apart: it runs on trade bars only).
-    std::vector<double> latency_us, refit_ms, rebalance_us;
+    std::vector<double> latency_us, refit_ms, rebalance_us;  // latency: jump filter + bar update
     size_t bars = 0, sessions = 0, off_grid = 0, fills_applied = 0, fills_unknown = 0;
     size_t unscored = 0;            // forecasts whose target bar never printed (halts, gaps)
     size_t unscored_overnight = 0;  // overnight forecasts followed by a late opening
@@ -135,8 +141,11 @@ public:
     // prices; the tail calibration learns from the P&L of the model's view. Both inputs are causal:
     // their row t depends on rows <= t only. eod: t is the last on-grid bar of its
     // session, so the daily refit runs before the forecast and the overnight forecast after it.
+    // input_us: time spent preparing this bar's input (the jump filter's decision), counted in the
+    // bar's latency, so that the per-bar figure has the boundary of the other engines.
     void step(const BarPanel& panel, const std::vector<double>& ret, const std::vector<int>& slot,
-              const std::vector<double>& gaps, size_t t, bool eod, const BarPanel* model_view = nullptr);
+              const std::vector<double>& gaps, size_t t, bool eod, const BarPanel* model_view = nullptr,
+              double input_us = 0.0);
     // A feed learns that a session ended early (halt, truncated feed) only when the next one
     // starts: this runs the end-of-session work (daily refit, overnight forecast) for the last bar
     // stepped, if it has not run yet. The forecast already issued at that bar targets a bar that
@@ -144,10 +153,17 @@ public:
     void end_session(const BarPanel& panel);
     // True between the first bar of a session and its end-of-session work.
     bool session_open() const;
-    // The forecast issued at the last bar stepped (its outcome still unknown); null if none.
-    const ForecastRecord* issued() const;
+    // The forecast issued at the last bar stepped (its outcome still unknown); null if none. Waits
+    // for its option revaluation, if one is running.
+    const ForecastRecord* issued();
     // The result so far, with the engine's state after the last bar.
     ReplayResult finish();
+    // Offline replays (run_replay): the option revaluations, which in operation run on a worker thread
+    // between two bars 15 minutes apart, are queued with the inputs of their bar and run after the
+    // bars, in bar order (the same numbers). A compressed replay would otherwise either run them
+    // while the next bars are timed or make every bar wait for them, and time neither situation of
+    // operation. Live (run_live) they run on a worker thread right after each bar's VaR.
+    void defer_revaluations();
 
 private:
     struct State;
@@ -189,9 +205,15 @@ struct ModelBacktest {
     bool has_es = false;
 };
 
+struct NamedBerkowitz {
+    std::string model;
+    BerkowitzTest test;
+};
+
 struct BacktestReport {
     std::vector<ModelBacktest> rows;
-    BerkowitzTest berkowitz_garch, berkowitz_ewma, berkowitz_overnight;
+    std::vector<NamedBerkowitz> berkowitz;  // one per VaR model, in ReplayResult::var_models order
+    BerkowitzTest berkowitz_overnight;
 };
 
 BacktestReport evaluate_backtest(const ReplayResult& r, const std::vector<double>& confidences,

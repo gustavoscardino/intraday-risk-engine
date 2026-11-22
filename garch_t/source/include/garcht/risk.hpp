@@ -19,6 +19,7 @@
 #include <vector>
 
 #include "garcht/garch.hpp"
+#include "riskcommon/model.hpp"
 
 namespace garcht {
 
@@ -34,15 +35,12 @@ struct TailFactors {
 TailFactors tail_factors(Dist dist, double nu, double confidence);
 
 // Standardized shock distribution: unit-variance Student-t (Normal if nu = +inf), optionally
-// with a generalized Pareto left tail.
-struct ShockDist {
-    double nu = std::numeric_limits<double>::infinity();
-    bool gpd = false;
-    double u0 = 0.0;     // loss threshold (standardized units, > 0)
-    double beta = 1.0;   // GPD scale
-    double xi = 0.0;     // GPD shape (heavier tail when larger; < 1 for a finite ES)
-    double theta = 0.0;  // P(L > u0)
-
+// with a generalized Pareto left tail. The fields are those of the common riskcommon::Shape:
+//   nu; gpd; u0 = loss threshold (standardized units, > 0); beta = GPD scale; xi = GPD shape
+//   (heavier tail when larger; < 1 for a finite ES); theta = P(L > u0).
+struct ShockDist : riskcommon::Shape {
+    ShockDist() = default;
+    explicit ShockDist(const riskcommon::Shape& s) : riskcommon::Shape(s) {}
     static ShockDist student(double nu);
     double cdf(double z) const;
     TailFactors factors(double confidence) const;
@@ -58,11 +56,7 @@ ShockDist fit_student_shock(const std::vector<double>& u, double nu_min, double 
 ShockDist fit_evt_shock(const std::vector<double>& u, double nu, double tail_fraction = 0.10,
                         int min_exceedances = 50);
 
-struct RiskMeasure {
-    double confidence = 0.0;
-    double var = 0.0;
-    double es = 0.0;
-};
+using RiskMeasure = riskcommon::RiskMeasure;  // confidence, var, es (money, positive = loss)
 
 inline RiskMeasure risk_measure(double mu, double sigma, const TailFactors& f) {
     return {f.confidence, -mu + sigma * f.var, -mu + sigma * f.es};

@@ -25,9 +25,12 @@ add_library(garcht STATIC
   src/data_quality.cpp
   src/revaluation.cpp
   src/synthetic.cpp
+  src/models.cpp
   src/replay.cpp)
 target_include_directories(garcht PUBLIC include)
-target_link_libraries(garcht PUBLIC Threads::Threads)
+# the code shared by the three engines (model interface, RiskMetrics baseline, jump filter)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../../common ${CMAKE_BINARY_DIR}/riskcommon)
+target_link_libraries(garcht PUBLIC riskcommon Threads::Threads)
 
 if(MSVC)
   target_compile_options(garcht PRIVATE /W4 /permissive-)

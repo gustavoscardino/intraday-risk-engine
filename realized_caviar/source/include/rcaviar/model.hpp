@@ -1,5 +1,6 @@
 #pragma once
 #include <cstddef>
+#include <optional>
 #include <vector>
 
 namespace rcaviar {
@@ -22,7 +23,13 @@ private:
 };
 double pinball(double realized_return, double quantile, double tau);
 double long_var(double exposure, double quantile); // positive long exposure only
-struct FitOptions { double tau = .01; int max_iterations = 1200; int starts = 6; double tolerance = 1e-7; };
+// warm_start: the previous calibration (daily refits), tried as a candidate as it stands and as one
+// more start of the search, so a refit never ends on a worse optimum than yesterday's parameters
+// when those still fit the new window better.
+struct FitOptions {
+    double tau = .01; int max_iterations = 1200; int starts = 6; double tolerance = 1e-7;
+    std::optional<Params> warm_start{};
+};
 struct FitResult {
     Params params;
     double initial_quantile = 0, last_quantile = 0, mean_loss = 0, constant_loss = 0;

@@ -4,9 +4,12 @@
 #include <cctype>
 #include <chrono>
 #include <cmath>
+#include <functional>
+#include <future>
 #include <map>
 #include <memory>
 #include <stdexcept>
+#include <thread>
 
 #include "garcht/revaluation.hpp"
 
@@ -60,6 +63,11 @@ struct ReplaySession::State {
         OptionContract c;
         int asset;
     };
+    // Monte Carlo revaluation of the option book for one forecast, run on a worker thread.
+    struct McOut {
+        std::vector<RiskMeasure> measures;
+        double sigma = 0.0, us = 0.0;
+    };
 
     ReplayConfig cfg;
     SessionSpec session;
@@ -73,20 +81,24 @@ struct ReplaySession::State {
     std::unique_ptr<MonteCarloRevaluation> mc;
     double bar_years = 0.0;
     std::vector<Fill> fills;
-    std::unique_ptr<IntradayRiskEngine> engine;
+    // the VaR models (garcht/models.hpp), main model first, and the window they are refitted on
+    std::vector<std::unique_ptr<riskcommon::PortfolioModel>> models;
+    GarchPortfolioModel* garch = nullptr;  // models[0]: option book, overnight, decomposition
+    IntradayRiskEngine* engine = nullptr;
+    riskcommon::HistoryRing history;
+    std::vector<riskcommon::ModelForecast> risk;  // forecast of each model at the last bar
     std::vector<double> qty, last_px, expo, xbook;
     std::vector<int> px_date;  // session date of last_px[i]
     std::vector<double> model_px;   // last close of the model's view (jump filter: validated prices)
     std::vector<int> model_px_date;
     std::vector<double> missing_row;
     size_t next_fill = 0;
-    PortfolioRisk risk, book_delta_risk;
+    PortfolioRisk book_delta_risk;
     int models_fitted = 0;
 
     // pending forecasts
     bool have_fc = false;
     ForecastRecord fc;
-    PortfolioRisk fc_risk;
     std::vector<double> fc_qty, fc_spot;
     std::vector<char> fc_live;  // options valued at forecast time
     double fc_option_value = 0.0;
@@ -95,6 +107,18 @@ struct ReplaySession::State {
     OvernightRecord on;
     std::vector<double> on_qty;
 
+    // Option revaluations (see book_forecast). Each job has an id; mc_record[id] is the index of its
+    // forecast in res.forecasts once that forecast is scored (npos: not scored, result discarded).
+    // Live: the job in flight runs on a worker thread (mc_job). Offline replay (defer_mc): the jobs
+    // are queued and run after the bars.
+    static constexpr size_t npos = static_cast<size_t>(-1);
+    bool defer_mc = false;
+    std::vector<std::function<McOut()>> mc_queue;
+    std::vector<size_t> mc_record;
+    std::future<McOut> mc_job;
+    size_t mc_job_id = npos;  // id of the job in mc_job
+    size_t fc_job = npos;     // id of the pending forecast's job
+
     int cur_date = -1, cur_slot = -1;  // last on-grid bar fed to the engine
     bool eod_done = true;              // end-of-session work of the current session done
     size_t last_t = 0;                 // last on-grid bar stepped
@@ -102,16 +126,21 @@ struct ReplaySession::State {
     double last_net = 0.0;
     std::chrono::steady_clock::time_point t_wall = std::chrono::steady_clock::now();
 
-    State(const ReplayInput& in, const ReplayConfig& cfg_in, const SessionSpec& s) : cfg(cfg_in), session(s) {
+    static EngineConfig engine_config(const ReplayConfig& cfg, const SessionSpec& s) {
+        EngineConfig e = cfg.engine;
+        e.bars_per_day = s.bars_per_day;
+        e.window_bars = cfg.window_days * s.bars_per_day;
+        e.min_fit_bars = std::min(e.window_bars, 20 * s.bars_per_day);
+        return e;
+    }
+
+    State(const ReplayInput& in, const ReplayConfig& cfg_in, const SessionSpec& s)
+        : cfg(cfg_in), session(s), ecfg(engine_config(cfg_in, s)),
+          history(static_cast<size_t>(std::max(ecfg.window_bars, 1)), in.tickers.size()) {
         n = in.tickers.size();
         if (n == 0) throw std::runtime_error("replay: no tickers");
         res.session = session;
-        ecfg = cfg.engine;
-        ecfg.bars_per_day = session.bars_per_day;
-        ecfg.window_bars = cfg.window_days * session.bars_per_day;
-        ecfg.min_fit_bars = std::min(ecfg.window_bars, 20 * session.bars_per_day);
         res.student_t = ecfg.spec.dist == Dist::StudentT;
-        res.model_name = !res.student_t ? "GARCH-N" : (ecfg.tail_model == TailModel::Evt ? "GARCH-t/EVT" : "GARCH-t");
         K = session.bars_per_day;
 
         for (size_t i = 0; i < n; ++i) {
@@ -132,7 +161,12 @@ struct ReplaySession::State {
         fills = in.fills;
         std::stable_sort(fills.begin(), fills.end(), [](const Fill& a, const Fill& b) { return a.time.key() < b.time.key(); });
 
-        engine = std::make_unique<IntradayRiskEngine>(in.tickers, ecfg);
+        models = make_models(in.tickers, ecfg);
+        garch = static_cast<GarchPortfolioModel*>(models.front().get());
+        engine = &garch->engine();
+        for (const auto& m : models) res.var_models.push_back(m->info());
+        res.model_name = res.var_models.front().name;
+        risk.resize(models.size());
         qty = in.initial_quantity;
         qty.resize(n, 0.0);
         last_px.assign(n, kNaN);
@@ -148,6 +182,19 @@ struct ReplaySession::State {
         on_qty.assign(n, 0.0);
     }
 
+    ~State() {
+        if (mc_job.valid()) mc_job.wait();
+    }
+
+    // Writes a revaluation into its forecast record (the pending one or a scored one).
+    void store_mc(size_t id, McOut o) {
+        ForecastRecord* r = id == fc_job && have_fc ? &fc : (mc_record[id] != npos ? &res.forecasts[mc_record[id]] : nullptr);
+        if (!r) return;  // its forecast was never scored
+        r->book_mc = std::move(o.measures);
+        r->book_mc_sigma = o.sigma;
+        r->mc_us = o.us;
+    }
+
     long find_asset(std::string t) const {
         for (char& c : t) c = static_cast<char>(std::toupper(static_cast<unsigned char>(c)));
         const auto it = tix.find(t);
@@ -159,10 +206,40 @@ struct ReplaySession::State {
         return b.c.quantity * b.c.multiplier * bs_price(b.c.type, spot, b.c.strike, tt, b.c.implied_vol, b.c.rate);
     }
 
+    // Collects the revaluation in flight on the worker thread (live), if any.
+    void join_mc() {
+        if (!mc_job.valid()) return;
+        store_mc(mc_job_id, mc_job.get());
+        mc_job_id = npos;
+    }
+
+    // Offline replay: runs the queued revaluations, in bar order, on a worker thread.
+    void run_deferred_mc() {
+        if (mc_queue.empty()) return;
+        std::vector<McOut> out(mc_queue.size());
+        std::thread worker([&] {
+            for (size_t k = 0; k < mc_queue.size(); ++k) out[k] = mc_queue[k]();
+        });
+        worker.join();
+        for (size_t k = 0; k < out.size(); ++k) store_mc(k, std::move(out[k]));
+        mc_queue.clear();
+    }
+
+    void feed(int slot, const double* r) {
+        for (auto& m : models) m->on_bar(slot, r);
+        history.push(slot, r);
+    }
+
+    void forecast_all(int next_slot) {
+        for (size_t k = 0; k < models.size(); ++k) models[k]->forecast(next_slot, expo.data(), risk[k]);
+    }
+
     // Daily re-estimation at the close of bar t (once the window is full). True if the engine refitted.
     bool refit(const BarPanel& panel, size_t t) {
         if (engine->history_size() < static_cast<size_t>(ecfg.window_bars)) return false;
-        const RefitReport rep = engine->refit(expo.data());
+        const riskcommon::History window = history.view();
+        for (auto& m : models) m->refit(window, expo.data());
+        const RefitReport& rep = garch->last_refit();
         models_fitted = rep.n_fitted;
         res.refit_ms.push_back(rep.seconds * 1e3);
         const std::string date = panel.timestamps[t].substr(0, 10);
@@ -192,7 +269,7 @@ struct ReplaySession::State {
     }
 
     void step(const BarPanel& panel, const std::vector<double>& ret, const std::vector<int>& slot,
-              const std::vector<double>& gaps, size_t t, bool eod, const BarPanel& view) {
+              const std::vector<double>& gaps, size_t t, bool eod, const BarPanel& view, double input_us) {
         // Off-grid rows (pre-open prints, an extended closing call, irregular stamps) are
         // ignored everywhere -- returns, gaps and P&L -- so the three stay consistent.
         if (slot[t] < 0) {
@@ -238,8 +315,8 @@ struct ReplaySession::State {
             }
             return v;
         };
-        // the forecast is scored on the prices as printed; the tail calibration learns from the
-        // outcome of the model's view, so a held bad print never reaches the tail
+        // the forecast is scored on the prices as printed; the models that learn from outcomes see
+        // the outcome of their own view, so a held bad print never reaches the GARCH tail
         const double pnl = bar_pnl(panel, last_px, px_date);
         const double model_pnl = &view == &panel ? pnl : bar_pnl(view, model_px, model_px_date);
         if (have_fc) {
@@ -262,12 +339,14 @@ struct ReplaySession::State {
                     }
                     fc.book_pnl = pnl + (v1 - v0);
                 }
-                engine->observe_outcome(model_pnl, fc_risk);
+                for (size_t k = 0; k < models.size(); ++k) models[k]->observe_outcome(model_pnl, fc.models[k]);
                 res.forecasts.push_back(fc);
+                if (fc_job != npos) mc_record[fc_job] = res.forecasts.size() - 1;  // its revaluation lands here
             } else {
                 ++res.unscored;  // the targeted bar never printed (halt, gap, late opening)
             }
             have_fc = false;
+            fc_job = npos;
         }
         for (size_t i = 0; i < n; ++i) {
             const double c = panel.at(panel.close, t, i);
@@ -300,20 +379,21 @@ struct ReplaySession::State {
         // grid slot (halts, gaps, early closes and late openings)
         if (new_session) {
             if (cur_date >= 0)
-                for (int k = cur_slot + 1; k < K; ++k) engine->on_bar(k, missing_row.data());
+                for (int k = cur_slot + 1; k < K; ++k) feed(k, missing_row.data());
             if (cfg.overnight) engine->on_overnight(&gaps[t * n]);
-            for (int k = 0; k < slot[t]; ++k) engine->on_bar(k, missing_row.data());
+            for (int k = 0; k < slot[t]; ++k) feed(k, missing_row.data());
         } else {
-            for (int k = cur_slot + 1; k < slot[t]; ++k) engine->on_bar(k, missing_row.data());
+            for (int k = cur_slot + 1; k < slot[t]; ++k) feed(k, missing_row.data());
         }
-        engine->on_bar(slot[t], &ret[t * n]);
+        feed(slot[t], &ret[t * n]);
         cur_date = panel.date[t];
         cur_slot = slot[t];
         last_t = t;
 
+        // positions marked at the model's view: a held print keeps the last validated close
         double net = 0.0, gross = 0.0;
         for (size_t i = 0; i < n; ++i) {
-            expo[i] = std::isfinite(last_px[i]) ? qty[i] * last_px[i] : 0.0;
+            expo[i] = std::isfinite(model_px[i]) ? qty[i] * model_px[i] : 0.0;
             net += expo[i];
             gross += std::fabs(expo[i]);
         }
@@ -324,37 +404,30 @@ struct ReplaySession::State {
             refitted = refit(panel, t);
         } else if (traded && engine->ready()) {
             const auto r0 = std::chrono::steady_clock::now();
-            engine->recalibrate_tail(expo.data());
+            for (auto& m : models) m->rebalance(expo.data());
             rebalance_us = std::chrono::duration<double, std::micro>(std::chrono::steady_clock::now() - r0).count();
             res.rebalance_us.push_back(rebalance_us);
         }
         const int next_slot = (slot[t] + 1) % K;
-        engine->compute(next_slot, expo.data(), risk);
-        const double us =
-            std::chrono::duration<double, std::micro>(std::chrono::steady_clock::now() - t0).count() - rebalance_us;
-        res.engine_seconds += (us + rebalance_us) * 1e-6;
+        forecast_all(next_slot);
+        const double us = std::chrono::duration<double, std::micro>(std::chrono::steady_clock::now() - t0).count() -
+                          rebalance_us + input_us;
+        res.engine_seconds += (us + rebalance_us) * 1e-6;  // includes the jump filter (input_us)
         last_timed = !refitted && engine->ready();
         if (last_timed) res.latency_us.push_back(us);
 
-        have_fc = engine->ready();
+        have_fc = garch->ready();
         if (have_fc) {
             fc = ForecastRecord{};
             fc.forecast_time = panel.timestamps[t];
             fc.target_slot = next_slot;
             fc.net = net;
             fc.gross = gross;
-            fc.mean = risk.mean;
-            fc.sigma = risk.sigma;
-            fc.nu = risk.nu;
-            fc.tail = risk.tail;
-            fc.ewma_sigma = risk.ewma_sigma;
-            fc.garch = risk.garch;
-            fc.ewma = risk.ewma;
+            fc.models = risk;
             fc.update_us = us;
             fc.models_fitted = models_fitted;
-            fc_risk = risk;
             fc_qty = qty;
-            fc_spot = last_px;
+            fc_spot = model_px;
             if (has_book) book_forecast(panel, t, next_slot);
         }
         if (eod) {
@@ -363,9 +436,12 @@ struct ReplaySession::State {
         }
     }
 
-    // delta-linear vs Monte Carlo full revaluation of stocks + options, for the forecast of bar t
+    // delta-linear vs Monte Carlo full revaluation of stocks + options, for the forecast of bar t.
+    // The VaR of the bar is already published: the simulation runs on a worker thread (it is the
+    // heaviest step of a bar and would evict the engine's data from the caches) and its result
+    // reaches the forecast record when it is done, before the record is read.
     void book_forecast(const BarPanel& panel, size_t t, int next_slot) {
-        const auto m0 = std::chrono::steady_clock::now();
+        join_mc();  // live: one at a time, so the generator advances in bar order (reproducible)
         std::vector<Position> pos;
         for (size_t i = 0; i < n; ++i) {
             xbook[i] = expo[i];
@@ -381,7 +457,7 @@ struct ReplaySession::State {
             const BookOption& bo = book[b];
             const size_t a = static_cast<size_t>(bo.asset);
             fc_live[b] = 0;
-            if (!std::isfinite(last_px[a])) continue;
+            if (!std::isfinite(model_px[a])) continue;
             Position p;
             p.kind = Position::Kind::Option;
             p.asset = bo.asset;
@@ -394,8 +470,8 @@ struct ReplaySession::State {
             p.multiplier = bo.c.multiplier;
             if (p.expiry <= 0.0) continue;  // expired: no risk left
             fc_live[b] = 1;
-            xbook[a] += position_delta_exposure(p, last_px[a]);
-            fc_option_value += position_value(p, last_px[a]);
+            xbook[a] += position_delta_exposure(p, model_px[a]);
+            fc_option_value += position_value(p, model_px[a]);
             pos.push_back(p);
         }
         // delta-linear book with the same multivariate t(nu_p) the simulation draws from (the
@@ -410,12 +486,28 @@ struct ReplaySession::State {
                              book_delta_risk.nu, cl)));
         fc.book_delta_sigma = book_delta_risk.sigma;
         std::vector<double> spot(n);
-        for (size_t i = 0; i < n; ++i) spot[i] = std::isfinite(last_px[i]) ? last_px[i] : 0.0;  // as expo
-        mc->simulate(engine->joint_forecast(next_slot));
-        const McRiskResult mr = mc->evaluate(pos, spot, bar_years, ecfg.confidences);
-        fc.book_mc = mr.measures;
-        fc.book_mc_sigma = mr.sigma;
-        fc.mc_us = std::chrono::duration<double, std::micro>(std::chrono::steady_clock::now() - m0).count();
+        for (size_t i = 0; i < n; ++i) spot[i] = std::isfinite(model_px[i]) ? model_px[i] : 0.0;  // as expo
+        auto job = [mcr = mc.get(), jf = engine->joint_forecast(next_slot), pos = std::move(pos), spot = std::move(spot),
+                    years = bar_years, confs = ecfg.confidences]() {
+            const auto m0 = std::chrono::steady_clock::now();
+            mcr->simulate(jf);
+            const McRiskResult mr = mcr->evaluate(pos, spot, years, confs);
+            McOut o;
+            o.measures = mr.measures;
+            o.sigma = mr.sigma;
+            o.us = std::chrono::duration<double, std::micro>(std::chrono::steady_clock::now() - m0).count();
+            return o;
+        };
+        fc_job = mc_record.size();
+        mc_record.push_back(npos);
+        if (!cfg.mc_async) {
+            store_mc(fc_job, job());  // on the bar thread, right after the VaR (the original design)
+        } else if (defer_mc) {
+            mc_queue.push_back(std::move(job));
+        } else {
+            mc_job = std::async(std::launch::async, std::move(job));
+            mc_job_id = fc_job;
+        }
     }
 };
 
@@ -425,8 +517,9 @@ ReplaySession::ReplaySession(const ReplayInput& in, const ReplayConfig& cfg, con
 ReplaySession::~ReplaySession() = default;
 
 void ReplaySession::step(const BarPanel& panel, const std::vector<double>& ret, const std::vector<int>& slot,
-                         const std::vector<double>& gaps, size_t t, bool eod, const BarPanel* model_view) {
-    s_->step(panel, ret, slot, gaps, t, eod, model_view ? *model_view : panel);
+                         const std::vector<double>& gaps, size_t t, bool eod, const BarPanel* model_view,
+                         double input_us) {
+    s_->step(panel, ret, slot, gaps, t, eod, model_view ? *model_view : panel, input_us);
 }
 
 void ReplaySession::end_session(const BarPanel& panel) {
@@ -438,7 +531,7 @@ void ReplaySession::end_session(const BarPanel& panel) {
     if (refitted) {
         if (s.last_timed) s.res.latency_us.pop_back();
         s.last_timed = false;
-        s.engine->compute((s.cur_slot + 1) % s.K, s.expo.data(), s.risk);
+        s.forecast_all((s.cur_slot + 1) % s.K);
     }
     if (s.engine->ready()) s.overnight_forecast(panel, s.last_t, s.last_net);
     s.eod_done = true;
@@ -446,15 +539,22 @@ void ReplaySession::end_session(const BarPanel& panel) {
 
 bool ReplaySession::session_open() const { return s_->cur_date >= 0 && !s_->eod_done; }
 
-const ForecastRecord* ReplaySession::issued() const { return s_->have_fc ? &s_->fc : nullptr; }
+const ForecastRecord* ReplaySession::issued() {
+    s_->join_mc();
+    return s_->have_fc ? &s_->fc : nullptr;
+}
+
+void ReplaySession::defer_revaluations() { s_->defer_mc = true; }
 
 ReplayResult ReplaySession::finish() {
     State& s = *s_;
+    s.join_mc();
+    s.run_deferred_mc();
     ReplayResult res = s.res;
     res.quantity = s.qty;
     res.last_price = s.last_px;
     res.exposure = s.expo;
-    res.last_risk = s.risk;
+    res.last_risk = s.garch->last_risk();
     res.correlation = s.engine->correlation();
     res.diurnal = s.engine->diurnal().factors();
     res.corr_scale = s.engine->slot_correlation_scale();
@@ -480,6 +580,70 @@ std::vector<char> end_of_session_flags(const BarPanel& panel, const std::vector<
     return eod;
 }
 
+// The models' input of each bar, prepared inside the bar's own cycle: the jump filter's decision on
+// the bar (if on) and the returns and overnight gaps of the models' view. Row t needs rows <= t only,
+// so a file and a live feed are prepared the same way, one bar at a time.
+class BarInput {
+public:
+    BarInput(size_t n, const SessionSpec& session, const ReplayConfig& cfg)
+        : n_(n), session_(session), filter_on_(cfg.jump_filter), filter_(n, session, cfg.jump), stream_(n) {}
+
+    // Appends row t of `panel` (rows < t already prepared) to the model's view; untimed (in a live
+    // system the feed handler writes the row).
+    void add_row(const BarPanel& panel, size_t t) {
+        slot_.push_back(bar_slot(panel.minute[t], session_));
+        ret_.resize((t + 1) * n_, kNaN);
+        gaps_.resize((t + 1) * n_, kNaN);
+        if (!filter_on_) return;
+        if (view_.tickers.empty()) view_.tickers = panel.tickers;
+        view_.timestamps.push_back(panel.timestamps[t]);
+        view_.time_key.push_back(panel.time_key[t]);
+        view_.date.push_back(panel.date[t]);
+        view_.minute.push_back(panel.minute[t]);
+        for (auto [dst, src] : {std::pair{&view_.open, &panel.open}, std::pair{&view_.high, &panel.high},
+                                std::pair{&view_.low, &panel.low}, std::pair{&view_.close, &panel.close},
+                                std::pair{&view_.volume, &panel.volume}})
+            dst->insert(dst->end(), src->begin() + static_cast<long>(t * n_), src->begin() + static_cast<long>((t + 1) * n_));
+    }
+    // Decides row t (the last one added); returns the time it took, in microseconds.
+    double prepare(const BarPanel& panel, size_t t) {
+        const auto t0 = std::chrono::steady_clock::now();
+        if (slot_[t] >= 0) {
+            if (filter_on_) filter_.apply(view_, t);
+            const BarPanel& v = view(panel);
+            stream_.step(v.date[t], slot_[t], &v.open[t * n_], &v.close[t * n_], &ret_[t * n_], &gaps_[t * n_]);
+            if (filter_on_) {  // a move let in one bar late enters at full size (see restore_accepted)
+                const auto& acc = filter_.accepted();
+                for (; accepted_done_ < acc.size(); ++accepted_done_) {
+                    double& r = ret_[acc[accepted_done_].bar * n_ + acc[accepted_done_].asset];
+                    if (std::isfinite(r)) r = acc[accepted_done_].ret;
+                }
+            }
+        }
+        return std::chrono::duration<double, std::micro>(std::chrono::steady_clock::now() - t0).count();
+    }
+    // The session of the last row prepared is over (end-of-day work, untimed).
+    void end_session() {
+        if (filter_on_) filter_.end_session();
+    }
+    const BarPanel& view(const BarPanel& panel) const { return filter_on_ ? view_ : panel; }
+    const std::vector<double>& ret() const { return ret_; }
+    const std::vector<double>& gaps() const { return gaps_; }
+    const std::vector<int>& slot() const { return slot_; }
+    std::vector<JumpEvent> events() const { return filter_on_ ? filter_.events() : std::vector<JumpEvent>{}; }
+
+private:
+    size_t n_;
+    SessionSpec session_;
+    bool filter_on_;
+    JumpFilter filter_;
+    ReturnStream stream_;
+    size_t accepted_done_ = 0;
+    BarPanel view_;  // the jump-filtered copy of the prices (filter on)
+    std::vector<double> ret_, gaps_;
+    std::vector<int> slot_;
+};
+
 }  // namespace
 
 ReplayResult run_replay(const ReplayInput& in, const ReplayConfig& cfg_in) {
@@ -488,22 +652,11 @@ ReplayResult run_replay(const ReplayInput& in, const ReplayConfig& cfg_in) {
     if (n == 0 || in.bars.num_assets() != n) throw std::runtime_error("replay: tickers / bars mismatch");
 
     const SessionSpec session = cfg_in.detect_session ? detect_session(in.bars) : cfg_in.session;
-    // The jump filter decides each bar on the bars up to it, so running it over the whole panel
-    // first is the same as running it bar by bar. It shapes the model's returns only: the replay
-    // steps the prices as printed, so the P&L the forecasts are scored on is the market's.
+    // The jump filter shapes the model's returns only: the replay steps the prices as printed, so the
+    // P&L the forecasts are scored on is the market's.
     const BarPanel& panel = in.bars;
-    BarPanel filtered;
-    JumpFilter filter(n, session, cfg_in.jump);
-    if (cfg_in.jump_filter) {
-        filtered = in.bars;
-        for (size_t t = 0; t < T; ++t) filter.apply(filtered, t);
-    }
-    const BarPanel& model_view = cfg_in.jump_filter ? filtered : in.bars;
-    std::vector<double> ret, gaps;
-    std::vector<int> slot;
-    bar_returns(model_view, session, ret, slot);
-    if (cfg_in.jump_filter) filter.restore_accepted(ret);
-    overnight_returns(model_view, slot, gaps);
+    std::vector<int> slot(T);
+    for (size_t t = 0; t < T; ++t) slot[t] = bar_slot(panel.minute[t], session);
     size_t sessions = 0;
     {
         int last_date = -1;
@@ -520,9 +673,16 @@ ReplayResult run_replay(const ReplayInput& in, const ReplayConfig& cfg_in) {
     const std::vector<char> eod = end_of_session_flags(panel, slot);
 
     ReplaySession replay(in, cfg_in, session);
-    for (size_t t = 0; t < T; ++t) replay.step(panel, ret, slot, gaps, t, eod[t] != 0, &model_view);
+    replay.defer_revaluations();
+    BarInput input(n, session, cfg_in);
+    for (size_t t = 0; t < T; ++t) {
+        input.add_row(panel, t);
+        const double input_us = input.prepare(panel, t);  // counted in the bar's latency
+        if (eod[t]) input.end_session();
+        replay.step(panel, input.ret(), input.slot(), input.gaps(), t, eod[t] != 0, &input.view(panel), input_us);
+    }
     ReplayResult res = replay.finish();
-    if (cfg_in.jump_filter) res.jump_events = filter.events();
+    res.jump_events = input.events();
     res.wall_seconds = std::chrono::duration<double>(std::chrono::steady_clock::now() - t_wall).count();
     return res;
 }
@@ -557,24 +717,17 @@ ReplayResult run_live(const ReplayInput& history, const ReplayConfig& cfg,
     BarPanel panel = history.bars;  // prices as printed; grows by one row per bar
     const SessionSpec session = cfg.detect_session ? detect_session(panel) : cfg.session;
     ReplaySession replay(history, cfg, session);
-    std::unique_ptr<JumpFilter> jumps;
-    BarPanel filtered;  // the model's view when the jump filter is on (as in run_replay)
-    if (cfg.jump_filter) {
-        jumps = std::make_unique<JumpFilter>(n, session, cfg.jump);
-        filtered = panel;
-        for (size_t t = 0; t < filtered.num_bars(); ++t) jumps->apply(filtered, t);
-    }
-    const BarPanel& model_view = jumps ? filtered : panel;
-    std::vector<double> ret, gaps;
-    std::vector<int> slot;
-    bar_returns(model_view, session, ret, slot);
-    if (jumps) jumps->restore_accepted(ret);
-    overnight_returns(model_view, slot, gaps);
+    BarInput input(n, session, cfg);  // the model's view, prepared bar by bar as in run_replay
     int grid_date = -1;  // date of the last on-grid bar stepped
     {   // the history, as run_replay would (its last bar ends its session)
+        std::vector<int> slot(panel.num_bars());
+        for (size_t t = 0; t < panel.num_bars(); ++t) slot[t] = bar_slot(panel.minute[t], session);
         const std::vector<char> eod = end_of_session_flags(panel, slot);
         for (size_t t = 0; t < panel.num_bars(); ++t) {
-            replay.step(panel, ret, slot, gaps, t, eod[t] != 0, &model_view);
+            input.add_row(panel, t);
+            const double input_us = input.prepare(panel, t);
+            if (eod[t]) input.end_session();
+            replay.step(panel, input.ret(), input.slot(), input.gaps(), t, eod[t] != 0, &input.view(panel), input_us);
             if (slot[t] >= 0) grid_date = panel.date[t];
         }
     }
@@ -599,34 +752,32 @@ ReplayResult run_live(const ReplayInput& history, const ReplayConfig& cfg,
             const long long key = pending.begin()->first;
             PendingBar b = std::move(pending.begin()->second);
             pending.erase(pending.begin());
-            for (BarPanel* p : {&panel, &filtered}) {
-                if (p == &filtered && !jumps) continue;
-                p->timestamps.push_back(b.time.str());
-                p->time_key.push_back(key);
-                p->date.push_back(b.time.ymd);
-                p->minute.push_back(b.time.minute);
-                for (size_t i = 0; i < n; ++i) {
-                    p->open.push_back(b.open[i]);
-                    p->high.push_back(b.high[i]);
-                    p->low.push_back(b.low[i]);
-                    p->close.push_back(b.close[i]);
-                    p->volume.push_back(b.volume[i]);
-                }
+            panel.timestamps.push_back(b.time.str());
+            panel.time_key.push_back(key);
+            panel.date.push_back(b.time.ymd);
+            panel.minute.push_back(b.time.minute);
+            for (size_t i = 0; i < n; ++i) {
+                panel.open.push_back(b.open[i]);
+                panel.high.push_back(b.high[i]);
+                panel.low.push_back(b.low[i]);
+                panel.close.push_back(b.close[i]);
+                panel.volume.push_back(b.volume[i]);
             }
             stepped = key;
             ++st.bars;
-            if (jumps) jumps->apply(filtered, filtered.num_bars() - 1);
-            bar_returns(model_view, session, ret, slot);  // causal: earlier rows do not change
-            if (jumps) jumps->restore_accepted(ret);
-            overnight_returns(model_view, slot, gaps);
             const size_t t = panel.num_bars() - 1;
+            input.add_row(panel, t);
+            const double input_us = input.prepare(panel, t);
+            const std::vector<int>& slot = input.slot();
             if (slot[t] < 0) {
-                replay.step(panel, ret, slot, gaps, t, false, &model_view);  // off-grid: counted and ignored
+                replay.step(panel, input.ret(), slot, input.gaps(), t, false, &input.view(panel));  // off-grid: ignored
                 continue;
             }
             // a new session started while the previous one had not reached its last slot
             if (replay.session_open() && panel.date[t] != grid_date) replay.end_session(panel);
-            replay.step(panel, ret, slot, gaps, t, slot[t] == session.bars_per_day - 1, &model_view);
+            const bool eod = slot[t] == session.bars_per_day - 1;
+            if (eod) input.end_session();  // with the end-of-day work
+            replay.step(panel, input.ret(), slot, input.gaps(), t, eod, &input.view(panel), input_us);
             grid_date = panel.date[t];
             if (on_bar) on_bar(panel, t, replay.issued());
         }
@@ -710,7 +861,7 @@ ReplayResult run_live(const ReplayInput& history, const ReplayConfig& cfg,
     close_bars(std::numeric_limits<long long>::max());
     replay.end_session(panel);  // the last bar ends its session, as at the end of a file
     ReplayResult res = replay.finish();
-    if (jumps) res.jump_events = jumps->events();
+    res.jump_events = input.events();
     return res;
 }
 
@@ -720,53 +871,50 @@ BacktestReport evaluate_backtest(const ReplayResult& r, const std::vector<double
     const int bpd = r.session.bars_per_day;
     auto group = [&](int slot) { return slot < 3 ? 0 : (slot >= bpd - 3 ? 2 : 1); };
 
-    // intraday models
+    // intraday models, in the order of r.var_models
     std::vector<double> x;
     std::vector<int> slots;
-    std::vector<DistForecast> fg, fe;
+    std::vector<const ForecastRecord*> fr;
     for (const ForecastRecord& f : r.forecasts) {
         if (!std::isfinite(f.pnl)) continue;
         x.push_back(f.pnl);
         slots.push_back(f.target_slot);
-        fg.emplace_back(f.mean, f.sigma, f.tail);
-        fe.emplace_back(0.0, f.ewma_sigma, std::numeric_limits<double>::infinity());
+        fr.push_back(&f);
     }
-    std::vector<double> pit_g(x.size()), pit_e(x.size());
-    for (size_t t = 0; t < x.size(); ++t) {
-        pit_g[t] = forecast_cdf(fg[t], x[t]);
-        pit_e[t] = forecast_cdf(fe[t], x[t]);
-    }
-    rep.berkowitz_garch = berkowitz_test(pit_g);
-    rep.berkowitz_ewma = berkowitz_test(pit_e);
-
-    for (int model = 0; model < 2; ++model)
+    for (size_t m = 0; m < r.var_models.size(); ++m) {
+        std::vector<DistForecast> dist;
+        std::vector<double> pit;
+        for (size_t t = 0; t < fr.size(); ++t) {
+            const riskcommon::ModelForecast& f = fr[t]->models[m];
+            dist.emplace_back(f.mean, f.sigma, ShockDist(f.shape));
+            pit.push_back(forecast_cdf(dist.back(), x[t]));
+        }
+        rep.berkowitz.push_back({r.var_models[m].name, berkowitz_test(pit)});
         for (size_t k = 0; k < confs.size(); ++k) {
             ModelBacktest mb;
-            mb.model = model == 0 ? r.model_name : "EWMA-N (ref)";
+            mb.model = r.var_models[m].name;
             mb.confidence = confs[k];
             std::vector<int> hits, seg_hits[3];
             double loss_sum = 0.0, es_sum = 0.0;
-            size_t j = 0;
-            for (const ForecastRecord& f : r.forecasts) {
-                if (!std::isfinite(f.pnl)) continue;
-                const RiskMeasure& m = model == 0 ? f.garch[k] : f.ewma[k];
-                const int h = -f.pnl > m.var;
+            for (size_t t = 0; t < fr.size(); ++t) {
+                const RiskMeasure& rm = fr[t]->models[m].measures[k];
+                const int h = -x[t] > rm.var;
                 hits.push_back(h);
-                seg_hits[group(slots[j])].push_back(h);
+                seg_hits[group(slots[t])].push_back(h);
                 if (h) {
-                    loss_sum += -f.pnl;
-                    es_sum += m.es;
+                    loss_sum += -x[t];
+                    es_sum += rm.es;
                 }
-                ++j;
             }
             mb.coverage = coverage_test(hits, 1.0 - confs[k]);
             for (int g = 0; g < 3; ++g) mb.by_time[g] = coverage_test(seg_hits[g], 1.0 - confs[k]);
             mb.has_by_time = true;
             mb.es_ratio = es_sum > 0.0 ? loss_sum / es_sum : kNaN;
-            mb.es = acerbi_szekely_test(x, model == 0 ? fg : fe, confs[k], es_sims, 1000 + k);
+            mb.es = acerbi_szekely_test(x, dist, confs[k], es_sims, 1000 + k);
             mb.has_es = true;
             rep.rows.push_back(mb);
         }
+    }
 
     // overnight (close -> end of the next first bar)
     if (!r.overnight.empty()) {

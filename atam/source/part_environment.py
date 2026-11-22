@@ -48,7 +48,7 @@ def os_name() -> str:
 def run(fresh: bool = False):
     s = Section("Environment of the ATAM evidence")
     s.add(f"generated: {dt.datetime.now().strftime('%Y-%m-%d')}")
-    paths = ("ewma", "garch_t", "realized_caviar", "data")
+    paths = ("common", "ewma", "garch_t", "realized_caviar", "data")
     dirty = "yes" if _git("status", "--porcelain", "--", *paths) else "no"
     s.add(f"engines and data: commit {_git('log', '-1', '--format=%h %ad', '--date=short', '--', *paths)}"
           f" (uncommitted changes: {dirty})")

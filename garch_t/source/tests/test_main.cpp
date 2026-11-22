@@ -582,8 +582,8 @@ TEST(engine_single_asset_matches_univariate_formula) {
     CHECK_REL(r.sigma_contrib[0], r.sigma, 1e-12);
     for (size_t k = 0; k < cfg.confidences.size(); ++k) {
         const TailFactors f = r.tail.factors(cfg.confidences[k]);  // t body + GPD tail (EVT)
-        CHECK_REL(r.garch[k].var, r.sigma * f.var, 1e-12);
-        CHECK_REL(r.garch[k].es, r.sigma * f.es, 1e-12);
+        CHECK_REL(r.measures[k].var, r.sigma * f.var, 1e-12);
+        CHECK_REL(r.measures[k].es, r.sigma * f.es, 1e-12);
     }
     CHECK(r.nu > 2.5 && r.nu < 12);  // calibrated tail close to the simulated nu = 5
     // live update moves the forecast exactly like the univariate filter
@@ -627,7 +627,7 @@ TEST(engine_hedges_and_correlations) {
     double sum = 0;
     for (double v : mix.sigma_contrib) sum += v;
     CHECK_REL(sum, mix.sigma, 1e-12);
-    CHECK(mix.ewma_sigma > 0 && mix.ewma[2].var > mix.ewma[0].var && mix.garch[2].es > mix.garch[2].var);
+    CHECK(mix.measures[2].var > mix.measures[0].var && mix.measures[2].es > mix.measures[2].var);
     // first bar of the day is riskier through the diurnal factor
     CHECK(eng.compute(0, x_mix).sigma > eng.compute(2, x_mix).sigma);
 
@@ -638,7 +638,7 @@ TEST(engine_hedges_and_correlations) {
         eng.on_bar(t % 4, r);
     }
     const PortfolioRisk after = eng.compute(3, x_mix);
-    CHECK(std::isfinite(after.sigma) && std::isfinite(after.garch[0].var) && std::isfinite(after.ewma_sigma));
+    CHECK(std::isfinite(after.sigma) && std::isfinite(after.measures[0].var));
     CHECK(is_psd_corr(eng.correlation(), 3));
     const double nu_before = eng.portfolio_nu();
     const double nu_after = eng.recalibrate_tail(x_hedge);
@@ -664,7 +664,7 @@ TEST(engine_dead_feed_does_not_block_correlations) {
     CHECK(R[1] == 0.0 && R[5] == 0.0 && R[4] == 1.0);  // dead asset: identity block
     CHECK(is_psd_corr(R, 3));
     const PortfolioRisk risk = eng.compute(1, x);
-    CHECK(std::isfinite(risk.sigma) && risk.sigma > 0 && std::isfinite(risk.ewma_sigma));
+    CHECK(std::isfinite(risk.sigma) && risk.sigma > 0);
     // live bars keep updating the correlation of the active pair
     const std::vector<double> before = R;
     const double r[3] = {0.01, kNaN, -0.01};
@@ -687,7 +687,7 @@ TEST(engine_normal_spec_and_constant_correlation) {
     eng.refit(x);
     const PortfolioRisk r = eng.compute(0, x);
     CHECK(std::isinf(r.nu));
-    CHECK_REL(r.garch[2].var, r.sigma * math::norm_ppf(0.99), 1e-12);
+    CHECK_REL(r.measures[2].var, r.sigma * math::norm_ppf(0.99), 1e-12);
     const std::vector<double> R0 = eng.correlation();
     const double z[2] = {0.01, -0.01};
     eng.on_bar(1, z);
@@ -1140,7 +1140,7 @@ TEST(engine_overnight_tail_calibration_and_threads) {
             PortfolioRisk r;
             while (!stop) {
                 eng.compute(1, x, r);
-                if (!std::isfinite(r.sigma) || !(r.garch[0].var > 0)) ++bad;
+                if (!std::isfinite(r.sigma) || !(r.measures[0].var > 0)) ++bad;
                 const JointForecast jf = eng.joint_forecast(2);
                 if (jf.sigma.size() != 2) ++bad;
             }
@@ -1263,12 +1263,27 @@ TEST(replay_end_to_end_with_options_and_overnight) {
     CHECK(r.model_name == "GARCH-t/EVT");
     bool finite = true;
     for (const ForecastRecord& f : r.forecasts)
-        finite = finite && std::isfinite(f.pnl) && f.garch[2].var > 0 && f.book_mc.size() == 3 &&
+        finite = finite && std::isfinite(f.pnl) && f.models[0].measures[2].var > 0 && f.book_mc.size() == 3 &&
                  std::isfinite(f.book_pnl) && f.book_mc[2].var > 0 && f.book_delta[2].var > 0;
     CHECK(finite);
     const BacktestReport bt = evaluate_backtest(r, rc.engine.confidences, 200);
     CHECK(bt.rows.size() == 3 * 4 + 3);  // 2 intraday models + 2 book models, x3 levels; overnight x3
-    CHECK(std::isfinite(bt.berkowitz_garch.p) && std::isfinite(bt.berkowitz_overnight.p));
+    CHECK(std::isfinite(bt.berkowitz[0].test.p) && std::isfinite(bt.berkowitz_overnight.p));
+    CHECK(r.var_models.size() == 2 && r.var_models[0].main && r.var_models[1].name == "EWMA-N (ref)");
+    CHECK(bt.berkowitz.size() == 2 && bt.berkowitz[1].model == "EWMA-N (ref)");
+    // the option revaluation on a worker thread gives the records of the synchronous one, bit for bit
+    ReplayConfig sync = rc;
+    sync.mc_async = false;
+    const ReplayResult rs = run_replay(in, sync);
+    bool same = rs.forecasts.size() == r.forecasts.size();
+    for (size_t i = 0; same && i < r.forecasts.size(); ++i) {
+        const ForecastRecord &a = r.forecasts[i], &b = rs.forecasts[i];
+        same = a.book_mc.size() == b.book_mc.size() && a.book_mc_sigma == b.book_mc_sigma &&
+               a.models[0].measures[2].var == b.models[0].measures[2].var;
+        for (size_t k = 0; same && k < a.book_mc.size(); ++k)
+            same = a.book_mc[k].var == b.book_mc[k].var && a.book_mc[k].es == b.book_mc[k].es;
+    }
+    CHECK(same);
     bool threw = false;
     try {
         ReplayConfig too_long = rc;
@@ -1278,6 +1293,64 @@ TEST(replay_end_to_end_with_options_and_overnight) {
         threw = true;
     }
     CHECK(threw);
+}
+
+TEST(resampled_finer_samples_reach_any_grid) {
+    // 5-second samples of one stock aggregate into 1-minute bars: first open, high, low, last close, volume
+    std::vector<BarRow> fine;
+    for (int k = 1; k <= 24; ++k) {  // 10:00:05 .. 10:02:00
+        BarRow r;
+        r.time.ymd = 20260105;
+        r.time.minute = 600 + (5 * k) / 60;
+        r.time.millis = ((5 * k) % 60) * 1000;
+        r.ticker = "AAA";
+        r.open = r.close = 10.0 + 0.01 * k;
+        r.high = r.close + 0.005;
+        r.low = r.close - 0.005;
+        r.volume = 1.0;
+        fine.push_back(r);
+    }
+    std::reverse(fine.begin(), fine.end());  // the file order does not matter
+    const SessionSpec one_minute{600, 1, 420};
+    const BarPanel p = build_panel(resample_rows(fine, one_minute), {"AAA"});
+    CHECK(p.num_bars() == 2 && p.minute[0] == 601 && p.minute[1] == 602);
+    CHECK_REL(p.open[0], 10.01, 1e-12);   // 10:00:05
+    CHECK_REL(p.close[0], 10.12, 1e-12);  // 10:01:00 closes the first bar
+    CHECK_REL(p.high[0], 10.125, 1e-12);
+    CHECK_REL(p.low[0], 10.005, 1e-12);
+    CHECK(p.volume[0] == 12.0 && p.volume[1] == 12.0);
+    CHECK_REL(p.open[1], 10.13, 1e-12);
+
+    // the synthetic market split into 5-minute sub-bars and resampled to its 15-minute grid is the
+    // same panel, and the replay on it the same replay
+    SyntheticConfig c;
+    c.days = 45;
+    c.degraded_copy = false;
+    const SyntheticMarket m = generate_market(c);
+    std::vector<BarRow> sub;
+    for (const BarRow& r : m.rows) {
+        double prev = r.open;
+        for (int j = 0; j < 3; ++j) {  // 10:00-10:15 -> 10:05, 10:10, 10:15
+            BarRow s = r;
+            const double cl = j == 2 ? r.close : r.open + (r.close - r.open) * (j + 1) / 3.0;
+            s.open = prev;
+            s.close = cl;
+            s.high = j == 0 ? r.high : std::max(prev, cl);
+            s.low = j == 0 ? r.low : std::min(prev, cl);
+            s.volume = r.volume / 3.0;
+            s.time.minute = r.time.minute - 10 + 5 * j;
+            prev = cl;
+            sub.push_back(s);
+        }
+    }
+    const std::vector<std::string> tickers = m.tickers();
+    const BarPanel original = build_panel(m.rows, tickers);
+    const SessionSpec grid = detect_session(original);
+    const BarPanel back = build_panel(resample_rows(sub, grid), tickers);
+    bool same = back.timestamps == original.timestamps && back.close == original.close && back.open == original.open &&
+                back.high == original.high && back.low == original.low;
+    for (size_t k = 0; same && k < back.volume.size(); ++k) same = std::fabs(back.volume[k] - original.volume[k]) < 1e-6;
+    CHECK(same);
 }
 
 
@@ -1813,7 +1886,7 @@ TEST(live_feed_reproduces_the_file_replay) {
     for (size_t i = 0; same && i < batch.forecasts.size(); ++i) {
         const ForecastRecord &a = batch.forecasts[i], &b = live.forecasts[i];
         same = a.forecast_time == b.forecast_time && a.target_time == b.target_time && a.pnl == b.pnl &&
-               a.sigma == b.sigma && a.garch[2].var == b.garch[2].var && a.ewma[2].var == b.ewma[2].var;
+               a.models[0].sigma == b.models[0].sigma && a.models[0].measures[2].var == b.models[0].measures[2].var && a.models[1].measures[2].var == b.models[1].measures[2].var;
     }
     CHECK(same);
     bool same_on = batch.overnight.size() == live.overnight.size();
@@ -1852,7 +1925,7 @@ TEST(live_feed_reproduces_the_file_replay) {
     }, st3);
     bool same_f = batch_f.forecasts.size() == live_f.forecasts.size() && batch_f.jump_events.size() == live_f.jump_events.size();
     for (size_t i = 0; same_f && i < batch_f.forecasts.size(); ++i)
-        same_f = batch_f.forecasts[i].pnl == live_f.forecasts[i].pnl && batch_f.forecasts[i].garch[2].var == live_f.forecasts[i].garch[2].var;
+        same_f = batch_f.forecasts[i].pnl == live_f.forecasts[i].pnl && batch_f.forecasts[i].models[0].measures[2].var == live_f.forecasts[i].models[0].measures[2].var;
     CHECK(same_f);
 
     // A feed line is split as the file reader splits a CSV: a spreadsheet export (BOM, ';', quoted
@@ -1967,7 +2040,7 @@ TEST(jump_filter_bad_tick_genuine_shock_and_market_move) {
     size_t var_differs = 0;
     for (size_t i = 0; same_pnl && i < on.forecasts.size(); ++i) {
         same_pnl = off.forecasts[i].target_time == on.forecasts[i].target_time && off.forecasts[i].pnl == on.forecasts[i].pnl;
-        var_differs += off.forecasts[i].garch[0].var != on.forecasts[i].garch[0].var;
+        var_differs += off.forecasts[i].models[0].measures[0].var != on.forecasts[i].models[0].measures[0].var;
     }
     CHECK(same_pnl);
     CHECK(var_differs > 0);
@@ -1987,7 +2060,7 @@ TEST(jump_filter_bad_tick_genuine_shock_and_market_move) {
     auto damaged = [](const ReplayResult& a, const ReplayResult& b) {
         size_t k = 0;
         for (size_t i = 0; i < a.forecasts.size() && i < b.forecasts.size(); ++i)
-            k += std::fabs(a.forecasts[i].garch[2].var / b.forecasts[i].garch[2].var - 1.0) > 0.05;
+            k += std::fabs(a.forecasts[i].models[0].measures[2].var / b.forecasts[i].models[0].measures[2].var - 1.0) > 0.05;
         return k;
     };
     CHECK(clean_on.forecasts.size() == on.forecasts.size());

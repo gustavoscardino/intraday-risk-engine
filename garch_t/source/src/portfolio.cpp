@@ -135,7 +135,6 @@ IntradayRiskEngine::IntradayRiskEngine(std::vector<std::string> tickers, EngineC
         dcc_a_ = cfg_.dcc_a;
         dcc_b_ = cfg_.dcc_b;
     }
-    S_.assign(n * n, 0.0);
     z_.assign(n, kNaN);
     stale_var_.assign(n, 0.0);
     seen_.assign(n, 0);
@@ -344,30 +343,6 @@ void IntradayRiskEngine::corr_update(std::vector<double>& Q, const double* z) co
     }
 }
 
-// Baseline (RiskMetrics) S <- lambda S + (1 - lambda) r r' over active pairs; missing entries
-// as in corr_update, with S as the covariance.
-void IntradayRiskEngine::baseline_update(const double* r) {
-    const size_t n = static_cast<size_t>(n_);
-    const double lam = cfg_.ewma_lambda, w = 1.0 - lam;
-    if (!complete_row(r)) {
-        std::vector<double> rr(n * n, 0.0);
-        if (!conditional_outer(S_, false, r, rr)) return;
-        for (size_t i = 0; i < n; ++i) {
-            if (!assets_[i].active) continue;
-            for (size_t j = 0; j < n; ++j)
-                if (assets_[j].active) S_[i * n + j] = lam * S_[i * n + j] + w * rr[i * n + j];
-        }
-        return;
-    }
-    for (size_t i = 0; i < n; ++i) {
-        if (!assets_[i].active) continue;
-        const double ri = w * r[i];
-        double* row = &S_[i * n];
-        for (size_t j = 0; j < n; ++j)
-            if (assets_[j].active) row[j] = lam * row[j] + ri * r[j];
-    }
-}
-
 void IntradayRiskEngine::normalize_corr(const std::vector<double>& Q, std::vector<double>& R) const {
     const size_t n = static_cast<size_t>(n_);
     double* inv_sd = inv_sd_.data();  // R_ij = Q_ij / sqrt(Q_ii Q_jj): n sqrt + n^2 multiplies
@@ -422,7 +397,6 @@ void IntradayRiskEngine::on_bar(int slot, const double* returns) {
         normalize_corr(Q_, R_);
         shrink_corr(R_);
     }
-    baseline_update(returns);
 }
 
 void IntradayRiskEngine::observe_outcome(double pnl, const PortfolioRisk& f) {
@@ -873,12 +847,11 @@ RefitReport IntradayRiskEngine::refit(const double* exposures) {
 
     // ---- window correlation of standardized residuals over active assets, on complete
     // continuous-trading bars (=> PSD; inactive assets get an identity block): DCC target.
-    std::vector<double> M(n * n, 0.0), Sr(n * n, 0.0);
-    size_t m = 0;  // complete bars (baseline)
+    std::vector<double> M(n * n, 0.0);
+    size_t m = 0;  // complete bars
     std::vector<size_t> reg_rows;  // complete continuous-trading bars, chronological
     for (size_t c = 0; c < T; ++c) {
         const double* z = &win_z_[c * n];
-        const double* r = &win_r_[c * n];
         if (!complete_row(z)) continue;
         ++m;
         const bool regular = !is_auction_slot(slots[c]);
@@ -888,7 +861,6 @@ RefitReport IntradayRiskEngine::refit(const double* exposures) {
             for (size_t j = 0; j < n; ++j) {
                 if (!assets_[j].active) continue;
                 if (regular) M[i * n + j] += clip(z[i], cfg_.z_clip) * clip(z[j], cfg_.z_clip);
-                Sr[i * n + j] += r[i] * r[j];
             }
         }
     }
@@ -987,26 +959,6 @@ RefitReport IntradayRiskEngine::refit(const double* exposures) {
     }
     rep.dcc_a = dcc_a_;
     rep.dcc_b = dcc_b_;
-
-    // ---- baseline: RiskMetrics EWMA covariance of raw returns
-    if (m > 0) {
-        for (double& v : Sr) v /= static_cast<double>(m);
-    } else {
-        std::fill(Sr.begin(), Sr.end(), 0.0);
-    }
-    for (size_t i = 0; i < n; ++i) {  // variance only for assets without joint estimates
-        if (m > 0 && assets_[i].active) continue;
-        double ss = 0.0;
-        size_t k = 0;
-        for (size_t c = 0; c < T; ++c)
-            if (std::isfinite(win_r_[c * n + i])) {
-                ss += win_r_[c * n + i] * win_r_[c * n + i];
-                ++k;
-            }
-        Sr[i * n + i] = k > 0 ? ss / static_cast<double>(k) : 0.0;
-    }
-    S_ = Sr;
-    for (size_t c = 0; c < T; ++c) baseline_update(&win_r_[c * n]);
 
     ready_ = true;
     try {
@@ -1305,16 +1257,15 @@ void IntradayRiskEngine::compute(int next_slot, const double* x, PortfolioRisk& 
     out.asset_sigma.resize(n);
     out.position_sigma.resize(n);
     out.sigma_contrib.resize(n);
-    out.garch.resize(K);
-    out.ewma.resize(K);
+    out.measures.resize(K);
     out.nu = nu_p_;
     out.tail = tail_.dist();
     if (!ready_) {
-        out.mean = out.sigma = out.ewma_sigma = kNaN;
+        out.mean = out.sigma = kNaN;
         std::fill(out.asset_sigma.begin(), out.asset_sigma.end(), kNaN);
         std::fill(out.position_sigma.begin(), out.position_sigma.end(), kNaN);
         std::fill(out.sigma_contrib.begin(), out.sigma_contrib.end(), kNaN);
-        for (size_t k = 0; k < K; ++k) out.garch[k] = out.ewma[k] = {cfg_.confidences[k], kNaN, kNaN};
+        for (size_t k = 0; k < K; ++k) out.measures[k] = {cfg_.confidences[k], kNaN, kNaN};
         return;
     }
 
@@ -1344,19 +1295,7 @@ void IntradayRiskEngine::compute(int next_slot, const double* x, PortfolioRisk& 
     out.mean = mean;
     out.sigma = sigma;
 
-    double var_e = 0.0;
-    for (size_t i = 0; i < n; ++i) {
-        const double* row = &S_[i * n];
-        double acc = 0.0;
-        for (size_t j = 0; j < n; ++j) acc += row[j] * x[j];
-        var_e += x[i] * acc;
-    }
-    out.ewma_sigma = std::sqrt(std::max(var_e, 0.0));
-
-    for (size_t k = 0; k < K; ++k) {
-        out.garch[k] = risk_measure(mean, sigma, tail_.factors()[k]);
-        out.ewma[k] = risk_measure(0.0, out.ewma_sigma, normal_tail_.factors()[k]);
-    }
+    for (size_t k = 0; k < K; ++k) out.measures[k] = risk_measure(mean, sigma, tail_.factors()[k]);
 }
 
 OvernightRisk IntradayRiskEngine::compute_overnight(const double* x) const {

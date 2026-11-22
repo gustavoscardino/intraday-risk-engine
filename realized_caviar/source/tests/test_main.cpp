@@ -2,8 +2,10 @@
 #include "rcaviar/shared_data.hpp"
 #include "rcaviar/replay.hpp"
 #include <cmath>
+#include <filesystem>
 #include <iostream>
 #include <limits>
+#include <map>
 #include <stdexcept>
 
 namespace {
@@ -125,6 +127,53 @@ int main() {
         const auto unscored=rcaviar::make_bar_windows(missing_target,0);
         require(unscored[0].forecast_time==shared[0].forecast_time && std::isnan(unscored[0].observation.target_return),"missing future target suppressed observed features");
         close(unscored[0].observation.realized_variance,shared[0].observation.realized_variance);
+        // With the prices as printed beside the models' view, the target the forecast is scored on is
+        // the printed one, while the model is fitted on its view (a held print is not a model target).
+        auto held_view=panel; held_view.close[4]=std::nan("");
+        const auto with_printed=rcaviar::make_bar_windows(held_view,0,&panel);
+        require(with_printed[0].forecast_time==shared[0].forecast_time && std::isnan(with_printed[0].observation.target_return)
+                && with_printed[0].scored_return && std::abs(*with_printed[0].scored_return-shared[0].observation.target_return)<1e-15,
+                "scored target as printed, model target from the view");
+        // The jump filter on the shared data: the bad ticks of the degraded synthetic feed are removed
+        // before the features, so the realized variances come back towards those of the clean feed.
+        const auto data_dir=std::filesystem::path(__FILE__).parent_path()/".."/".."/".."/"data"/"synthetic";
+        if (std::filesystem::exists(data_dir/"prices_15m_degraded.csv")) {
+            const auto clean=rcaviar::read_shared_data(data_dir.string(),"XPET3",0,{},false);
+            const auto off=rcaviar::read_shared_data(data_dir.string(),"XPET3",0,(data_dir/"prices_15m_degraded.csv").string(),false);
+            const auto on=rcaviar::read_shared_data(data_dir.string(),"XPET3",0,(data_dir/"prices_15m_degraded.csv").string(),true);
+            auto rv_error=[&](const rcaviar::SharedData& d) {
+                std::map<std::int64_t,double> ref;
+                for (const auto& w:clean.windows) ref[w.forecast_time]=w.observation.realized_variance;
+                double err=0;
+                for (const auto& w:d.windows) {
+                    const auto it=ref.find(w.forecast_time);
+                    if (it!=ref.end()) err+=std::abs(std::log((w.observation.realized_variance+1e-12)/(it->second+1e-12)));
+                }
+                return err;
+            };
+            std::size_t bad_ticks=0;
+            for (const auto& e:on.jump_events) bad_ticks+=e.action=="BAD_TICK";
+            require(bad_ticks>0 && off.jump_events.empty(),"the filter decides the degraded feed's jumps");
+            require(rv_error(on)<0.5*rv_error(off),"the filtered features stay close to the clean feed's");
+            // A genuine move confined to one stock (XVAR3, -9% at 2026-08-21 13:15, held one bar and
+            // confirmed): the recursion receives exactly the updates of the unprotected model, the held
+            // bar's as a catch-up window (no forecast issued at it), so the shock is not damped.
+            const auto shock_on=rcaviar::read_shared_data(data_dir.string(),"XVAR3",0,{},true);
+            const auto shock_off=rcaviar::read_shared_data(data_dir.string(),"XVAR3",0,{},false);
+            std::map<std::int64_t,const rcaviar::Window*> by_time;
+            for (const auto& w:shock_off.windows) by_time[w.forecast_time]=&w;
+            std::size_t catch_ups=0, same=0;
+            bool equal_features=shock_on.windows.size()==shock_off.windows.size();
+            for (const auto& w:shock_on.windows) {
+                catch_ups+=!w.emit;
+                const auto it=by_time.find(w.forecast_time);
+                if (it==by_time.end()) { equal_features=false; continue; }
+                same+=w.observation.aggregate_return==it->second->observation.aggregate_return
+                      && w.observation.realized_variance==it->second->observation.realized_variance;
+            }
+            require(catch_ups>=1 && equal_features && same==shock_on.windows.size(),
+                    "a confirmed held print feeds the recursion the unprotected model's updates");
+        }
         auto partial=scaled; partial[10].target_return=std::nan("");
         const auto partial_fit=rcaviar::fit(partial);
         rcaviar::Filter partial_filter(partial_fit.params,partial_fit.initial_quantile);

@@ -140,7 +140,7 @@ ReplayInput shared_input(const SharedData& data) {
     in.training_sessions=data.training_sessions; in.shared=true;
     in.description="Shared 15m bars; preceding 1h features; no overnight targets. Sessions="+std::to_string(data.sessions)
         +"; initial training sessions="+std::to_string(data.training_sessions)+"; bad rows="+std::to_string(data.bad_rows)
-        +"; duplicates="+std::to_string(data.duplicates);
+        +"; duplicates="+std::to_string(data.duplicates)+"; "+data.protection;
     return in;
 }
 ReplayInput price_input(const std::vector<Price>& prices,bool reset_on_gap) {
@@ -223,6 +223,7 @@ ReplayResult run_replay(const ReplayInput& in,const ReplayConfig& cfg) {
         auto start=Clock::now();
         try {
             auto options=cfg.fit_options; options.tau=tau;
+            if (caviar && !result.calibrations.empty()) options.warm_start=result.calibrations.back().caviar.params;
             record.caviar=fit(training,options);
             caviar.emplace(record.caviar.params,record.caviar.last_quantile);
             record.status[0]=record.caviar.converged?"fitted":"not_converged";
@@ -321,10 +322,14 @@ ReplayResult run_replay(const ReplayInput& in,const ReplayConfig& cfg) {
             calibrate(session,w.forecast_time,end);
         }
         previous_session=session;
+        if (!w.emit) {  // a confirmed held print: its update, taken when the next bar confirms it
+            caviar->update(w.observation.aggregate_return,w.observation.realized_variance);
+            continue;
+        }
         Forecast f;
         f.forecast_time=w.forecast_time; f.target_time=w.target_time;
         f.aggregate_return=w.observation.aggregate_return; f.realized_variance=w.observation.realized_variance;
-        f.target_return=w.observation.target_return;
+        f.target_return=w.scored_return?*w.scored_return:w.observation.target_return;  // scored as printed
         f.quantile[0]=caviar->update(f.aggregate_return,f.realized_variance);
         f.var[0]=position_var(cfg.exposure,f.quantile[0]);
         if (cfg.compare) {
