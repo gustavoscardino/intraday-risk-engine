@@ -1,38 +1,38 @@
 Matched comparison: Realized-CAViaR, EWMA-N, EWMA-t and GARCH-t on every stock
 VaR confidence 0.99 (expected exception rate 1.00%); daily rolling calibration;
 estimation window fixed per dataset: synthetic 40 sessions, b3_real 40 sessions.
-Code: commit cae90e1; machine: Intel64 Family 6 Model 94 Stepping 3, GenuineIntel.
+Code: commit 547ccd5; machine: Intel64 Family 6 Model 94 Stepping 3, GenuineIntel.
 Targets: 15-minute bars from 11:00 to 17:00 (CAViaR needs one hour of the session); every model on the same targets.
 
 synthetic: 15 stocks
   model                 n   exc    rate  Kupiec rej  CC rej  pinball (bp)  lowest loss  ns/update
-  Realized-CAViaR   39570   437   1.10%     0/15      1/15         1.2311      4/15          23.7
-  EWMA-N            39570   655   1.66%    13/15     12/15         1.2357      1/15          36.1
-  EWMA-t            39570   484   1.22%     3/15      1/15         1.2235      2/15          37.3
-  GARCH-t           39570   396   1.00%     0/15      1/15         1.2176      8/15          30.8
+  Realized-CAViaR   39566   446   1.13%     0/15      1/15         1.2316      4/15          22.8
+  EWMA-N            39566   655   1.66%    13/15     12/15         1.2355      1/15          36.8
+  EWMA-t            39566   484   1.22%     4/15      1/15         1.2232      2/15          34.9
+  GARCH-t           39566   396   1.00%     0/15      1/15         1.2172      8/15          30.9
   Diebold-Mariano on the pinball loss (negative difference = model A better):
     A vs B                              pooled diff (bp)      DM        p   p Holm   per stock, significant at 5% (raw p | Holm p): A better / B better / neither
-    Realized-CAViaR vs EWMA-N                    -0.0047   -0.23   0.8157   1.0000   0 / 1 / 14 | 0 / 0 / 15
-    Realized-CAViaR vs EWMA-t                     0.0075    0.45   0.6517   1.0000   0 / 1 / 14 | 0 / 0 / 15
-    Realized-CAViaR vs GARCH-t                    0.0135    0.99   0.3199   1.0000   1 / 2 / 12 | 1 / 0 / 14
-    EWMA-N vs EWMA-t                              0.0122    1.81   0.0699   0.4191   1 / 0 / 14 | 0 / 0 / 15
-    EWMA-N vs GARCH-t                             0.0182    1.51   0.1303   0.6515   1 / 2 / 12 | 1 / 0 / 14
-    EWMA-t vs GARCH-t                             0.0060    0.86   0.3903   1.0000   1 / 2 / 12 | 1 / 1 / 13
+    Realized-CAViaR vs EWMA-N                    -0.0039   -0.20   0.8451   1.0000   0 / 1 / 14 | 0 / 1 / 14
+    Realized-CAViaR vs EWMA-t                     0.0083    0.50   0.6180   1.0000   0 / 1 / 14 | 0 / 1 / 14
+    Realized-CAViaR vs GARCH-t                    0.0144    1.05   0.2945   1.0000   1 / 2 / 12 | 1 / 1 / 13
+    EWMA-N vs EWMA-t                              0.0122    1.82   0.0691   0.4147   1 / 0 / 14 | 0 / 0 / 15
+    EWMA-N vs GARCH-t                             0.0183    1.52   0.1283   0.6417   1 / 2 / 12 | 1 / 0 / 14
+    EWMA-t vs GARCH-t                             0.0060    0.87   0.3855   1.0000   1 / 2 / 12 | 1 / 1 / 13
 
 b3_real: 15 stocks
   model                 n   exc    rate  Kupiec rej  CC rej  pinball (bp)  lowest loss  ns/update
-  Realized-CAViaR   16785   268   1.60%     6/15      5/15         1.1711      5/15          21.7
-  EWMA-N            16785   354   2.11%    13/15     13/15         1.2221      0/15          32.1
-  EWMA-t            16785   266   1.58%     5/15      4/15         1.1889      0/15          34.4
-  GARCH-t           16785   244   1.45%     3/15      1/15         1.1333     10/15          28.9
+  Realized-CAViaR   16776   267   1.59%     6/15      5/15         1.1695      5/15          23.4
+  EWMA-N            16776   352   2.10%    13/15     13/15         1.2141      0/15          35.6
+  EWMA-t            16776   265   1.58%     5/15      4/15         1.1813      0/15          38.0
+  GARCH-t           16776   244   1.45%     3/15      1/15         1.1292     10/15          31.2
   Diebold-Mariano on the pinball loss (negative difference = model A better):
     A vs B                              pooled diff (bp)      DM        p   p Holm   per stock, significant at 5% (raw p | Holm p): A better / B better / neither
-    Realized-CAViaR vs EWMA-N                    -0.0550   -1.70   0.0894   0.2682   1 / 0 / 14 | 0 / 0 / 15
-    Realized-CAViaR vs EWMA-t                    -0.0185   -0.63   0.5296   0.5296   0 / 0 / 15 | 0 / 0 / 15
-    Realized-CAViaR vs GARCH-t                    0.0370    1.45   0.1466   0.2932   0 / 2 / 13 | 0 / 0 / 15
-    EWMA-N vs EWMA-t                              0.0365    2.77   0.0055   0.0221   0 / 3 / 12 | 0 / 0 / 15
-    EWMA-N vs GARCH-t                             0.0919    3.94   0.0001   0.0005   0 / 4 / 11 | 0 / 0 / 15
-    EWMA-t vs GARCH-t                             0.0554    3.49   0.0005   0.0024   0 / 2 / 13 | 0 / 0 / 15
+    Realized-CAViaR vs EWMA-N                    -0.0490   -1.54   0.1247   0.3678   1 / 0 / 14 | 0 / 0 / 15
+    Realized-CAViaR vs EWMA-t                    -0.0128   -0.44   0.6568   0.6568   0 / 0 / 15 | 0 / 0 / 15
+    Realized-CAViaR vs GARCH-t                    0.0393    1.54   0.1226   0.3678   0 / 2 / 13 | 0 / 0 / 15
+    EWMA-N vs EWMA-t                              0.0362    2.74   0.0061   0.0244   0 / 3 / 12 | 0 / 0 / 15
+    EWMA-N vs GARCH-t                             0.0883    3.79   0.0002   0.0009   0 / 3 / 12 | 0 / 0 / 15
+    EWMA-t vs GARCH-t                             0.0520    3.32   0.0009   0.0044   0 / 2 / 13 | 0 / 0 / 15
 
 Notes: the pooled test uses, at each target time, the mean loss difference over the stocks (it accounts
 for the stocks moving together). p-values are asymptotic (normal), Newey-West variance with Bartlett weights.
