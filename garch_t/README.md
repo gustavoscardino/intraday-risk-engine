@@ -82,7 +82,7 @@ garch_t/
     │   └── math.hpp, optimize.hpp, random.hpp   math, optimizer, random numbers
     ├── src/                 implementation of each .hpp above (.cpp with the same name)
     ├── apps/                the programs in bin/ (one .cpp per program)
-    ├── tests/               automated tests (59 tests, 4031 checks)
+    ├── tests/               automated tests (59 tests, 4044 checks)
     └── tools/               fetch_b3_yahoo.py: downloads recent real B3 data
 ```
 
@@ -148,7 +148,7 @@ Open a terminal in the `garch_t` folder (on Windows: right-click the folder → 
 bin\intraday_risk.exe                              synthetic market (default), with the option book
 bin\intraday_risk.exe --data b3_real               real B3 data
 bin\intraday_risk.exe --data synthetic --prices ..\data\synthetic\prices_15m_degraded.csv --z-clip 6
-                                                   faulty feed; --z-clip 6 cuts bad ticks
+                                                   faulty feed; --z-clip 6 also caps the shocks
 bin\intraday_risk.exe --data C:\my\folder          your own data (see below)
 bin\monte_carlo.exe                                study over 60 simulated markets (about 2 min)
 bin\intraday_risk.exe --help                       lists all options
@@ -171,7 +171,7 @@ themselves: `--data synthetic` becomes `data/synthetic`. Results go to
 | `--options FILE` / `--no-options` | option book / ignore options | `options.csv`, if present |
 | `--mc N` | scenarios of the options Monte Carlo | 10000 |
 | `--z-clip Z` | caps shocks at Z standard deviations (protects against bad ticks) | off |
-| `--jump-filter` (`--jump-z Z`) | holds a stock's isolated price jump for one bar: dropped if the next bar undoes it (a bad tick), kept one bar late otherwise; jumps of several stocks together are kept at once (see below) | off (Z = 10) |
+| `--no-jump-filter` (`--jump-z Z`) | feeds the model every print as it is. By default a stock's isolated price jump is held for one bar: dropped if the next bar undoes it (a bad tick), kept one bar late otherwise; jumps of several stocks together are kept at once (see below) | filter on (Z = 10) |
 | `--corr ewma\|dcc\|constant` | correlation model between stocks | `ewma` |
 | `--corr-lambda L` | fixes the λ of the EWMA correlation instead of estimating it | estimated every day |
 | `--dist t\|normal` | distribution of each stock | `t` |
@@ -188,22 +188,30 @@ themselves: `--data synthetic` becomes `data/synthetic`. Results go to
 
 Invalid values are rejected with an error message, never silently replaced by the default.
 
-**Jump filter.** A wrong print (one close far off, the next bar back to normal) enters a GARCH as
-two extreme shocks, the tick and its reversal, and inflates the variance for many bars; `--z-clip`
-only shrinks them. `--jump-filter` holds a stock's isolated jump (beyond 10 times the robust scale
-of its recent returns at that time of day) for one bar: if the next bar undoes it, the print never
-enters the model; if the new level holds, the move enters one bar late. Several stocks jumping
-together are a market move and enter at once. On the fault catalogue (`atam/results/faults/`):
+**Jump filter (on by default).** A wrong print (one close far off, the next bar back to normal)
+enters a GARCH as two extreme shocks, the tick and its reversal, and inflates the variance for many
+bars; `--z-clip` only shrinks them. The filter holds a stock's isolated jump (beyond 10 times the
+robust scale of its recent returns at that time of day) for one bar: if the next bar undoes it, the
+print never enters the model; if the new level holds, the move enters one bar late. Several stocks
+jumping together are a market move and enter at once. A jump held at the last bar of a session
+never enters the intraday model (the overnight gap starts from the last close kept). Every decision
+is written to `jump_events.csv` and counted in the report's `data protection` line.
 
-| Faulty copy of the data | default | `--z-clip 6` | `--jump-filter` |
+The filter changes only what the model sees. The backtest scores every forecast on the P&L of the
+prices as printed, so the filter cannot hide a loss (an automated test checks that the P&L is
+identical with the filter on and off). On the fault catalogue (`atam/results/faults/`):
+
+| Faulty copy of the data | `--no-jump-filter` | `--no-jump-filter --z-clip 6` | filter (default) |
 |---|---|---|---|
 | b3_real, 10 bad ticks: forecasts off by more than 5% | 77.6% | 85.4% | 0.2% |
 | b3_real, all recoverable faults together | 60.0% | 52.6% | 7.3% |
 | synthetic, 10 bad ticks | 24.5% | 0.3% | 0.0% |
 
-The cost: a genuine move confined to one stock reaches the VaR one bar late (on the clean b3_real,
-3% of the forecasts differ by more than 5% from the default run; the exception rate is 0.98%
-against 1.06%). The decision on each bar uses only the bars up to it, so it works the same live.
+The cost: a genuine move confined to one stock reaches the VaR one bar late. On the clean b3_real
+the filter held 18 jumps in 87 sessions (one a bad tick, 16 genuine moves, one at a session's last
+bar); the coverage stays green at every level (99%: 1.15% with the filter, 1.07% without). An
+accepted move enters the model at its full size, as the return since the last good close. The
+decision on each bar uses only the bars up to it, so it works the same live.
 
 **Live feed.** `--live` connects to a feed server and computes the VaR at each bar as it arrives,
 printing one line per bar. `data/tools/feed_server.py` turns any dataset into such a feed (the same
@@ -215,7 +223,8 @@ python ..\data\tools\feed_server.py --data b3_real --from 2026-11-03 --bar-secon
 bin\intraday_risk.exe --data b3_real --live 127.0.0.1:9000       (in a second window)
 ```
 
-Each bar is closed when the feed's clock passes it; a row that arrives after that is late and is
+The feed's lines follow the CSV conventions of the files (separators, quotes, decimal commas,
+columns in any order). Each bar is closed when the feed's clock passes it; a row that arrives after that is late and is
 dropped (counted in the report), a repeated row keeps the first. On a clean feed the live run gives
 exactly the same results as the replay of the file (checked by an automated test, and end to end on
 `b3_real`). Serve a folder written by `data/tools/inject_faults.py` to see the engine on a faulty
@@ -261,7 +270,7 @@ open in Excel).
 
 ```
   model            conf   exc    rate            95% CI expected  Kupiec p     CC p  ES Z2 p    zone ES ratio
-  GARCH-t/EVT     0.990    26   0.84% [ 0.58%,  1.24%]    1.00%    0.3746   0.5402   0.7426   green    1.055
+  GARCH-t/EVT     0.990    27   0.88% [ 0.60%,  1.27%]    1.00%    0.4854   0.3898   0.6907   green    1.045
   EWMA-N (ref)    0.990    50   1.62% [ 1.23%,  2.14%]    1.00%    0.0014   0.0059   0.0005  yellow    1.247
 ```
 
@@ -383,20 +392,22 @@ At the open, EWMA-N reaches 5.2% of exceptions at 99%; GARCH-t stays at 1.2%.
 
 | Model | 95% VaR | 97.5% VaR | 99% VaR | ES test (p) | Traffic light |
 |---|---|---|---|---|---|
-| **GARCH-t** | 4.89% | 2.22% | 1.07% | 0.31 | green at all three levels |
-| EWMA-N (ref) | 4.82% | 3.21% | 1.68% | 0.0005 (rejected) | yellow at 97.5% and 99% |
+| **GARCH-t** | 4.66% | 2.14% | 1.15% | 0.26 | green at all three levels |
+| EWMA-N (ref) | 4.97% | 3.13% | 1.68% | 0.0005 (rejected) | yellow at 99% |
 
-The Berkowitz test of the whole distribution does not reject GARCH-t (p = 0.06); it rejects
-EWMA-N (p = 0.004).
+The Berkowitz test of the whole distribution is at the limit for GARCH-t (p = 0.045; 0.06 with
+`--no-jump-filter`) and rejects EWMA-N clearly (p = 0.001).
 
-**Synthetic market** (`results/synthetic`): GARCH-t 5.17% / 2.37% / 0.84%, Berkowitz p = 0.61.
-With the degraded feed (and `--z-clip 6`): 5.04% / 2.44% / 0.84%, with no run-time failure.
+**Synthetic market** (`results/synthetic`): GARCH-t 5.17% / 2.37% / 0.88%, Berkowitz p = 0.63.
+With the degraded feed (and `--z-clip 6`): 5.20% / 2.44% / 0.84%, with no run-time failure.
+The Monte Carlo study measures the model alone, on markets with no faulty prints, so it runs with
+the jump filter off (the library default).
 
 ---
 
 ## Tests and validation
 
-`build.bat` (or `build.sh`) rebuilds and runs **59 automated tests (4031 checks)** and 7 end-to-end
+`build.bat` (or `build.sh`) rebuilds and runs **59 automated tests (4044 checks)** and 7 end-to-end
 tests. They cover:
 
 - **Math functions:** compared with SciPy and with 40-digit reference values (mpmath).
@@ -408,7 +419,11 @@ tests. They cover:
 - **Robustness:** faulty data, halted stock, new listing, assorted CSV formats and time zones,
   several threads at once, folders with accented names.
 - **Live feed:** the same market fed row by row, with a session cut short, gives exactly the
-  forecasts of the file replay; late and repeated rows are counted and dropped.
+  forecasts of the file replay, with the jump filter off and on; late and repeated rows are counted
+  and dropped.
+- **Jump filter:** a bad tick (also at a session's first bar), a genuine shift, a move at a
+  session's last bar and a market move are each classified as expected; the decisions are causal;
+  the scored P&L is the same with the filter on and off.
 
 It compiles with no warnings on GCC, Clang and Visual Studio, for Windows, Linux and macOS.
 
@@ -447,8 +462,11 @@ project, add `source/` to its CMake (`add_subdirectory`) and link to the `garcht
 ## Known limitations
 
 - **Short real history.** Yahoo keeps only ~60 sessions of 15-minute bars; `fetch_b3_yahoo.py`
-  appends new sessions, and `b3_real` has 87. On these data VaR, ES and the Berkowitz test pass
-  (Berkowitz p = 0.06, close to the limit); a longer B3 history would make the validation firmer.
+  appends new sessions, and `b3_real` has 87. On these data VaR and ES pass at every level; the
+  Berkowitz test of the whole distribution is at the limit (p = 0.045); a longer B3 history would
+  make the validation firmer.
+- **Live feed and trading hours.** The live mode takes the session grid from the history, the file
+  replay from the whole file: if the hours change inside the file (see below), give `--session`.
 - **B3 trading hours.** The close moves between 17:00 and 18:00 with US daylight saving time. For a
   period crossing the change, run each part separately with `--session`.
 - **B3 holidays** are registered for 2025–2027 (function `is_b3_holiday` in

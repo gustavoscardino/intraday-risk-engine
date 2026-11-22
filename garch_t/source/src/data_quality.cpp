@@ -39,7 +39,10 @@ void JumpFilter::apply(BarPanel& p, size_t t) {
     std::vector<char> decided(n_, 0);  // the return enters now, whatever its size
     for (size_t i = 0; i < n_; ++i) {
         Asset& a = assets_[i];
-        if (a.pending && a.last_date != date) a.pending = false;  // a new session: the held print is gone
+        if (a.pending && a.last_date != date) {  // the session ended first: the held print never enters
+            events_.push_back({p.timestamps[t], p.tickers[i], "UNDECIDED", a.held_ret, 0.0});
+            a.pending = false;
+        }
         const double c = p.close[t * n_ + i];
         if (!valid_price(c)) continue;
         const double ref = a.last_date == date ? a.last_close : p.open[t * n_ + i];
@@ -51,6 +54,7 @@ void JumpFilter::apply(BarPanel& p, size_t t) {
             events_.push_back({p.timestamps[t], p.tickers[i], bad ? "BAD_TICK" : "SHOCK_ACCEPTED", a.held_ret, 0.0});
             a.pending = false;
             decided[i] = !bad;
+            if (!bad) accepted_.push_back({t, i, ret[i]});
         }
     }
     const double factor = slot_factor(slot);
@@ -72,6 +76,10 @@ void JumpFilter::apply(BarPanel& p, size_t t) {
         }
         Asset& a = assets_[i];
         events_.push_back({p.timestamps[t], p.tickers[i], "HELD", ret[i], zs[i]});
+        if (a.last_date != date) {  // held at its first bar: the session's reference is this bar's open
+            a.last_close = p.open[t * n_ + i];
+            a.last_date = date;
+        }
         a.pending = true;
         a.held_close = p.close[t * n_ + i];
         a.held_ret = ret[i];
@@ -91,6 +99,13 @@ void JumpFilter::apply(BarPanel& p, size_t t) {
         if (static_cast<int>(a.abs_ret.size()) > cfg_.lookback) a.abs_ret.pop_front();
         a.last_close = p.close[t * n_ + i];
         a.last_date = date;
+    }
+}
+
+void JumpFilter::restore_accepted(std::vector<double>& ret) const {
+    for (const Accepted& a : accepted_) {
+        const size_t k = a.t * n_ + a.asset;
+        if (k < ret.size() && std::isfinite(ret[k])) ret[k] = a.ret;
     }
 }
 

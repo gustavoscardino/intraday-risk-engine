@@ -8,8 +8,9 @@ DIR defaults to the dataset folder next to garch_t (data/b3_real).
 
 Yahoo keeps only the last ~60 sessions of 15-minute bars, so by default the dataset GROWS: the
 sessions already in DIR/prices_15m.csv are kept as they are and only the sessions after its last
-day are appended (assets.csv and portfolio_initial.csv are kept too). Today's session is left out
-while it may still be trading. --replace rebuilds the folder from the download alone.
+day are appended (assets.csv and portfolio_initial.csv are kept too). Today's session is always
+left out (it may be incomplete); run the script again the next day to add it. --replace rebuilds the
+folder from the download alone.
 
 Writes DIR/assets.csv, DIR/prices_15m.csv (bar *close* times, Sao Paulo local time),
 DIR/portfolio_initial.csv (roughly equal notional, one short hedge) and an empty
@@ -134,6 +135,8 @@ def main():
         all_rows.extend(rows)
         first_day = rows[0][0][:10]
         last_price[sym] = next(r[5] for r in rows if r[0][:10] == first_day)
+    if not all_rows and not existing:
+        sys.exit("error: no bars were downloaded (network, or Yahoo returned no data); nothing written")
     all_rows.sort(key=lambda r: (r[0], r[1]))
     formatted = [(ts, sym, f"{o:.4f}", f"{h:.4f}", f"{l:.4f}", f"{c:.4f}", str(v)) for ts, sym, o, h, l, c, v in all_rows]
 

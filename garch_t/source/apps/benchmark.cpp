@@ -69,7 +69,7 @@ int main(int argc, char** argv) {
     // ---- estimation
     std::printf("maximum-likelihood fit (BFGS, analytic gradient, std errors included)\n");
     std::printf("  %8s %10s %10s %8s %8s\n", "n", "t (ms)", "Normal(ms)", "iters", "evals");
-    for (size_t n : {1000u, 1680u, 5000u, 20000u}) {
+    for (size_t n : {1000u, 1120u, 5000u, 20000u}) {
         const std::vector<double> y = simulate(truth, n, 2 + n);
         FitResult ft, fn;
         const double tt = median_seconds(reps, [&] { ft = fit_garch(y, GarchSpec{}); });
@@ -77,14 +77,14 @@ int main(int argc, char** argv) {
         std::printf("  %8zu %10.2f %10.2f %8d %8d\n", n, 1e3 * tt, 1e3 * tn, ft.iterations, ft.evaluations);
     }
     {
-        const std::vector<double> y = simulate(truth, 1680, 77);
+        const std::vector<double> y = simulate(truth, 1120, 77);
         const FitResult first = fit_garch(y, GarchSpec{});
         FitOptions warm;
         warm.warm_start = &first.params;
         warm.n_starts = 1;
         warm.compute_std_errors = false;
         const double tw = median_seconds(reps, [&] { g_sink = fit_garch(y, GarchSpec{}, warm).loglik; });
-        std::printf("  warm-started daily refit, n = 1680, no std errors: %.2f ms\n\n", 1e3 * tw);
+        std::printf("  warm-started daily refit, n = 1120, no std errors: %.2f ms\n\n", 1e3 * tw);
     }
 
     // ---- online filter
@@ -112,16 +112,16 @@ int main(int argc, char** argv) {
     }
 
     // ---- portfolio engine
-    std::printf("portfolio engine (window 60 days x 28 bars = 1680 bars)\n");
+    std::printf("portfolio engine (window 40 days x 28 bars = 1120 bars)\n");
     std::printf("  %6s %14s %14s %16s %12s\n", "assets", "refit 1 thr", "refit all thr", "bar update+VaR", "bars/s");
     for (int n : {15, 50, 200}) {
         EngineConfig cfg;
-        cfg.window_bars = 1680;
+        cfg.window_bars = 1120;  // 40 sessions, the estimation window of every engine
         std::vector<std::string> tk;
         for (int i = 0; i < n; ++i) tk.push_back("A" + std::to_string(i));
         Rng rng(1000 + n);
         std::vector<std::vector<double>> paths(static_cast<size_t>(n));
-        for (int i = 0; i < n; ++i) paths[static_cast<size_t>(i)] = simulate(truth, 1680 + 5000, 5000 + i);
+        for (int i = 0; i < n; ++i) paths[static_cast<size_t>(i)] = simulate(truth, 1120 + 5000, 5000 + i);
         std::vector<double> x(static_cast<size_t>(n));
         for (double& v : x) v = 1e5 * (0.5 + rng.uniform());
         double t1 = 0.0, tall = 0.0;
@@ -129,7 +129,7 @@ int main(int argc, char** argv) {
             cfg.threads = threads;
             IntradayRiskEngine eng(tk, cfg);
             std::vector<double> row(static_cast<size_t>(n));
-            for (size_t t = 0; t < 1680; ++t) {
+            for (size_t t = 0; t < 1120; ++t) {
                 for (int i = 0; i < n; ++i) row[static_cast<size_t>(i)] = paths[static_cast<size_t>(i)][t];
                 eng.on_bar(static_cast<int>(t % 28), row.data());
             }
@@ -141,7 +141,7 @@ int main(int argc, char** argv) {
                 const size_t bars = 5000;
                 std::vector<double> lat;
                 lat.reserve(bars);
-                for (size_t t = 1680; t < 1680 + bars; ++t) {
+                for (size_t t = 1120; t < 1120 + bars; ++t) {
                     for (int i = 0; i < n; ++i) row[static_cast<size_t>(i)] = paths[static_cast<size_t>(i)][t];
                     const auto s0 = clk::now();
                     eng.on_bar(static_cast<int>(t % 28), row.data());

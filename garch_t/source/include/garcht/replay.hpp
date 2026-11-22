@@ -129,8 +129,9 @@ public:
     ReplaySession(const ReplaySession&) = delete;
     ReplaySession& operator=(const ReplaySession&) = delete;
 
-    // Bar t of `panel` has closed. ret / slot / gaps: bar_returns and overnight_returns of the panel
-    // (both causal: their row t depends on rows <= t only). eod: t is the last on-grid bar of its
+    // Bar t of `panel` has closed. ret / slot / gaps: bar_returns and overnight_returns of the panel,
+    // or of its jump-filtered copy (the model's view); the P&L and the marks come from `panel`. Both
+    // are causal: their row t depends on rows <= t only. eod: t is the last on-grid bar of its
     // session, so the daily refit runs before the forecast and the overnight forecast after it.
     void step(const BarPanel& panel, const std::vector<double>& ret, const std::vector<int>& slot,
               const std::vector<double>& gaps, size_t t, bool eod);
@@ -154,7 +155,8 @@ private:
 // Live replay from a market-data feed (data/tools/feed_server.py). The history in `history.bars`
 // is stepped first (calibration); then each line of the feed comes from next_line until it
 // returns false or the feed sends #end:
-//     timestamp,ticker,open,high,low,close,volume   header (columns in any order)
+//     timestamp,ticker,open,high,low,close,volume   header (columns in any order; the CSV
+//                                                    conventions of the file reader)
 //     <row>                                          one bar of one stock
 //     #clock <timestamp>                             every bar closing at or before it is complete
 // A bar is assembled from its rows and stepped when the feed's clock passes it; a row of a bar
@@ -162,6 +164,10 @@ private:
 // the first row, rows not after the history are counted and ignored. The session grid comes from
 // the history (cfg.detect_session) or cfg.session. on_bar(panel, t, issued) runs after each live
 // on-grid bar, with the forecast issued at it (null while the engine is not ready).
+// One line of a feed split into fields the way the file reader splits a CSV (quoted fields, a
+// UTF-8 BOM; ',' ';' or tab). delimiter 0 detects it (pass the header line first); it is then kept.
+std::vector<std::string> split_feed_line(const std::string& line, char& delimiter);
+
 struct LiveStats {
     size_t rows = 0, bars = 0, late = 0, duplicates = 0, unknown = 0, bad = 0, before_history = 0;
 };

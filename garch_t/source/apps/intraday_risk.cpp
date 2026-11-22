@@ -56,7 +56,7 @@ void usage() {
                  "                     [--tail oos|insample] [--tail-model evt|t] [--diurnal per-asset|pooled] [--no-diurnal] [--z-clip Z] [--threads N]\n"
                  "                     [--options FILE] [--no-options] [--mc N] [--no-overnight] [--es-sims N]\n"
                  "                     [--session auto|HH:MM,BAR_MIN,BARS] [--utc-offset MIN] [--daily] [--live HOST:PORT]\n"
-                 "                     [--jump-filter] [--jump-z Z]\n"
+                 "                     [--no-jump-filter] [--jump-z Z]\n"
                  "  --data NAME|DIR   dataset: a name searched as data/NAME next to garch_t (default\n"
                  "                    synthetic; also b3_real) or any folder with assets.csv and prices_15m.csv\n"
                  "  --out DIR         output folder (default garch_t/results/NAME)\n"
@@ -67,8 +67,10 @@ void usage() {
                  "  --utc-offset MIN  local offset applied to timestamps that carry a zone (Z, +hh:mm);\n"
                  "                    timestamps without a zone are taken as local time already\n"
                  "  --es-sims N       simulations for the Acerbi-Szekely p-values (0 = statistics only)\n"
-                 "  --jump-filter     hold a stock's isolated price jump until its next bar: dropped if it reverts\n"
-                 "                    (bad tick), kept one bar late otherwise; --jump-z Z sets the threshold (10)\n"
+                 "  --no-jump-filter  feed the model every print as it is. By default a stock's isolated price\n"
+                 "                    jump is held until its next bar: dropped if it reverts (bad tick), kept\n"
+                 "                    one bar late otherwise; --jump-z Z sets the threshold (10 robust sd).\n"
+                 "                    The backtest always scores the forecasts on the prices as printed\n"
                  "  --live HOST:PORT  take the bars from a live feed (data/tools/feed_server.py) as they close;\n"
                  "                    the dataset's sessions before the first one it sends are the history\n");
 }
@@ -88,7 +90,8 @@ bool parse_args(int argc, char** argv, Options& o) {
         else if (a == "--no-options") o.no_options = true;
         else if (a == "--no-diurnal") e.diurnal = false;
         else if (a == "--no-overnight") o.replay.overnight = false;
-        else if (a == "--jump-filter") o.replay.jump_filter = true;
+        else if (a == "--jump-filter") o.replay.jump_filter = true;  // the default
+        else if (a == "--no-jump-filter") o.replay.jump_filter = false;
         else if (!has_val) {
             std::fprintf(stderr, "error: unknown option or missing value: %s\n", a.c_str());
             return false;
@@ -123,7 +126,6 @@ bool parse_args(int argc, char** argv, Options& o) {
             if (!cli::to_double(a, val(), e.z_clip, 0.0, 1e6)) return false;
         } else if (a == "--jump-z") {
             if (!cli::to_double(a, val(), o.replay.jump.z, 3.0, 1e6)) return false;
-            o.replay.jump_filter = true;
         } else if (a == "--threads") {
             if (!cli::to_int(a, val(), e.threads, 0, 1024)) return false;
         } else if (a == "--mc") {
@@ -256,6 +258,9 @@ void say(const char* fmt, ...) {
 int main(int argc, char** argv) {
     const paths::Utf8Console console;
     Options opt;
+    // A feed has bad ticks (atam/results/faults): the application holds isolated jumps by default.
+    // The library default stays off, so ReplayConfig{} is the bare model (monte_carlo, tests).
+    opt.replay.jump_filter = true;
     if (!parse_args(argc, argv, opt)) {
         usage();
         return opt.help ? 0 : 2;
@@ -312,12 +317,24 @@ int main(int argc, char** argv) {
         if (!opt.live.empty()) {
             feed = std::make_unique<TcpLines>(opt.live);
             std::string line;
-            int first_live_date = 0;
+            int first_live_date = 0, ts_col = -1;
+            char delimiter = 0;
             while (!first_live_date && feed->next(line)) {
                 received.push_back(line);
+                if (line.empty() || line[0] == '#') continue;
+                const std::vector<std::string> f = split_feed_line(line, delimiter);
+                if (f.empty()) continue;
+                if (ts_col < 0) {  // the header: find the timestamp column
+                    for (size_t c = 0; c < f.size(); ++c) {
+                        std::string h = f[c];
+                        for (char& ch : h) ch = static_cast<char>(std::toupper(static_cast<unsigned char>(ch)));
+                        if (h == "TIMESTAMP" || h == "DATETIME") ts_col = static_cast<int>(c);
+                    }
+                    if (ts_col < 0) throw std::runtime_error("live feed: the header has no timestamp column");
+                    continue;
+                }
                 TimePoint tp;
-                if (received.size() > 1 && !line.empty() && line[0] != '#' &&
-                    parse_time(line.substr(0, line.find(',')), tp, opt.utc_offset))
+                if (static_cast<size_t>(ts_col) < f.size() && parse_time(f[static_cast<size_t>(ts_col)], tp, opt.utc_offset))
                     first_live_date = tp.ymd;
             }
             if (!first_live_date) throw std::runtime_error("the feed at " + opt.live + " sent no bar");
@@ -370,8 +387,9 @@ int main(int argc, char** argv) {
                     std::printf("  %s  (calibrating: the window is not full yet)\n", p.timestamps[t].c_str());
                 std::fflush(stdout);
             }, opt.utc_offset);
-            say("live feed: %zu rows, %zu bars; late rows dropped %zu, duplicated %zu, unknown ticker %zu, invalid %zu\n",
-                st.rows, st.bars, st.late, st.duplicates, st.unknown, st.bad);
+            say("live feed: %zu rows, %zu bars; late rows dropped %zu, duplicated %zu, unknown ticker %zu, invalid %zu, "
+                "inside the history %zu\n",
+                st.rows, st.bars, st.late, st.duplicates, st.unknown, st.bad, st.before_history);
         }
         const SessionSpec& ss = res.session;
         say("session: first bar closes %02d:%02d, %d-minute bars, %d bars/day; %zu sessions, window %d days%s\n",
@@ -386,18 +404,20 @@ int main(int argc, char** argv) {
                 prot = b;
             }
             if (opt.replay.jump_filter) {
-                size_t held = 0, bad = 0, accepted = 0, market = 0;
+                size_t held = 0, bad = 0, accepted = 0, market = 0, undecided = 0;
                 for (const JumpEvent& e : res.jump_events) {
                     held += e.action == "HELD";
                     bad += e.action == "BAD_TICK";
                     accepted += e.action == "SHOCK_ACCEPTED";
                     market += e.action == "MARKET_MOVE";
+                    undecided += e.action == "UNDECIDED";
                 }
-                char b[256];
+                char b[320];
                 std::snprintf(b, sizeof b,
-                              "jump filter (z %g): %zu jumps held, %zu bad ticks removed, %zu genuine moves accepted "
-                              "one bar late, %zu market moves kept (jump_events.csv)",
-                              opt.replay.jump.z, held, bad, accepted, market);
+                              "jump filter (z %g): isolated jumps held %zu (bad ticks removed %zu, genuine moves "
+                              "accepted one bar late %zu, held at a session's last bar %zu), market moves kept %zu "
+                              "(jump_events.csv)",
+                              opt.replay.jump.z, held, bad, accepted, undecided, market);
                 prot += (prot.empty() ? "" : "; ") + std::string(b);
             }
             say("data protection: %s\n", prot.empty() ? "none (the feed is taken as it is)" : prot.c_str());

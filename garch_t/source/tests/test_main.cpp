@@ -1839,12 +1839,37 @@ TEST(live_feed_reproduces_the_file_replay) {
         return true;
     }, st2);
     CHECK(st2.late == 1 && st2.duplicates == 1);
+
+    // With the jump filter on, the live mode filters bar by bar as the file replay does.
+    rc.jump_filter = true;
+    const ReplayResult batch_f = run_replay(full, rc);
+    next = 0;
+    LiveStats st3;
+    const ReplayResult live_f = run_live(history, rc, [&](std::string& l) {
+        if (next >= lines.size()) return false;
+        l = lines[next++];
+        return true;
+    }, st3);
+    bool same_f = batch_f.forecasts.size() == live_f.forecasts.size() && batch_f.jump_events.size() == live_f.jump_events.size();
+    for (size_t i = 0; same_f && i < batch_f.forecasts.size(); ++i)
+        same_f = batch_f.forecasts[i].pnl == live_f.forecasts[i].pnl && batch_f.forecasts[i].garch[2].var == live_f.forecasts[i].garch[2].var;
+    CHECK(same_f);
+
+    // A feed line is split as the file reader splits a CSV: a spreadsheet export (BOM, ';', quoted
+    // fields, decimal commas) is read the same way live.
+    char delim = 0;
+    const std::vector<std::string> head = split_feed_line("\xEF\xBB\xBFticker;timestamp;close", delim);
+    CHECK(delim == ';' && head.size() == 3 && head[0] == "ticker" && head[1] == "timestamp");
+    const std::vector<std::string> row = split_feed_line("\"AAA\";2026-01-02 10:15:00;\"38,50\"", delim);
+    double px = 0.0;
+    CHECK(row.size() == 3 && row[0] == "AAA" && parse_number(row[2], px) && px == 38.5);
 }
 
 TEST(jump_filter_bad_tick_genuine_shock_and_market_move) {
     // 5 stocks, 12 sessions of 28 bars of small moves; in session 10: a bad tick on stock 0 (slot 8,
-    // +8%, back at the next bar), a genuine -8% level shift on stock 1 (slot 14) and a -5% move of
-    // every stock together (slot 20).
+    // +8%, back at the next bar), a genuine -8% level shift on stock 1 (slot 14), a -5% move of
+    // every stock together (slot 20) and a genuine +8% move of stock 3 at the session's last bar;
+    // in session 11, a bad tick on stock 2 at the session's first bar.
     const size_t n = 5;
     std::vector<BarRow> rows;
     std::vector<double> px(n, 50.0);
@@ -1860,6 +1885,7 @@ TEST(jump_filter_bad_tick_genuine_shock_and_market_move) {
                 double close = px[i] * std::exp(noise());
                 if (d == 10 && k == 14 && i == 1) close *= 0.92;
                 if (d == 10 && k == 20) close *= 0.95;
+                if (d == 10 && k == 27 && i == 3) close *= 1.08;
                 BarRow r;
                 r.time = {20261005 + d, 615 + 15 * k, 0};
                 r.ticker = names[i];
@@ -1870,6 +1896,7 @@ TEST(jump_filter_bad_tick_genuine_shock_and_market_move) {
                 r.volume = 1000;
                 px[i] = close;
                 if (d == 10 && k == 8 && i == 0) r.close *= 1.08;  // the print is wrong, the price is not
+                if (d == 11 && k == 0 && i == 2) r.close *= 1.08;
                 rows.push_back(r);
             }
     const std::vector<std::string> tickers(names, names + n);
@@ -1884,31 +1911,67 @@ TEST(jump_filter_bad_tick_genuine_shock_and_market_move) {
     CHECK(std::isnan(p.close[(bar + 14) * n + 1]));                     // genuine shift held one bar,
     CHECK(p.close[(bar + 15) * n + 1] == raw.close[(bar + 15) * n + 1]);  // then enters
     for (size_t i = 0; i < n; ++i) CHECK(p.close[(bar + 20) * n + i] == raw.close[(bar + 20) * n + i]);  // market move kept
-    int held = 0, bad = 0, accepted = 0, market = 0;
+    CHECK(std::isnan(p.close[(bar + 27) * n + 3]));                     // held at the last bar: undecided
+    CHECK(std::isnan(p.close[(bar + 28) * n + 2]));                     // bad tick at a first bar held ...
+    CHECK(p.close[(bar + 29) * n + 2] == raw.close[(bar + 29) * n + 2]);  // ... and decided at the next
+    int held = 0, bad = 0, accepted = 0, market = 0, undecided = 0;
     for (const JumpEvent& e : filter.events()) {
         held += e.action == "HELD";
-        bad += e.action == "BAD_TICK" && e.ticker == "AAA";
+        bad += e.action == "BAD_TICK" && (e.ticker == "AAA" || e.ticker == "CCC");
         accepted += e.action == "SHOCK_ACCEPTED" && e.ticker == "BBB";
         market += e.action == "MARKET_MOVE";
+        undecided += e.action == "UNDECIDED" && e.ticker == "DDD";
     }
-    CHECK(held == 2 && bad == 1 && accepted == 1 && market == 5);
-    // causal: deciding bar t without the later bars gives the same row t
+    CHECK(held == 4 && bad == 2 && accepted == 1 && market == 5 && undecided == 1);
+    CHECK(filter.events().size() == 13);
+    // causal: a different future (every later price moved) leaves every decision up to the cut as it was
     size_t same = 0, total = 0;
     for (size_t cut : {bar + 8, bar + 14, bar + 20}) {
-        BarPanel head = raw;
-        head.timestamps.resize(cut + 1);
-        head.time_key.resize(cut + 1);
-        head.date.resize(cut + 1);
-        head.minute.resize(cut + 1);
-        for (auto* m : {&head.open, &head.high, &head.low, &head.close, &head.volume}) m->resize((cut + 1) * n);
+        BarPanel other = raw;
+        for (size_t k = (cut + 1) * n; k < other.close.size(); ++k) {
+            other.close[k] *= 1.3;
+            other.open[k] *= 0.8;
+        }
         JumpFilter f2(n, session);
-        for (size_t t = 0; t <= cut; ++t) f2.apply(head, t);
-        for (size_t i = 0; i < n; ++i, ++total) {
-            const double a = head.close[cut * n + i], b = p.close[cut * n + i];
+        for (size_t t = 0; t < other.num_bars(); ++t) f2.apply(other, t);
+        for (size_t k = 0; k < (cut + 1) * n; ++k, ++total) {
+            const double a = other.close[k], b = p.close[k];
             same += (std::isnan(a) && std::isnan(b)) || a == b;
         }
     }
     CHECK(same == total);
+    // an accepted jump enters the model at full size: the whole move since the last good close
+    std::vector<double> ret;
+    std::vector<int> slots;
+    bar_returns(p, session, ret, slots);
+    const double spread = ret[(bar + 15) * n + 1];  // across the held close: scaled by 1/sqrt(2)
+    filter.restore_accepted(ret);
+    const double full = std::log(raw.close[(bar + 15) * n + 1] / raw.close[(bar + 13) * n + 1]);
+    CHECK(std::fabs(ret[(bar + 15) * n + 1] - full) < 1e-15);
+    CHECK(std::fabs(spread * std::sqrt(2.0) - full) < 1e-12);
+
+    // The filter shapes the model's view only: with it on and off, the replay scores the same
+    // forecasts on the same P&L (the prices as printed), while the bad tick moves the VaR off.
+    ReplayInput in;
+    in.tickers = tickers;
+    in.bars = raw;
+    in.initial_quantity.assign(n, 100.0);
+    ReplayConfig rc;
+    rc.window_days = 5;
+    rc.overnight = false;
+    const ReplayResult off = run_replay(in, rc);
+    rc.jump_filter = true;
+    const ReplayResult on = run_replay(in, rc);
+    CHECK(off.forecasts.size() == on.forecasts.size() && !on.forecasts.empty());
+    bool same_pnl = off.forecasts.size() == on.forecasts.size();
+    size_t var_differs = 0;
+    for (size_t i = 0; same_pnl && i < on.forecasts.size(); ++i) {
+        same_pnl = off.forecasts[i].target_time == on.forecasts[i].target_time && off.forecasts[i].pnl == on.forecasts[i].pnl;
+        var_differs += off.forecasts[i].garch[0].var != on.forecasts[i].garch[0].var;
+    }
+    CHECK(same_pnl);
+    CHECK(var_differs > 0);
+    CHECK(on.jump_events.size() == filter.events().size());
 }
 
 // ------------------------------------------------------------------ runner

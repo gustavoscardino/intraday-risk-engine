@@ -12,6 +12,7 @@
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #else
+#include <cerrno>
 #include <netdb.h>
 #include <sys/socket.h>
 #include <sys/types.h>
@@ -70,8 +71,13 @@ public:
             }
             char chunk[1 << 14];
             const auto got = recv(sock_, chunk, static_cast<int>(sizeof chunk), 0);
+#if !defined(_WIN32)
+            if (got < 0 && errno == EINTR) continue;  // interrupted by a signal: not the end of the feed
+#endif
             if (got <= 0) {
-                if (pos_ < buf_.size()) {  // a last line without its end-of-line
+                // a last line without its end-of-line is kept only after an orderly close; after a
+                // reset or an error it may be cut in the middle of a number, so it is dropped
+                if (got == 0 && pos_ < buf_.size()) {
                     line.assign(buf_, pos_, std::string::npos);
                     pos_ = buf_.size();
                     return true;

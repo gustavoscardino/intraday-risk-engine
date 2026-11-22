@@ -96,6 +96,7 @@ struct ReplaySession::State {
     int cur_date = -1, cur_slot = -1;  // last on-grid bar fed to the engine
     bool eod_done = true;              // end-of-session work of the current session done
     size_t last_t = 0;                 // last on-grid bar stepped
+    bool last_timed = false;           // its update time is in latency_us (no refit at that bar)
     double last_net = 0.0;
     std::chrono::steady_clock::time_point t_wall = std::chrono::steady_clock::now();
 
@@ -316,7 +317,8 @@ struct ReplaySession::State {
         const double us =
             std::chrono::duration<double, std::micro>(std::chrono::steady_clock::now() - t0).count() - rebalance_us;
         res.engine_seconds += (us + rebalance_us) * 1e-6;
-        if (!refitted && engine->ready()) res.latency_us.push_back(us);
+        last_timed = !refitted && engine->ready();
+        if (last_timed) res.latency_us.push_back(us);
 
         have_fc = engine->ready();
         if (have_fc) {
@@ -414,7 +416,14 @@ void ReplaySession::step(const BarPanel& panel, const std::vector<double>& ret, 
 void ReplaySession::end_session(const BarPanel& panel) {
     State& s = *s_;
     if (s.cur_date < 0 || s.eod_done) return;
-    s.refit(panel, s.last_t);
+    // as if eod had been known at the bar: a refit bar is not a latency sample, and the state
+    // after it is the post-refit risk (the forecast issued there targets a bar that never prints)
+    const bool refitted = s.refit(panel, s.last_t);
+    if (refitted) {
+        if (s.last_timed) s.res.latency_us.pop_back();
+        s.last_timed = false;
+        s.engine->compute((s.cur_slot + 1) % s.K, s.expo.data(), s.risk);
+    }
     if (s.engine->ready()) s.overnight_forecast(panel, s.last_t, s.last_net);
     s.eod_done = true;
 }
@@ -464,20 +473,21 @@ ReplayResult run_replay(const ReplayInput& in, const ReplayConfig& cfg_in) {
 
     const SessionSpec session = cfg_in.detect_session ? detect_session(in.bars) : cfg_in.session;
     // The jump filter decides each bar on the bars up to it, so running it over the whole panel
-    // first is the same as running it bar by bar.
+    // first is the same as running it bar by bar. It shapes the model's returns only: the replay
+    // steps the prices as printed, so the P&L the forecasts are scored on is the market's.
+    const BarPanel& panel = in.bars;
     BarPanel filtered;
-    std::vector<JumpEvent> jump_events;
+    JumpFilter filter(n, session, cfg_in.jump);
     if (cfg_in.jump_filter) {
         filtered = in.bars;
-        JumpFilter filter(n, session, cfg_in.jump);
         for (size_t t = 0; t < T; ++t) filter.apply(filtered, t);
-        jump_events = filter.events();
     }
-    const BarPanel& panel = cfg_in.jump_filter ? filtered : in.bars;
+    const BarPanel& model_view = cfg_in.jump_filter ? filtered : in.bars;
     std::vector<double> ret, gaps;
     std::vector<int> slot;
-    bar_returns(panel, session, ret, slot);
-    overnight_returns(panel, slot, gaps);
+    bar_returns(model_view, session, ret, slot);
+    if (cfg_in.jump_filter) filter.restore_accepted(ret);
+    overnight_returns(model_view, slot, gaps);
     size_t sessions = 0;
     {
         int last_date = -1;
@@ -496,23 +506,20 @@ ReplayResult run_replay(const ReplayInput& in, const ReplayConfig& cfg_in) {
     ReplaySession replay(in, cfg_in, session);
     for (size_t t = 0; t < T; ++t) replay.step(panel, ret, slot, gaps, t, eod[t] != 0);
     ReplayResult res = replay.finish();
-    res.jump_events = std::move(jump_events);
+    if (cfg_in.jump_filter) res.jump_events = filter.events();
     res.wall_seconds = std::chrono::duration<double>(std::chrono::steady_clock::now() - t_wall).count();
     return res;
 }
 
 // ================================================================== live feed
 
-namespace {
-
-std::vector<std::string> split_fields(const std::string& line) {
-    std::vector<std::string> out(1);
-    for (char c : line) {
-        if (c == ',') out.emplace_back();
-        else if (c != '\r' && c != '"') out.back() += c;
-    }
-    return out;
+std::vector<std::string> split_feed_line(const std::string& line, char& delimiter) {
+    const CsvTable t = parse_csv(line, delimiter);
+    delimiter = t.delimiter;
+    return t.header;  // the line's only record (empty for a blank line)
 }
+
+namespace {
 
 std::string upper_trim(std::string s) {
     while (!s.empty() && std::isspace(static_cast<unsigned char>(s.back()))) s.pop_back();
@@ -531,18 +538,22 @@ ReplayResult run_live(const ReplayInput& history, const ReplayConfig& cfg,
                       int utc_offset) {
     const size_t n = history.tickers.size();
     if (n == 0 || history.bars.num_assets() != n) throw std::runtime_error("live: tickers / history mismatch");
-    BarPanel panel = history.bars;  // grows by one row per bar
+    BarPanel panel = history.bars;  // prices as printed; grows by one row per bar
     const SessionSpec session = cfg.detect_session ? detect_session(panel) : cfg.session;
     ReplaySession replay(history, cfg, session);
     std::unique_ptr<JumpFilter> jumps;
+    BarPanel filtered;  // the model's view when the jump filter is on (as in run_replay)
     if (cfg.jump_filter) {
         jumps = std::make_unique<JumpFilter>(n, session, cfg.jump);
-        for (size_t t = 0; t < panel.num_bars(); ++t) jumps->apply(panel, t);
+        filtered = panel;
+        for (size_t t = 0; t < filtered.num_bars(); ++t) jumps->apply(filtered, t);
     }
+    const BarPanel& model_view = jumps ? filtered : panel;
     std::vector<double> ret, gaps;
     std::vector<int> slot;
-    bar_returns(panel, session, ret, slot);
-    overnight_returns(panel, slot, gaps);
+    bar_returns(model_view, session, ret, slot);
+    if (jumps) jumps->restore_accepted(ret);
+    overnight_returns(model_view, slot, gaps);
     int grid_date = -1;  // date of the last on-grid bar stepped
     {   // the history, as run_replay would (its last bar ends its session)
         const std::vector<char> eod = end_of_session_flags(panel, slot);
@@ -564,6 +575,7 @@ ReplayResult run_live(const ReplayInput& history, const ReplayConfig& cfg,
     const long long history_end = stepped;
     int c_ts = -1, c_tk = -1, c_o = -1, c_h = -1, c_l = -1, c_c = -1, c_v = -1;
     bool have_header = false;
+    char delimiter = 0;  // detected on the header line, as the file reader does
 
     // Appends the pending bars closing at or before `until` to the panel and steps them.
     auto close_bars = [&](long long until) {
@@ -571,22 +583,26 @@ ReplayResult run_live(const ReplayInput& history, const ReplayConfig& cfg,
             const long long key = pending.begin()->first;
             PendingBar b = std::move(pending.begin()->second);
             pending.erase(pending.begin());
-            panel.timestamps.push_back(b.time.str());
-            panel.time_key.push_back(key);
-            panel.date.push_back(b.time.ymd);
-            panel.minute.push_back(b.time.minute);
-            for (size_t i = 0; i < n; ++i) {
-                panel.open.push_back(b.open[i]);
-                panel.high.push_back(b.high[i]);
-                panel.low.push_back(b.low[i]);
-                panel.close.push_back(b.close[i]);
-                panel.volume.push_back(b.volume[i]);
+            for (BarPanel* p : {&panel, &filtered}) {
+                if (p == &filtered && !jumps) continue;
+                p->timestamps.push_back(b.time.str());
+                p->time_key.push_back(key);
+                p->date.push_back(b.time.ymd);
+                p->minute.push_back(b.time.minute);
+                for (size_t i = 0; i < n; ++i) {
+                    p->open.push_back(b.open[i]);
+                    p->high.push_back(b.high[i]);
+                    p->low.push_back(b.low[i]);
+                    p->close.push_back(b.close[i]);
+                    p->volume.push_back(b.volume[i]);
+                }
             }
             stepped = key;
             ++st.bars;
-            if (jumps) jumps->apply(panel, panel.num_bars() - 1);
-            bar_returns(panel, session, ret, slot);  // causal: earlier rows do not change
-            overnight_returns(panel, slot, gaps);
+            if (jumps) jumps->apply(filtered, filtered.num_bars() - 1);
+            bar_returns(model_view, session, ret, slot);  // causal: earlier rows do not change
+            if (jumps) jumps->restore_accepted(ret);
+            overnight_returns(model_view, slot, gaps);
             const size_t t = panel.num_bars() - 1;
             if (slot[t] < 0) {
                 replay.step(panel, ret, slot, gaps, t, false);  // off-grid: counted and ignored
@@ -615,7 +631,8 @@ ReplayResult run_live(const ReplayInput& history, const ReplayConfig& cfg,
             }
             continue;
         }
-        const std::vector<std::string> f = split_fields(line);
+        const std::vector<std::string> f = split_feed_line(line, delimiter);
+        if (f.empty()) continue;
         if (!have_header) {
             for (size_t k = 0; k < f.size(); ++k) {
                 const std::string h = upper_trim(f[k]);

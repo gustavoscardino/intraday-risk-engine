@@ -10,10 +10,14 @@
 //   * at its next bar in the session, if the close undid more than revert_share of the jump, the
 //     held print was a BAD_TICK and never enters the model; otherwise the new level is genuine
 //     (SHOCK_ACCEPTED) and enters now, one bar late, as the return since the last good close;
-//   * when many stocks jump together it is a MARKET_MOVE and every return is kept at once.
+//   * when many stocks jump together it is a MARKET_MOVE and every return is kept at once;
+//   * a jump held at the last bar of a session is UNDECIDED: it never enters the intraday model,
+//     and the next overnight gap starts from the last close kept.
 //
 // The decision on bar t uses bars <= t only, so the filter runs the same way on a file and on a
-// live feed. Its cost is the delay of a genuine move confined to one stock (measured in atam/).
+// live feed. It changes what the model sees, never the backtest: the realized P&L is always
+// computed from the prices as printed. Its cost is the delay of a genuine move confined to one
+// stock (measured in atam/).
 #pragma once
 
 #include <cstddef>
@@ -41,7 +45,7 @@ struct JumpFilterConfig {
 
 struct JumpEvent {
     std::string time, ticker;
-    std::string action;  // HELD, BAD_TICK, SHOCK_ACCEPTED, MARKET_MOVE
+    std::string action;  // HELD, BAD_TICK, SHOCK_ACCEPTED, MARKET_MOVE, UNDECIDED
     double ret = 0.0;    // log-return of the jump (since the last good close)
     double z = 0.0;      // |ret| / robust scale
 };
@@ -53,6 +57,10 @@ public:
     // at bar t to NaN in `panel`. Reads rows <= t only; changes row t only.
     void apply(BarPanel& panel, size_t t);
     const std::vector<JumpEvent>& events() const { return events_; }
+    // bar_returns spreads a return across a missing close over the slots it spans (scaled by
+    // 1/sqrt(span)); an accepted jump happened in one bar, so this puts the whole move since the
+    // last good close back into `ret` (bar_returns of the filtered panel) at full size.
+    void restore_accepted(std::vector<double>& ret) const;
 
 private:
     struct Asset {
@@ -71,6 +79,11 @@ private:
     std::vector<Asset> assets_;
     std::vector<std::deque<double>> slot_norm_;  // per slot: |return| / median |return| of its stock
     std::vector<JumpEvent> events_;
+    struct Accepted {
+        size_t t, asset;
+        double ret;  // log-return since the last good close
+    };
+    std::vector<Accepted> accepted_;
 };
 
 }  // namespace garcht
