@@ -21,6 +21,7 @@
 #include <vector>
 
 #include "garcht/backtest.hpp"
+#include "garcht/data_quality.hpp"
 #include "garcht/market_data.hpp"
 #include "garcht/portfolio.hpp"
 #include "garcht/synthetic.hpp"
@@ -36,6 +37,8 @@ struct ReplayConfig {
     int mc_scenarios = 10000;     // option book: Monte Carlo scenarios per bar
     std::uint64_t mc_seed = 7;
     bool record_params = true;    // keep per-asset parameters of every refit
+    bool jump_filter = false;     // hold isolated price jumps until the next bar (data_quality.hpp)
+    JumpFilterConfig jump;
 };
 
 struct ReplayInput {
@@ -101,6 +104,7 @@ struct ReplayResult {
     size_t bars = 0, sessions = 0, off_grid = 0, fills_applied = 0, fills_unknown = 0;
     size_t unscored = 0;            // forecasts whose target bar never printed (halts, gaps)
     size_t unscored_overnight = 0;  // overnight forecasts followed by a late opening
+    std::vector<JumpEvent> jump_events;  // decisions of the jump filter (if on)
     double engine_seconds = 0.0, wall_seconds = 0.0;
     // state after the last bar
     std::string last_time;

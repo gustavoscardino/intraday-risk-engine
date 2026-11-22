@@ -105,6 +105,8 @@ VARIANTS: dict[str, Variant] = {
                        "no data-quality layer; duplicates dropped by the loader (default)"),
     "garch_t_zclip6": Variant("garch_t_zclip6", "garch_t", "GARCH-t (clip 6 sd)", ("--z-clip", "6"), False,
                               "stateless clipping of standardized shocks at 6 sd"),
+    "garch_t_jump": Variant("garch_t_jump", "garch_t", "GARCH-t (jump filter)", ("--jump-filter",), False,
+                            "isolated price jumps held one bar: dropped if they revert, kept otherwise"),
     "realized_caviar": Variant("realized_caviar", "realized_caviar", "Realized-CAViaR", (), True,
                                "no data-quality layer; one instrument, three matched models (default)"),
 }

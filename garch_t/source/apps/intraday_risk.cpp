@@ -52,6 +52,7 @@ void usage() {
                  "                     [--tail oos|insample] [--tail-model evt|t] [--diurnal per-asset|pooled] [--no-diurnal] [--z-clip Z] [--threads N]\n"
                  "                     [--options FILE] [--no-options] [--mc N] [--no-overnight] [--es-sims N]\n"
                  "                     [--session auto|HH:MM,BAR_MIN,BARS] [--utc-offset MIN] [--daily] [--live HOST:PORT]\n"
+                 "                     [--jump-filter] [--jump-z Z]\n"
                  "  --data NAME|DIR   dataset: a name searched as data/NAME next to garch_t (default\n"
                  "                    synthetic; also b3_real) or any folder with assets.csv and prices_15m.csv\n"
                  "  --out DIR         output folder (default garch_t/results/NAME)\n"
@@ -62,6 +63,8 @@ void usage() {
                  "  --utc-offset MIN  local offset applied to timestamps that carry a zone (Z, +hh:mm);\n"
                  "                    timestamps without a zone are taken as local time already\n"
                  "  --es-sims N       simulations for the Acerbi-Szekely p-values (0 = statistics only)\n"
+                 "  --jump-filter     hold a stock's isolated price jump until its next bar: dropped if it reverts\n"
+                 "                    (bad tick), kept one bar late otherwise; --jump-z Z sets the threshold (10)\n"
                  "  --live HOST:PORT  take the bars from a live feed (data/tools/feed_server.py) as they close;\n"
                  "                    the dataset's sessions before the first one it sends are the history\n");
 }
@@ -81,6 +84,7 @@ bool parse_args(int argc, char** argv, Options& o) {
         else if (a == "--no-options") o.no_options = true;
         else if (a == "--no-diurnal") e.diurnal = false;
         else if (a == "--no-overnight") o.replay.overnight = false;
+        else if (a == "--jump-filter") o.replay.jump_filter = true;
         else if (!has_val) {
             std::fprintf(stderr, "error: unknown option or missing value: %s\n", a.c_str());
             return false;
@@ -113,6 +117,9 @@ bool parse_args(int argc, char** argv, Options& o) {
             e.tail = k == 0 ? TailCalibration::OutOfSample : TailCalibration::InSample;
         } else if (a == "--z-clip") {
             if (!cli::to_double(a, val(), e.z_clip, 0.0, 1e6)) return false;
+        } else if (a == "--jump-z") {
+            if (!cli::to_double(a, val(), o.replay.jump.z, 3.0, 1e6)) return false;
+            o.replay.jump_filter = true;
         } else if (a == "--threads") {
             if (!cli::to_int(a, val(), e.threads, 0, 1024)) return false;
         } else if (a == "--mc") {
@@ -362,6 +369,30 @@ int main(int argc, char** argv) {
                     (ss.open_minute + ss.bar_minutes) / 60, (ss.open_minute + ss.bar_minutes) % 60, ss.bar_minutes,
                     ss.bars_per_day, res.sessions, opt.replay.window_days,
                     opt.window_given ? "" : " (automatic: half of the sessions, at most 60)");
+        {   // protection against a faulty feed, so a report says how its numbers were produced
+            std::string prot;
+            if (opt.replay.engine.z_clip > 0.0) {
+                char b[64];
+                std::snprintf(b, sizeof b, "shocks clipped at %g sd", opt.replay.engine.z_clip);
+                prot = b;
+            }
+            if (opt.replay.jump_filter) {
+                size_t held = 0, bad = 0, accepted = 0, market = 0;
+                for (const JumpEvent& e : res.jump_events) {
+                    held += e.action == "HELD";
+                    bad += e.action == "BAD_TICK";
+                    accepted += e.action == "SHOCK_ACCEPTED";
+                    market += e.action == "MARKET_MOVE";
+                }
+                char b[256];
+                std::snprintf(b, sizeof b,
+                              "jump filter (z %g): %zu jumps held, %zu bad ticks removed, %zu genuine moves accepted "
+                              "one bar late, %zu market moves kept (jump_events.csv)",
+                              opt.replay.jump.z, held, bad, accepted, market);
+                prot += (prot.empty() ? "" : "; ") + std::string(b);
+            }
+            say("data protection: %s\n", prot.empty() ? "none (the feed is taken as it is)" : prot.c_str());
+        }
         if (res.forecasts.empty())
             say("warning: no out-of-sample forecasts: the dataset has too few sessions for the window\n");
         const BacktestReport bt = evaluate_backtest(res, confs, opt.es_sims);
@@ -399,6 +430,14 @@ int main(int argc, char** argv) {
             std::fprintf(f, "\n");
         }
         std::fclose(f);
+
+        if (opt.replay.jump_filter) {
+            f = open_out(opt.out + "/jump_events.csv");
+            std::fprintf(f, "time,ticker,action,return,z\n");
+            for (const JumpEvent& e : res.jump_events)
+                std::fprintf(f, "%s,%s,%s,%.6f,%.2f\n", e.time.c_str(), e.ticker.c_str(), e.action.c_str(), e.ret, e.z);
+            std::fclose(f);
+        }
 
         if (!res.overnight.empty()) {
             f = open_out(opt.out + "/risk_overnight.csv");

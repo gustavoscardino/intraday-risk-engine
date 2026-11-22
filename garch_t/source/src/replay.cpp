@@ -454,11 +454,21 @@ std::vector<char> end_of_session_flags(const BarPanel& panel, const std::vector<
 
 ReplayResult run_replay(const ReplayInput& in, const ReplayConfig& cfg_in) {
     const auto t_wall = std::chrono::steady_clock::now();
-    const BarPanel& panel = in.bars;
-    const size_t n = in.tickers.size(), T = panel.num_bars();
-    if (n == 0 || panel.num_assets() != n) throw std::runtime_error("replay: tickers / bars mismatch");
+    const size_t n = in.tickers.size(), T = in.bars.num_bars();
+    if (n == 0 || in.bars.num_assets() != n) throw std::runtime_error("replay: tickers / bars mismatch");
 
-    const SessionSpec session = cfg_in.detect_session ? detect_session(panel) : cfg_in.session;
+    const SessionSpec session = cfg_in.detect_session ? detect_session(in.bars) : cfg_in.session;
+    // The jump filter decides each bar on the bars up to it, so running it over the whole panel
+    // first is the same as running it bar by bar.
+    BarPanel filtered;
+    std::vector<JumpEvent> jump_events;
+    if (cfg_in.jump_filter) {
+        filtered = in.bars;
+        JumpFilter filter(n, session, cfg_in.jump);
+        for (size_t t = 0; t < T; ++t) filter.apply(filtered, t);
+        jump_events = filter.events();
+    }
+    const BarPanel& panel = cfg_in.jump_filter ? filtered : in.bars;
     std::vector<double> ret, gaps;
     std::vector<int> slot;
     bar_returns(panel, session, ret, slot);
@@ -481,6 +491,7 @@ ReplayResult run_replay(const ReplayInput& in, const ReplayConfig& cfg_in) {
     ReplaySession replay(in, cfg_in, session);
     for (size_t t = 0; t < T; ++t) replay.step(panel, ret, slot, gaps, t, eod[t] != 0);
     ReplayResult res = replay.finish();
+    res.jump_events = std::move(jump_events);
     res.wall_seconds = std::chrono::duration<double>(std::chrono::steady_clock::now() - t_wall).count();
     return res;
 }
@@ -518,6 +529,11 @@ ReplayResult run_live(const ReplayInput& history, const ReplayConfig& cfg,
     BarPanel panel = history.bars;  // grows by one row per bar
     const SessionSpec session = cfg.detect_session ? detect_session(panel) : cfg.session;
     ReplaySession replay(history, cfg, session);
+    std::unique_ptr<JumpFilter> jumps;
+    if (cfg.jump_filter) {
+        jumps = std::make_unique<JumpFilter>(n, session, cfg.jump);
+        for (size_t t = 0; t < panel.num_bars(); ++t) jumps->apply(panel, t);
+    }
     std::vector<double> ret, gaps;
     std::vector<int> slot;
     bar_returns(panel, session, ret, slot);
@@ -563,6 +579,7 @@ ReplayResult run_live(const ReplayInput& history, const ReplayConfig& cfg,
             }
             stepped = key;
             ++st.bars;
+            if (jumps) jumps->apply(panel, panel.num_bars() - 1);
             bar_returns(panel, session, ret, slot);  // causal: earlier rows do not change
             overnight_returns(panel, slot, gaps);
             const size_t t = panel.num_bars() - 1;
@@ -654,7 +671,9 @@ ReplayResult run_live(const ReplayInput& history, const ReplayConfig& cfg,
     }
     close_bars(std::numeric_limits<long long>::max());
     replay.end_session(panel);  // the last bar ends its session, as at the end of a file
-    return replay.finish();
+    ReplayResult res = replay.finish();
+    if (jumps) res.jump_events = jumps->events();
+    return res;
 }
 
 

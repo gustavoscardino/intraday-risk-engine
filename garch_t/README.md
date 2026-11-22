@@ -82,7 +82,7 @@ garch_t/
     │   └── math.hpp, optimize.hpp, random.hpp   math, optimizer, random numbers
     ├── src/                 implementation of each .hpp above (.cpp with the same name)
     ├── apps/                the programs in bin/ (one .cpp per program)
-    ├── tests/               automated tests (58 tests, 4020 checks)
+    ├── tests/               automated tests (59 tests, 4031 checks)
     └── tools/               fetch_b3_yahoo.py: downloads recent real B3 data
 ```
 
@@ -170,6 +170,7 @@ themselves: `--data synthetic` becomes `data/synthetic`. Results go to
 | `--options FILE` / `--no-options` | option book / ignore options | `options.csv`, if present |
 | `--mc N` | scenarios of the options Monte Carlo | 10000 |
 | `--z-clip Z` | caps shocks at Z standard deviations (protects against bad ticks) | off |
+| `--jump-filter` (`--jump-z Z`) | holds a stock's isolated price jump for one bar: dropped if the next bar undoes it (a bad tick), kept one bar late otherwise; jumps of several stocks together are kept at once (see below) | off (Z = 10) |
 | `--corr ewma\|dcc\|constant` | correlation model between stocks | `ewma` |
 | `--corr-lambda L` | fixes the λ of the EWMA correlation instead of estimating it | estimated every day |
 | `--dist t\|normal` | distribution of each stock | `t` |
@@ -185,6 +186,23 @@ themselves: `--data synthetic` becomes `data/synthetic`. Results go to
 | `--live HOST:PORT` | takes the bars from a live market-data feed as they close (see below) | off (reads the file) |
 
 Invalid values are rejected with an error message, never silently replaced by the default.
+
+**Jump filter.** A wrong print (one close far off, the next bar back to normal) enters a GARCH as
+two extreme shocks, the tick and its reversal, and inflates the variance for many bars; `--z-clip`
+only shrinks them. `--jump-filter` holds a stock's isolated jump (beyond 10 times the robust scale
+of its recent returns at that time of day) for one bar: if the next bar undoes it, the print never
+enters the model; if the new level holds, the move enters one bar late. Several stocks jumping
+together are a market move and enter at once. On the fault catalogue (`atam/results/faults/`):
+
+| Faulty copy of the data | default | `--z-clip 6` | `--jump-filter` |
+|---|---|---|---|
+| b3_real, 10 bad ticks: forecasts off by more than 5% | 77.6% | 85.4% | 0.2% |
+| b3_real, all recoverable faults together | 60.0% | 52.6% | 7.3% |
+| synthetic, 10 bad ticks | 24.5% | 0.3% | 0.0% |
+
+The cost: a genuine move confined to one stock reaches the VaR one bar late (on the clean b3_real,
+3% of the forecasts differ by more than 5% from the default run; the exception rate is 0.98%
+against 1.06%). The decision on each bar uses only the bars up to it, so it works the same live.
 
 **Live feed.** `--live` connects to a feed server and computes the VaR at each bar as it arrives,
 printing one line per bar. `data/tools/feed_server.py` turns any dataset into such a feed (the same
@@ -374,7 +392,7 @@ With the degraded feed: 5.20% / 2.46% / 1.07%, with no run-time failure.
 
 ## Tests and validation
 
-`build.bat` (or `build.sh`) rebuilds and runs **58 automated tests (4020 checks)** and 7 end-to-end
+`build.bat` (or `build.sh`) rebuilds and runs **59 automated tests (4031 checks)** and 7 end-to-end
 tests. They cover:
 
 - **Math functions:** compared with SciPy and with 40-digit reference values (mpmath).

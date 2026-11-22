@@ -2,6 +2,7 @@
 #pragma once
 
 #include "garcht/backtest.hpp"
+#include "garcht/data_quality.hpp"
 #include "garcht/garch.hpp"
 #include "garcht/market_data.hpp"
 #include "garcht/math.hpp"

@@ -33,7 +33,7 @@ DEV_LIMIT = 5.0  # % deviation from the clean-feed VaR counted as damaged
 DATASETS = {"synthetic": "XPET3", "b3_real": "PETR4"}  # dataset -> a stock (unused: every stock is run)
 FEEDS = WORK / "faults"  # faulty datasets written by inject_faults.py (not versioned)
 OUT = RESULTS / "faults"
-VARIANT_KEYS = ["ewma", "ewma_nodq", "garch_t", "garch_t_zclip6", "realized_caviar"]
+VARIANT_KEYS = ["ewma", "ewma_nodq", "garch_t", "garch_t_zclip6", "garch_t_jump", "realized_caviar"]
 JOBS = 3
 
 

@@ -1841,6 +1841,76 @@ TEST(live_feed_reproduces_the_file_replay) {
     CHECK(st2.late == 1 && st2.duplicates == 1);
 }
 
+TEST(jump_filter_bad_tick_genuine_shock_and_market_move) {
+    // 5 stocks, 12 sessions of 28 bars of small moves; in session 10: a bad tick on stock 0 (slot 8,
+    // +8%, back at the next bar), a genuine -8% level shift on stock 1 (slot 14) and a -5% move of
+    // every stock together (slot 20).
+    const size_t n = 5;
+    std::vector<BarRow> rows;
+    std::vector<double> px(n, 50.0);
+    unsigned s = 12345;
+    auto noise = [&]() {
+        s = s * 1103515245u + 12345u;
+        return (static_cast<double>((s >> 8) & 0xFFFF) / 65535.0 - 0.5) * 0.004;  // +-0.2%
+    };
+    const char* names[] = {"AAA", "BBB", "CCC", "DDD", "EEE"};
+    for (int d = 0; d < 12; ++d)
+        for (int k = 0; k < 28; ++k)
+            for (size_t i = 0; i < n; ++i) {
+                double close = px[i] * std::exp(noise());
+                if (d == 10 && k == 14 && i == 1) close *= 0.92;
+                if (d == 10 && k == 20) close *= 0.95;
+                BarRow r;
+                r.time = {20261005 + d, 615 + 15 * k, 0};
+                r.ticker = names[i];
+                r.open = px[i];
+                r.close = close;
+                r.high = std::max(r.open, close);
+                r.low = std::min(r.open, close);
+                r.volume = 1000;
+                px[i] = close;
+                if (d == 10 && k == 8 && i == 0) r.close *= 1.08;  // the print is wrong, the price is not
+                rows.push_back(r);
+            }
+    const std::vector<std::string> tickers(names, names + n);
+    const BarPanel raw = build_panel(rows, tickers);
+    const SessionSpec session = detect_session(raw);
+    BarPanel p = raw;
+    JumpFilter filter(n, session);
+    for (size_t t = 0; t < p.num_bars(); ++t) filter.apply(p, t);
+    const size_t bar = 10 * 28;
+    CHECK(std::isnan(p.close[(bar + 8) * n + 0]));                      // bad tick held ...
+    CHECK(p.close[(bar + 9) * n + 0] == raw.close[(bar + 9) * n + 0]);  // ... and the next bar kept
+    CHECK(std::isnan(p.close[(bar + 14) * n + 1]));                     // genuine shift held one bar,
+    CHECK(p.close[(bar + 15) * n + 1] == raw.close[(bar + 15) * n + 1]);  // then enters
+    for (size_t i = 0; i < n; ++i) CHECK(p.close[(bar + 20) * n + i] == raw.close[(bar + 20) * n + i]);  // market move kept
+    int held = 0, bad = 0, accepted = 0, market = 0;
+    for (const JumpEvent& e : filter.events()) {
+        held += e.action == "HELD";
+        bad += e.action == "BAD_TICK" && e.ticker == "AAA";
+        accepted += e.action == "SHOCK_ACCEPTED" && e.ticker == "BBB";
+        market += e.action == "MARKET_MOVE";
+    }
+    CHECK(held == 2 && bad == 1 && accepted == 1 && market == 5);
+    // causal: deciding bar t without the later bars gives the same row t
+    size_t same = 0, total = 0;
+    for (size_t cut : {bar + 8, bar + 14, bar + 20}) {
+        BarPanel head = raw;
+        head.timestamps.resize(cut + 1);
+        head.time_key.resize(cut + 1);
+        head.date.resize(cut + 1);
+        head.minute.resize(cut + 1);
+        for (auto* m : {&head.open, &head.high, &head.low, &head.close, &head.volume}) m->resize((cut + 1) * n);
+        JumpFilter f2(n, session);
+        for (size_t t = 0; t <= cut; ++t) f2.apply(head, t);
+        for (size_t i = 0; i < n; ++i, ++total) {
+            const double a = head.close[cut * n + i], b = p.close[cut * n + i];
+            same += (std::isnan(a) && std::isnan(b)) || a == b;
+        }
+    }
+    CHECK(same == total);
+}
+
 // ------------------------------------------------------------------ runner
 int main(int argc, char** argv) {
     const std::string filter = argc > 1 ? argv[1] : "";

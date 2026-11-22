@@ -22,6 +22,7 @@ add_library(garcht STATIC
   src/seasonality.cpp
   src/portfolio.cpp
   src/market_data.cpp
+  src/data_quality.cpp
   src/revaluation.cpp
   src/synthetic.cpp
   src/replay.cpp)
