@@ -1,32 +1,33 @@
 flowchart LR
-    subgraph Entrada["Entradas (um modo por execução)"]
+    subgraph Input["Inputs (one mode per run)"]
         direction TB
-        HF["Alta frequência<br/>preços a cada 5 s<br/>simulação interna ou --prices CSV"]
-        SH["Dados compartilhados<br/>data/synthetic · data/b3_real<br/>uma ação (--ticker), barras de 15 min"]
+        HF["High frequency<br/>prices every 5 s<br/>internal simulation or --prices CSV"]
+        SH["Shared data<br/>data/synthetic · data/b3_real<br/>one stock (--ticker), 15-minute bars<br/>jump filter over every stock"]
         HF ~~~ SH
     end
 
-    subgraph Lib["Biblioteca rcaviar"]
+    subgraph Lib["rcaviar library"]
         direction TB
-        DA["data · shared_data<br/>janelas causais: R, RV e alvo futuro<br/>sem atravessar o pernoite"]
-        CAL["Calibração diária comum (fora do caminho crítico)<br/>CAViaR: perda pinball · EWMA: λ por QLIKE<br/>GARCH-t: máxima verossimilhança · perfil U"]
-        FL["Modelos online, mesmos alvos e exposição<br/>Realized-CAViaR: q(t+1) = β0 + β1·q(t) + β2·|R(t)| + β3·√RV(t)<br/>EWMA-N, EWMA-t e GARCH-t sobre r / s(horário)"]
+        DA["data · shared_data<br/>causal windows: R, RV and future target<br/>never across the overnight · target scored as printed"]
+        CAL["Common daily calibration (off the critical path)<br/>CAViaR: pinball loss, warm start from yesterday<br/>EWMA: λ by QLIKE · GARCH-t: maximum likelihood · U profile"]
+        FL["Online models, same targets and exposure<br/>Realized-CAViaR: q(t+1) = β0 + β1·q(t) + β2·|R(t)| + β3·√RV(t)<br/>EWMA-N, EWMA-t and GARCH-t on r / s(time of day)"]
         DA --> CAL --> FL
     end
 
-    subgraph Reuso["Reutilizado (compilado das fontes)"]
+    subgraph Reuse["Reused (compiled from source)"]
         direction TB
-        GT["garch_t<br/>market_data · backtest · garch<br/>math · optimize · risk"]
-        EW["ewma<br/>ewma (filtro e λ) · seasonality (perfil U)<br/>math"]
-        GT ~~~ EW
+        GT["garch_t<br/>market_data · backtest · garch<br/>math · optimize · risk · data_quality"]
+        EW["ewma<br/>ewma (filter and λ) · seasonality (U profile)<br/>math"]
+        CO["common/<br/>jump filter"]
+        GT ~~~ EW ~~~ CO
     end
 
-    subgraph Saida["results/"]
+    subgraph Output["results/"]
         direction TB
-        VAR["VaR da posição (comprada ou vendida)<br/>−E · expm1(q)"]
-        OUT["backtest_summary · backtest_by_hour<br/>Kupiec · Christoffersen · pinball<br/>latência em lotes p50/p95/p99"]
+        VAR["VaR of the position (long or short)<br/>−E · expm1(q)"]
+        OUT["backtest_summary · backtest_by_hour<br/>Kupiec · Christoffersen · pinball<br/>latency in batches p50/p95/p99"]
         VAR --> OUT
     end
 
-    Entrada --> Lib --> Saida
-    Lib -. usa .-> Reuso
+    Input --> Lib --> Output
+    Lib -. uses .-> Reuse

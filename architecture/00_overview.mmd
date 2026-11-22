@@ -1,0 +1,29 @@
+flowchart LR
+    subgraph Data["data/ (shared by the modules)"]
+        direction TB
+        SY["synthetic/<br/>15 fictitious stocks · 150 sessions<br/>portfolio · fills · options<br/>clean feed and faulty feed"]
+        B3["b3_real/<br/>15 B3 stocks · 87 sessions<br/>(Yahoo Finance)"]
+        SY ~~~ B3
+    end
+
+    subgraph Engines["VaR techniques (one module per technique)"]
+        direction TB
+        GT["garch_t/ · C++17<br/>GARCH(1,1)-t per stock · portfolio<br/>dynamic correlation · EVT tail<br/>options by Monte Carlo"]
+        EW["ewma/ · C++17<br/>EWMA-N (ref) · EWMA-N · EWMA-t · portfolio<br/>data-quality layer"]
+        RC["realized_caviar/ · C++20<br/>Realized-CAViaR × EWMA-N × EWMA-t × GARCH-t<br/>same stock, same targets and calibration<br/>reuses garch_t and ewma code"]
+        GT ~~~ EW ~~~ RC
+    end
+
+    CO["common/ · C++17<br/>model interface (PortfolioModel)<br/>RiskMetrics baseline · jump filter"]
+
+    subgraph Results["results/ of each module"]
+        direction TB
+        RS["garch_t · ewma<br/>risk_15m.csv · risk_overnight.csv<br/>backtest_summary.csv (same columns)"]
+        BS["realized_caviar<br/>backtest_summary · backtest_by_hour<br/>Kupiec · Christoffersen · pinball · latency"]
+        RS ~~~ BS
+    end
+
+    CMP["Comparison in the capstone<br/>statistical quality × computational cost<br/>architecture: atam/"]
+
+    Data --> Engines --> Results --> CMP
+    CO -. compiled into .-> Engines

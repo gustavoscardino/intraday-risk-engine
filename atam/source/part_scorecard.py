@@ -512,8 +512,8 @@ def tradeoff_rows(m: M) -> tuple[list[str], list[tuple[str, str, dict]]]:
     cn = ENGINES["realized_caviar"].unprotected
     rows = [
         ("Shared jump filter: isolated\njump held one bar (default)", "all three", {
-            R1: ("+", f"{m['garch_t_nojump', 'degraded_share_dev5_pct']:.1f}% -> {m[g, 'degraded_share_dev5_pct']:.2f}% (GARCH-t)\n"
-                      f"{m[cn, 'degraded_share_dev5_pct']:.1f}% -> {m[c, 'degraded_share_dev5_pct']:.1f}% (CAViaR)"),
+            R1: ("+", f"GARCH-t {m['garch_t_nojump', 'degraded_share_dev5_pct']:.0f}->{m[g, 'degraded_share_dev5_pct']:.1f}%\n"
+                      f"CAViaR {m[cn, 'degraded_share_dev5_pct']:.0f}->{m[c, 'degraded_share_dev5_pct']:.0f}%"),
             R2: ("~", f"x{min(m[g, 'shock_min_ratio'], m[e, 'shock_min_ratio']):.3f}, a move\nheld one bar"),
             CP: ("+" if m[e, "baseline_mismatches"] == 0 else "-",
                  f"{m[e, 'baseline_mismatches']:.0f} / {m[e, 'baseline_mismatches_b3_default']:.0f} baseline\nforecasts differ"),

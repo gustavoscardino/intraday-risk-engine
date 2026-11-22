@@ -1,5 +1,5 @@
 Monte Carlo study: 60 markets x 150 days (realistic profile), window 40 days, 8 threads
-  60 markets in 75.1 s
+  60 markets in 72.1 s
 
 Pooled exception rates over 60 markets (95% Wilson intervals) and rejection frequencies at 5%
   model            conf forecasts     rate              95% CI   Kupiec       CC    ES Z2  ES ratio
@@ -25,6 +25,6 @@ Pooled exception rate by time of day (open = first 3 bars, close = last 3 bars)
   EWMA-N (ref)    0.975     7.815%     2.228%     4.732%
   EWMA-N (ref)    0.990     5.224%     1.204%     2.813%
 
-Berkowitz test rejections at 5%: GARCH 13.3%, EWMA-N 100.0%, overnight 8.3% (of 60 markets)
+Berkowitz test rejections at 5%: GARCH-t/EVT 13.3%, EWMA-N (ref) 100.0%, overnight 8.3% (of 60 markets)
 Average portfolio nu 6.56; correlation dynamics a 0.0241, b 0.9759 (EWMA: lambda = b)
 Summary written to garch_t/results/monte_carlo_realistic/monte_carlo_summary.csv (report: report.txt)

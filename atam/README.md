@@ -6,9 +6,12 @@ engine is one architecture:
 
 | Engine | Folder | Architecture in one line |
 |---|---|---|
-| EWMA | `ewma/` | portfolio engine in layers, with a data-quality layer (NORMAL / DEGRADED / FREEZE) |
-| GARCH-t | `garch_t/` | portfolio engine: GARCH per asset, dynamic correlation, EVT tail, options by Monte Carlo, jump filter on the input |
-| Realized-CAViaR | `realized_caviar/` | single-instrument engine; CAViaR plus matched EWMA-N and GARCH-t baselines on the same targets |
+| EWMA | `ewma/` | portfolio engine in layers, models behind the common interface, a data-quality layer (NORMAL / DEGRADED / FREEZE) |
+| GARCH-t | `garch_t/` | portfolio engine: GARCH per asset, dynamic correlation, EVT tail, options by Monte Carlo off the bar thread, models behind the common interface |
+| Realized-CAViaR | `realized_caviar/` | single-instrument engine; CAViaR plus matched EWMA-N, EWMA-t and GARCH-t baselines on the same targets |
+
+The three compile the shared library `common/` (the model interface, the RiskMetrics baseline and the
+jump filter that each of them runs by default).
 
 The evaluation follows the four ATAM steps asked for the project:
 
@@ -82,7 +85,7 @@ results/
 |---|---|---|
 | `correctness` | C1, Rp1 | prices after a cut time are replaced (perturbation) or removed (truncation): nothing issued before the cut may change; three identical runs compared cell by cell |
 | `comparability` | Cp1 | the EWMA(0.94) baseline that EWMA and GARCH-t both compute, forecast by forecast, on synthetic and B3 data; the shared targets of Realized-CAViaR's three models |
-| `robustness` | R1, R2 | the faulty feed against the clean one; the VaR at scripted genuine shocks with and without each engine's protection (Realized-CAViaR, which has none: whether the shock reaches its features) |
+| `robustness` | R1, R2 | the faulty feed against the clean one (for Realized-CAViaR also the days its daily calibration lands on another optimum); the VaR at scripted genuine shocks with and without each engine's protection (Realized-CAViaR also: whether the shock reaches its features) |
 | `faults` | R3 | faulty copies of both datasets written by `data/tools/inject_faults.py`, one kind of fault per copy plus all of them together, each engine against its own clean run; the faults flagged by the EWMA data-quality layer against the list of every fault injected |
 | `performance` | P1-P4 | per-bar latency from the replays, the benchmark programs, refit times, model-state size |
 | `modifiability` | M1, M2 | static analysis of the sources: files touched to add a model, hard-wired time-grid decisions, reuse |

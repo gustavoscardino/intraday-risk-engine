@@ -67,7 +67,8 @@ ewma/
     │   ├── seasonality.hpp      intraday volatility pattern (the "U")
     │   ├── ewma.hpp             multivariate EWMA filter, starting covariance, λ estimation
     │   ├── risk.hpp             VaR/ES factors (Normal and t), ν estimation, Black–Scholes
-    │   ├── engine.hpp           portfolio engine: on_bar / refit / compute / compute_overnight
+    │   ├── models.hpp           the three models behind the common model interface (common/)
+    │   ├── engine.hpp           portfolio engine: drives the models, window, overnight risk
     │   ├── data_quality.hpp     DQ rules, dq_score, modes, detection against the truth
     │   ├── backtest.hpp         Kupiec, Christoffersen, Wilson, traffic light, Berkowitz, Acerbi–Szekely
     │   ├── replay.hpp           the 15-minute cycle over a history + backtest of all forecasts
@@ -80,6 +81,8 @@ ewma/
 The engine is built on its own (namespace `ewmar`, its own build and programs) and does not link
 `garch_t`; some infrastructure was adapted from it (the `paths.hpp` / `cli.hpp` helpers, the UTF-8
 manifest, the B3 holiday table and parts of the CSV reader), and both read the same `data/` folder.
+Both compile the shared library `common/`: the common model interface, the RiskMetrics baseline
+(EWMA-N (ref) is the same code in both engines) and the jump filter.
 
 ---
 
@@ -92,13 +95,13 @@ what was known at that moment:
 rows of the price file, in file order (= the order they arrived from the feed)
   └─ data-quality layer: duplicates, late rows, gaps, frozen quotes -> the bars
 for each 15-minute bar:
-  1. decides the suspicious prices of the previous bar (bad tick or real shock?)
-  2. scores the previous forecast: P&L of the bar vs VaR (overnight gap excluded)
-  3. applies the trades (fills) of the bar
-  4. checks the new prices for jumps (|z| > 6), computes dq_score and the mode
-  5. updates the three EWMA filters (microseconds); FREEZE: no update
-  6. at the end of the day: re-estimates the U profile, λ and ν on the window (a few ms)
-  7. forecasts σ, VaR and ES of the next bar for the three models; at the close, the overnight
+  1. scores the previous forecast: P&L of the bar vs VaR (overnight gap excluded)
+  2. applies the trades (fills) of the bar
+  3. the jump filter decides the bar's prints (an isolated jump is held until the next bar),
+     computes dq_score and the mode
+  4. updates the three models (microseconds); FREEZE: no update
+  5. at the end of the day: re-estimates the U profile, λ and ν on the window (a few ms)
+  6. forecasts σ, VaR and ES of the next bar for the three models; at the close, the overnight
 at the end: backtest of all forecasts + report
 ```
 
@@ -154,11 +157,13 @@ On Linux/macOS: `./bin/ewma_risk` and forward slashes.
 | `--diurnal pooled\|per-asset\|off` | U profile common to all stocks, one per stock, or none | `pooled` |
 | `--no-overnight` | skips the overnight risk | computed |
 | `--options FILE` / `--no-options` | option book / ignore options | `options.csv`, if present |
-| `--no-dq` | turns the data-quality layer off (plain loader, as in `garch_t`) | on |
+| `--no-dq` | turns the data-quality layer off (plain loader, no jump filter) | on |
+| `--no-jump-filter` | keeps the layer but lets every isolated jump into the models | filter on |
 | `--dq-thresholds A,B` | dq_score limits of NORMAL and FREEZE | `0.9,0.6` |
 | `--truth FILE\|none` | clean price file for the detection rates and the robustness comparison | `prices_15m.csv` of the dataset |
 | `--es-sims N` | simulations for the p-value of the ES test | 2000 |
 | `--session auto\|HH:MM,MIN,N` | session: open, minutes per bar, bars per day | detected |
+| `--resample` | the price file has samples finer than the `--session` grid (e.g. 5-second prices): each bar takes the first open, the high, the low, the last close and the summed volume of its samples | off |
 | `--utc-offset MIN` | time zone for timestamps that carry one | −180 (São Paulo) |
 | `--daily` | prints λ, ν and refit time per day | — |
 
@@ -187,7 +192,7 @@ Invalid values are rejected with a message, never replaced by the default.
 
 | File | One row per… | Content |
 |---|---|---|
-| `risk_15m.csv` | forecast | `ref_*` (EWMA-N (ref)), `sigma`, `lambda`, `nu`, `n_*` (EWMA-N), `t_*` (EWMA-t) VaR/ES at the three levels, `realized_pnl`, `dq_score`, `mode`, `frozen`; with options, `book_*` |
+| `risk_15m.csv` | forecast | one block per model (common/README.md): `ref_*` (EWMA-N (ref): sigma, VaR/ES at the three levels), `n_*` (EWMA-N, with `n_lambda`), `t_*` (EWMA-t, with `t_nu`); `realized_pnl`, `dq_score`, `mode`, `frozen`; with options, `book_*` |
 | `backtest_summary.csv` | model × level | **the same columns as `garch_t`** |
 | `risk_overnight.csv` | session | `sigma_gap`, `sigma_first_bar`, `sigma`, VaR/ES t (`var_*`) and Normal (`n_var_*`), realized P&L |
 | `daily_summary.csv` | day | λ, ν, overnight λ and ν, refit time |
@@ -195,6 +200,7 @@ Invalid values are rejected with a message, never replaced by the default.
 | `risk_contributions_last.csv` | stock | position, exposure, volatility, standalone and component VaR 99% (EWMA-t) |
 | `correlation_last.csv` | stock | correlation matrix at the end |
 | `dq_events.csv` | event | time, stock, flag, detail |
+| `jump_events.csv` | decision of the jump filter | time, stock, action (`HELD`, `BAD_TICK`, `SHOCK_ACCEPTED`, `MARKET_MOVE`, `UNDECIDED`), return, z (the same file as `garch_t`) |
 | `alerts.csv` | alert | time, severity (`info` / `warning` / `critical`), type, message |
 | `dq_detection.csv` | flag | faults injected, detected, recall, flags on other cells |
 
@@ -248,7 +254,9 @@ Each stock has its own watermark (newest bar received). Rules:
 | `DELAY` | the bar already closed (the feed is more than 1 bar past it) | row discarded |
 | `GAP` | other stocks printed the bar, this one did not | missing return |
 | `STALE` | close unchanged **and** volume 0 for ≥ 3 bars in a row (volume 0 separates a frozen quote from a cheap stock that did not move) | price ignored from the 3rd bar on |
-| `SPIKE` | \|z\| > 6 against the forecast σ: the EWMA is updated with the value capped at ±6σ. If the next bar takes the price back (less than 25% of the move left), it was a bad tick: the price is excluded and the bar re-fed. If not, the shock is real and is re-fed in full (`SHOCK_KEPT`). If several stocks jump at the same bar, it is a market move and is kept at once | — |
+| `SUSPECT` | the jump filter shared by the three engines (`common/`): a return beyond 10 times the stock's robust scale (median absolute return of its last 10 sessions at that time of day), while fewer than 3 stocks jump together, is held: the models see the bar as not printed | price held |
+| `SPIKE` | the next bar of the stock undid more than half of the held jump: a bad tick | price never enters the models |
+| `SHOCK_KEPT` | the new level held (the move enters one bar late, at full size), or several stocks jumped together (a market move, kept at once) | price enters |
 
 `dq_score` = Σ wᵢ qᵢ, wᵢ = |exposure|ᵢ / Σ|exposure|, qᵢ = 1 minus the penalties of the stock's flags
 (GAP, STALE, SUSPECT, SPIKE: 1; OUT_OF_ORDER: 0.1; DUPLICATE: 0.05). Modes, with hysteresis (a better mode
@@ -268,26 +276,27 @@ only after 3 bars that qualify for it):
 
 | Model | 95% VaR | 97.5% VaR | 99% VaR | zone 99% | ES test p (99%) | ES ratio (99%) | Berkowitz p |
 |---|---|---|---|---|---|---|---|
-| EWMA-N (ref) | 4.61% | 2.66% | 1.62% | yellow | 0.0005 | 1.25 | 0.0003 |
-| EWMA-N | 4.68% | 2.70% | 1.72% | red | 0.0005 | 1.14 | 0.026 |
-| **EWMA-t** | 4.94% | 2.57% | 1.17% | **green** | **0.19** | **1.03** | **0.21** |
-| GARCH-t/EVT (`garch_t`) | 5.17% | 2.37% | 0.84% | green | 0.74 | 1.06 | 0.61 |
+| EWMA-N (ref) | 4.61% | 2.66% | 1.62% | yellow | 0.0005 | 1.25 | 0.0004 |
+| EWMA-N | 4.71% | 2.57% | 1.66% | yellow | 0.0005 | 1.14 | 0.050 |
+| **EWMA-t** | 4.87% | 2.47% | 1.20% | **green** | **0.16** | **1.02** | **0.26** |
+| GARCH-t/EVT (`garch_t`) | 5.17% | 2.37% | 0.88% | green | 0.68 | 1.05 | 0.67 |
 
-- EWMA-N (ref) reproduces the `garch_t` reference exactly: 142 / 82 / 50 exceptions.
+- EWMA-N (ref) is the same code as the `garch_t` reference (`common/`) and gives the same
+  forecasts on the same inputs: 142 / 82 / 50 exceptions in both.
 - Removing the U profile fixes the open: at 99%, exceptions in the first 3 bars fall from 5.2%
   (ref) to 2.7% (EWMA-N) and 1.8% (EWMA-t).
-- The t tail fixes the ES: its test passes and the ES ratio goes from 1.14 to 1.03.
+- The t tail fixes the ES: its test passes and the ES ratio goes from 1.14 to 1.02.
 
 ### Real B3 data (`results/b3_real`, 87 sessions, 1308 forecasts)
 
 | Model | 95% VaR | 97.5% VaR | 99% VaR | zone 99% | ES test p (99%) | ES ratio (99%) |
 |---|---|---|---|---|---|---|
-| EWMA-N (ref) | 4.82% | 3.21% | 1.68% | yellow | 0.0005 | 1.31 |
-| EWMA-N | 5.50% | 2.98% | 1.99% | yellow | 0.0005 | 1.24 |
-| **EWMA-t** | 5.58% | 2.75% | 1.38% | green | 0.033 | **1.17** |
-| GARCH-t/EVT (`garch_t`) | 4.89% | 2.22% | 1.07% | green | 0.31 | 1.02 |
+| EWMA-N (ref) | 4.97% | 3.13% | 1.68% | yellow | 0.0005 | 1.32 |
+| EWMA-N | 5.28% | 3.13% | 1.91% | yellow | 0.0005 | 1.23 |
+| **EWMA-t** | 5.66% | 2.83% | 1.38% | green | 0.033 | **1.18** |
+| GARCH-t/EVT (`garch_t`) | 4.74% | 2.22% | 1.15% | green | 0.24 | 0.99 |
 
-EWMA-N (ref) again equals the `garch_t` reference (63 / 42 / 22). At the open, EWMA-N (ref) has
+EWMA-N (ref) again equals the `garch_t` reference (65 / 41 / 22). At the open, EWMA-N (ref) has
 6.7% of exceptions at 99%; EWMA-N and EWMA-t, 1.5%.
 
 ### Data-quality experiment (same market, three runs)
@@ -301,7 +310,7 @@ Detection on the faulty feed (`results/synthetic_degraded/dq_detection.csv`):
 | out-of-order rows | 126 | 126 (100%), accepted as `OUT_OF_ORDER` |
 | late rows, arrived after their bar closed (`DELAY`) | 3 | 3 (100%), discarded |
 | frozen XCON3, day 130 (`STALE`) | 10 bars | 10 (2 flagged after the fact, already used) |
-| bad ticks XPET3, XBAN4, XTEC3 (`SPIKE`) | 3 | 3 (100%) |
+| bad ticks XPET3, XBAN4, XTEC3 (`SPIKE`, the shared jump filter) | 3 | 3 (100%) |
 
 The clean file has no arrival order, so the injected out-of-order and late rows are taken from the
 order in which the faulty file delivers them, with the same rule the layer applies: those two lines
@@ -313,30 +322,37 @@ shock not reverted). FREEZE is never triggered: no bar loses 40% of the exposure
 
 | Run (EWMA-t) | 95% / 97.5% / 99% exceptions | VaR 99 vs clean run: mean / max deviation | bars off by > 1% |
 |---|---|---|---|
-| clean feed | 152 / 79 / 36 | — | — |
-| faulty feed, DQ on | 151 / 77 / 36 | 0.52% / 6.8% | 377 |
-| faulty feed, DQ off | 146 / 79 / 39 | 2.56% / 48.7% | 1153 |
+| clean feed | 150 / 76 / 37 | — | — |
+| faulty feed, DQ on | 153 / 77 / 40 | 0.52% / 5.0% | 365 |
+| faulty feed, DQ off | 146 / 79 / 39 | 3.02% / 48.6% | 1447 |
 
 Without the layer, each bad tick inflates the variance for hours (VaR up to 49% too high); with it,
-the largest difference is 7%, at the bar where the bad tick was still undecided.
+the bad ticks never reach the models (the exceptions are counted on the prices as received, so the
+faulty run scores the bad ticks' own bars too). On the faulty copies of `atam/` (every recoverable
+fault together, B3 data) 6.3% of the EWMA-N forecasts move more than 5%, against 50.4% without the
+layer.
 
 ---
 
 ## Tests and validation
 
-`build.bat` (or `build.sh`) rebuilds and runs **28 unit tests (418 checks)** and 4 end-to-end
+`build.bat` (or `build.sh`) rebuilds and runs **29 unit tests (429 checks)**, the tests of the shared library (`common/`) and 4 end-to-end
 replays (clean, faulty with and without DQ, B3). They cover:
 
 - **Math:** Φ⁻¹, t distribution (cdf, pdf, quantile), incomplete beta and χ² against SciPy, deep in
   the tails.
 - **VaR/ES factors** of the t against SciPy numerical integration.
 - **Estimation:** recovers the U profile and λ of simulated series, and ν of simulated t samples.
-- **EWMA:** the covariance stays positive semidefinite with 15% of missing data; undoing a bar
-  restores the filters exactly.
+- **EWMA:** the covariance stays positive semidefinite with 15% of missing data.
+- **Model interface:** the three models are registered with their names and column prefixes; the
+  EWMA-N (ref) forecast is that of the shared RiskMetrics model on the same window.
 - **Backtest:** Kupiec, Christoffersen and Wilson against SciPy; Basel zones; Berkowitz and ES test
   accept a correct model and reject a wrong one.
 - **Data quality:** each rule on a small series with its fault injected; score, modes and
-  hysteresis; bad tick vs real jump inside a replay.
+  hysteresis; bad tick vs real jump inside a replay: the bad tick leaves the VaR where the clean
+  feed puts it, and the P&L the forecasts are scored on is the same with the filter on and off.
+- **Other grids:** 5-second samples aggregate into 1-minute bars; 15-minute rows split into 5-minute
+  samples and resampled give the same rows and the same replay.
 - **Data:** CSV formats, decimal comma, time zones, B3 calendar, return conventions.
 - **Replay:** a feed cut inside a session leaves every earlier forecast, overnight one included,
   as in the whole replay.
@@ -346,9 +362,9 @@ between sessions on the same laptop):
 
 | Stocks | Update per bar (median) | Daily re-estimation (median) |
 |---|---|---|
-| 15 | under 1 µs | about 6 ms |
-| 50 | about 6 µs | about 18 ms |
-| 200 | about 130 µs | about 120 ms |
+| 15 | about 1 µs | about 6 ms |
+| 50 | about 7 µs | about 18 ms |
+| 200 | about 130 µs | about 140 ms |
 
 ---
 
@@ -363,7 +379,7 @@ engine.on_overnight(opening_gaps);                 // at the open (optional)
 engine.on_bar(slot, bar_returns);                  // every 15 min; NaN = no trade
 if (end_of_day) engine.refit(exposures_in_brl);    // daily re-estimation
 PortfolioRisk r;
-engine.compute(next_slot, exposures_in_brl, r);    // r.ref / r.normal / r.student: sigma, VaR, ES
+engine.compute(next_slot, exposures_in_brl, r);    // r.models[k]: sigma, VaR, ES of engine.models()[k]
 OvernightRisk o = engine.compute_overnight(exposures_in_brl);
 ```
 
@@ -378,9 +394,12 @@ The complete cycle with the data-quality layer is `run_replay()` (`source/includ
   GARCH-t passes both; a longer history would make the comparison firmer.
 - **One λ for all stocks** (needed to keep the covariance positive semidefinite).
 - **Overnight**: gap and first bar assumed independent.
-- **Bad ticks at the close**: a jump at the last bar is decided with the next day's first bar, so the
-  overnight move enters the decision. On B3 one closing print (GGBR4, 2026-09-14) is excluded this way.
-- **SPIKE** needs the next bar: during that bar the update uses the value capped at ±6σ.
+- **Jumps at the close**: a jump held at the last bar of a session is undecided and never enters the
+  intraday models (the overnight gap starts from the last close kept).
+- **The jump filter** needs the next bar: a genuine move confined to one stock reaches the VaR one
+  bar late.
+- **Horizon**: one bar; a 5-minute VaR every minute on 5-second data is five runs on 5-minute grids
+  opening one minute apart (`--resample --session 10:00,5,84`, `10:01,5,83`, ...).
 - **Options**: delta-linear only (no gamma); fixed implied volatility per contract.
 - **B3 holidays** registered for 2025–2027 (`is_b3_holiday` in `source/src/market_data.cpp`).
 

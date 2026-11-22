@@ -1,0 +1,39 @@
+flowchart TB
+    subgraph Apps["Programs (apps/)"]
+        APP1["ewma_risk<br/>replay + report"]
+        APP2["benchmark<br/>speed"]
+    end
+
+    REP["replay<br/>15-minute cycle + backtest of every forecast"]
+
+    subgraph Core["Core"]
+        ENG["engine<br/>drives the models · window · overnight"]
+        DQ["data_quality<br/>rules · dq_score · modes · detection"]
+        BT["backtest<br/>statistical tests"]
+    end
+
+    subgraph Model["Model layer"]
+        MO["models<br/>EWMA-N · EWMA-t · make_models"]
+        EW["ewma<br/>covariance · λ estimation"]
+        SE["seasonality<br/>U profile"]
+        RK["risk<br/>N and t factors · ν · Black–Scholes"]
+    end
+
+    subgraph Common["common/ (shared library)"]
+        CI["model interface · RiskMetrics baseline<br/>jump filter"]
+    end
+
+    subgraph Base["Base"]
+        MD["market_data<br/>CSV · B3 calendar · panel · returns · resampling"]
+        MA["math<br/>Φ · Student t · Brent · random numbers"]
+    end
+
+    APP1 --> REP
+    APP2 --> ENG
+    REP --> ENG & DQ & BT
+    REP --> MD
+    ENG --> MO
+    MO --> EW & SE & RK & CI
+    DQ --> MD & CI
+    BT --> RK
+    EW & RK & BT --> MA

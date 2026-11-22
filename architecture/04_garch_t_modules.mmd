@@ -1,0 +1,43 @@
+flowchart TB
+    subgraph Apps["Programs (apps/)"]
+        IR["intraday_risk<br/>file replay or live feed (TCP) + report"]
+        MC["monte_carlo<br/>study over many markets"]
+        GD["generate_data<br/>generates the synthetic market"]
+        FS["fit_series<br/>fits a GARCH to one series"]
+        BM["benchmark<br/>speed"]
+    end
+
+    REP["replay<br/>15-minute cycle (file or live) + backtest of every forecast<br/>option revaluation off the bar thread"]
+    DQ["data_quality<br/>the shared jump filter on a bar panel"]
+
+    subgraph Core["Core"]
+        BT["backtest<br/>statistical tests"]
+        RV["revaluation<br/>options: Black–Scholes and Monte Carlo"]
+        SY["synthetic<br/>generator of the fictitious market"]
+    end
+
+    subgraph Model["Model layer"]
+        MO["models<br/>GarchPortfolioModel · make_models"]
+        PF["portfolio<br/>IntradayRiskEngine: GARCH-t/EVT<br/>EWMA/DCC correlation · EVT tail · overnight"]
+        SE["seasonality<br/>U profile"]
+        GA["garch<br/>GARCH(1,1)-t: estimation and filter"]
+        RK["risk<br/>VaR / ES: Normal, t, EVT"]
+    end
+
+    CO["common/ (shared library)<br/>model interface · RiskMetrics baseline · jump filter"]
+
+    BASE["Base (used by every layer above)<br/>market_data · math · optimize · random<br/>CSV and B3 calendar · special functions · BFGS · random numbers"]
+
+    IR --> REP
+    MC --> REP & SY
+    GD --> SY
+    FS --> GA
+    BM --> PF
+    REP --> MO & BT & RV & SY & DQ
+    MO --> PF & CO
+    DQ --> CO
+    PF --> SE & GA & RK
+    BT & RV --> RK
+    SY --> RV
+    RK --> GA
+    GA --> BASE

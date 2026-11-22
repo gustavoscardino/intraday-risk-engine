@@ -52,16 +52,19 @@ EWMA parameters (111 daily re-estimations; diurnal profile pooled)
   EWMA-N (ref):             lambda 0.94 fixed, raw returns, Normal
 
 Robustness: EWMA-t VaR 99 of this run vs the same market with a clean feed
-  3077 forecasts compared: mean deviation 2.560%, max 48.69% (at 2026-07-28 12:15:00), 1153 bars off by more than 1%
-  clean-feed backtest EWMA-t 0.950: 152 exceptions (4.94%), zone green
-  clean-feed backtest EWMA-t 0.975: 79 exceptions (2.57%), zone green
-  clean-feed backtest EWMA-t 0.990: 36 exceptions (1.17%), zone green
+  3077 forecasts compared: mean deviation 3.024%, max 48.63% (at 2026-07-28 12:15:00), 1447 bars off by more than 1%
+  clean-feed backtest EWMA-t 0.950: 150 exceptions (4.87%), zone green
+  clean-feed backtest EWMA-t 0.975: 76 exceptions (2.47%), zone green
+  clean-feed backtest EWMA-t 0.990: 37 exceptions (1.20%), zone green
 
-Last forecast (2026-10-02 17:00:00 -> next bar): sigma ref 17928 / EWMA 30090; VaR99 ref 41707, N 69999, t 74675; ES99 ref 47782, N 80195, t 91311 (nu 9.38)
+Last forecast (2026-10-02 17:00:00 -> next bar), VaR / ES 99:
+  EWMA-N (ref)   sigma      17928  VaR      41707  ES      47782
+  EWMA-N         sigma      30090  VaR      69999  ES      80195
+  EWMA-t         sigma      30090  VaR      74675  ES      91311
 
 Performance (15 assets)
-  per-bar update (fills + DQ + filters + VaR/ES of 3 models): p50 1.30 us, p95 2.90 us, p99 14.30 us, max 135.40 us
-  end-of-day refit (profile + lambda + nu + filters + overnight): p50 4.64 ms, p95 6.30 ms, max 8.35 ms
-  replay: 4198 bars, 3077 forecasts scored (1 unscored: target bar never printed; 0 overnight unscored), 21 fills applied (0 unknown), engine 0.538 s, wall 0.775 s
+  per-bar update (fills + jump filter + DQ score + models + VaR/ES): p50 1.50 us, p95 3.20 us, p99 14.10 us, max 98.00 us
+  end-of-day refit (profile + lambda + nu + filters + overnight): p50 4.42 ms, p95 7.35 ms, max 10.61 ms
+  replay: 4198 bars, 3077 forecasts scored (1 unscored: target bar never printed; 0 overnight unscored), 21 fills applied (0 unknown), engine 0.528 s, wall 0.757 s
 
 outputs written to ewma/results/synthetic_degraded_nodq (report: report.txt)

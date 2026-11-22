@@ -59,6 +59,7 @@ additional CLI arguments to both runs.
 | `--lambda L` | fixes the EWMA decay in (0, 1) | estimated at each calibration |
 | `--diurnal on\|off` | shared mode: baselines on returns divided by the U profile | on |
 | `--caviar-only` | disable the matched baselines | all four models |
+| `--no-jump-filter` | shared mode: let every isolated price jump into the features and baselines | filter on |
 | `--reset-on-gap` | explicit restart of 5s features after missing samples/session gaps | reject gaps |
 
 Invalid values and incompatible options fail explicitly. Real high-frequency
@@ -96,6 +97,19 @@ bar, including session warmup, and missing grid slots advance GARCH by its
 conditional expectation. GARCH uses zero-mean standardized t innovations; no
 EVT. These are single-instrument baselines, not the enriched portfolio outputs
 of the other executables.
+
+**Jump filter (shared mode, default on).** The causal jump filter shared by the
+three engines (`common/include/riskcommon/jump_filter.hpp`) runs over every stock
+of the file before the features are built, so its market-move rule sees the whole
+market: an isolated jump is held one bar, removed if the next bar undoes it (a
+bad tick), let in at full size otherwise. The features, the baselines' returns
+and the targets the models are fitted on come from the filtered prices; the
+forecasts are scored on the targets as printed (`target_return` in
+`forecasts.csv`), as in the portfolio engines, so the filter never changes the
+outcomes. Its decisions are written to `jump_events.csv` and counted in
+`report.txt`. On the degraded synthetic feed it removes the bad ticks before they
+enter |R| and RV (a unit test checks that the realized variances come back to
+those of the clean feed).
 
 **Diurnal profile (shared mode, default on).** Intraday volatility is U-shaped:
 the first bars of a session are several times more volatile than midday. At each
@@ -182,7 +196,13 @@ q_(t+1) = beta0 + beta1*q_t + beta2*abs(R_t) + beta3*sqrt(RV_t)
 The recursion advances on every complete feature window. Its target horizon
 is the one in the table, independent of update frequency. Estimation minimizes
 exact mean pinball loss with deterministic multi-start Nelder-Mead, return
-scaling, and a retained empirical constant-quantile candidate. Restrictions
+scaling, and a retained empirical constant-quantile candidate. A daily refit also
+tries the previous calibration, as a candidate and as one more start, so it never
+ends on a worse optimum than yesterday's parameters when those still fit the new
+window better. |R| and RV of the same hour are close substitutes, so the loss is
+nearly flat along a direction of (beta2, beta3): calibrations of nearly equal loss
+can sit far apart, and a few changed observations move the optimum from one to
+the other (atam/, finding R-6). Restrictions
 `beta0,beta2,beta3 <= 0` and `0 <= beta1 <= .995` preserve nonpositive quantiles
 and stability. They are additional modeling choices, not a global optimality
 guarantee. The model implements this repo's explicit realized-variance equation.
@@ -280,7 +300,10 @@ fits, failed-fit fallback, common target sets and causal calibration.
 Executable-level Python tests independently reconstruct training features,
 pinball loss, forecast direction, exposure, phase-specific EWMA recursions and
 CSV metrics. They also perturb future prices to check the first forecast.
-The shared clean, degraded and B3 datasets are replayed by CTest.
+The shared clean, degraded and B3 datasets are replayed by CTest; the jump filter
+is checked on the degraded synthetic feed (features back towards the clean feed's,
+targets scored as printed). CTest also runs the tests of the shared library
+(`common/`).
 
 If SciPy is installed, CTest additionally compares the C++ estimator against an
 independent linear-programming quantile-regression oracle at fixed persistence

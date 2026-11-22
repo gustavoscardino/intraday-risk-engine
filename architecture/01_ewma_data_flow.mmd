@@ -1,0 +1,34 @@
+flowchart LR
+    subgraph Input["data/"]
+        direction TB
+        P["prices_15m.csv<br/>(arrival order)"]
+        A["assets.csv · portfolio_initial.csv<br/>fills.csv · options.csv"]
+    end
+
+    subgraph DQ["Data-quality layer"]
+        direction TB
+        I["Ingestion<br/>DUPLICATE · OUT_OF_ORDER · DELAY"]
+        G["Bar panel<br/>GAP · STALE"]
+        S["Jump filter (common/)<br/>isolated jump held one bar:<br/>SPIKE (bad tick) or SHOCK_KEPT"]
+        M["dq_score and mode<br/>NORMAL · DEGRADED · FREEZE"]
+        I --> G --> S --> M
+    end
+
+    subgraph Engine["EWMA engine"]
+        direction TB
+        R["Returns of the models' view<br/>1st bar without the gap · ÷√k"]
+        E["Models behind PortfolioModel<br/>EWMA-N (ref) (RiskMetrics, common/)<br/>EWMA-N (λ estimated, U profile)<br/>EWMA-t (EWMA-N σ, t tail)"]
+        F["VaR / ES of every model"]
+        O["Overnight risk"]
+        R --> E --> F
+        E --> O
+    end
+
+    subgraph Output["results/"]
+        direction TB
+        B["Backtest<br/>Kupiec · Christoffersen<br/>Berkowitz · ES Z2"]
+        C["report.txt and CSVs<br/>dq_events · jump_events · alerts · dq_detection"]
+        B --> C
+    end
+
+    Input --> DQ --> Engine --> Output

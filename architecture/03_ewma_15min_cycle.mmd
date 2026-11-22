@@ -1,0 +1,29 @@
+flowchart LR
+    A([Bar t closes])
+
+    subgraph Data["Data and quality"]
+        direction TB
+        C["Scores the previous forecast<br/>loss of bar t−1 (prices as printed) vs forecast VaR"]
+        D["Applies the executed orders (fills)<br/>updates positions"]
+        B["Jump filter decides the bar's prints<br/>held jump undone → bad tick, never seen<br/>held jump kept → real shock, enters one bar late"]
+        E["Returns of the models' view<br/>exposures at the validated prices"]
+        F["Computes dq_score and the mode"]
+        C --> D --> B --> E --> F
+    end
+
+    subgraph Model["Models and forecast"]
+        direction TB
+        G{FREEZE?}
+        H["Does not update the models<br/>keeps the last valid VaR/ES"]
+        I["Updates the 3 models"]
+        J{End of day?}
+        K["Re-estimates U profile, λ and ν on the window<br/>recalibrates the filter's scales · overnight forecast"]
+        L["Forecasts σ, VaR and ES of bar t+1<br/>EWMA-N (ref) · EWMA-N · EWMA-t"]
+        G -- yes --> H --> J
+        G -- no --> I --> J
+        J -- yes --> K --> L
+        J -- no --> L
+    end
+
+    Z([Next bar: back to the start])
+    A --> Data --> Model --> Z

@@ -11,25 +11,25 @@ Backtest of the one-bar-ahead forecasts (3077 bars, overnight gap excluded)
   EWMA-N (ref)    0.950   142   4.61% [ 3.93%,  5.41%]    5.00%    0.3209   0.3809   0.1729   green    1.143
   EWMA-N (ref)    0.975    82   2.66% [ 2.15%,  3.30%]    2.50%    0.5620   0.7240   0.0055   green    1.202
   EWMA-N (ref)    0.990    50   1.62% [ 1.23%,  2.14%]    1.00%    0.0014   0.0059   0.0005  yellow    1.247
-  EWMA-N          0.950   144   4.68% [ 3.99%,  5.48%]    5.00%    0.4104   0.6303   0.2984   green    1.115
-  EWMA-N          0.975    83   2.70% [ 2.18%,  3.33%]    2.50%    0.4885   0.6950   0.0300   green    1.156
-  EWMA-N          0.990    53   1.72% [ 1.32%,  2.25%]    1.00%    0.0003   0.0008   0.0005     red    1.135
-  EWMA-t          0.950   152   4.94% [ 4.23%,  5.76%]    5.00%    0.8781   0.9677   0.4308   green    1.031
-  EWMA-t          0.975    79   2.57% [ 2.06%,  3.19%]    2.50%    0.8114   0.7841   0.2989   green    1.044
-  EWMA-t          0.990    36   1.17% [ 0.85%,  1.62%]    1.00%    0.3561   0.1309   0.1859   green    1.032
-  Berkowitz density test (whole distribution): EWMA-N (ref) p = 0.0003; EWMA-N p = 0.0256; EWMA-t p = 0.2072;
+  EWMA-N          0.950   145   4.71% [ 4.02%,  5.52%]    5.00%    0.4600   0.6859   0.2889   green    1.110
+  EWMA-N          0.975    79   2.57% [ 2.06%,  3.19%]    2.50%    0.8114   0.7841   0.0705   green    1.164
+  EWMA-N          0.990    51   1.66% [ 1.26%,  2.17%]    1.00%    0.0008   0.0020   0.0005  yellow    1.142
+  EWMA-t          0.950   150   4.87% [ 4.17%,  5.69%]    5.00%    0.7492   0.9179   0.4853   green    1.030
+  EWMA-t          0.975    76   2.47% [ 1.98%,  3.08%]    2.50%    0.9148   0.7361   0.4113   green    1.048
+  EWMA-t          0.990    37   1.20% [ 0.87%,  1.65%]    1.00%    0.2740   0.1205   0.1559   green    1.023
+  Berkowitz density test (whole distribution): EWMA-N (ref) p = 0.0004; EWMA-N p = 0.0498; EWMA-t p = 0.2624;
 
 Coverage by time of day (exception rate, Kupiec p in brackets)
   model            conf        open (3 bars)               midday       close (3 bars)
   EWMA-N (ref)    0.950      11.28% [0.0000]       3.47% [0.0003]       6.36% [0.2746]
   EWMA-N (ref)    0.975       8.54% [0.0000]       1.90% [0.0492]       2.42% [0.9294]
   EWMA-N (ref)    0.990       5.18% [0.0000]       1.20% [0.3406]       1.21% [0.7078]
-  EWMA-N          0.950       5.18% [0.8799]       4.80% [0.6421]       3.33% [0.1402]
-  EWMA-N          0.975       3.96% [0.1173]       2.73% [0.4782]       1.21% [0.0964]
-  EWMA-N          0.990       2.74% [0.0090]       1.65% [0.0031]       1.21% [0.7078]
-  EWMA-t          0.950       5.49% [0.6896]       5.04% [0.9221]       3.64% [0.2332]
-  EWMA-t          0.975       3.96% [0.1173]       2.56% [0.8432]       1.21% [0.0964]
-  EWMA-t          0.990       1.83% [0.1761]       1.07% [0.7148]       1.21% [0.7078]
+  EWMA-N          0.950       5.18% [0.8799]       4.84% [0.7111]       3.33% [0.1402]
+  EWMA-N          0.975       3.96% [0.1173]       2.56% [0.8432]       1.21% [0.0964]
+  EWMA-N          0.990       2.74% [0.0090]       1.57% [0.0092]       1.21% [0.7078]
+  EWMA-t          0.950       5.49% [0.6896]       5.00% [0.9963]       3.33% [0.1402]
+  EWMA-t          0.975       3.96% [0.1173]       2.44% [0.8471]       1.21% [0.0964]
+  EWMA-t          0.990       1.83% [0.1761]       1.12% [0.5730]       1.21% [0.7078]
 
 Other horizons / books
   model                  conf     n   exc    rate            95% CI  Kupiec p     CC p    zone ES ratio
@@ -38,40 +38,63 @@ Other horizons / books
   overnight EWMA-N      0.990   110     3   2.73% [ 0.93%,  7.71%]    0.1333   0.2978  yellow    1.263
   overnight EWMA-t      0.950   110     7   6.36% [ 3.12%, 12.56%]    0.5282   0.5068   green    1.127
   overnight EWMA-t      0.975   110     3   2.73% [ 0.93%,  7.71%]    0.8804   0.9082   green    1.255
-  overnight EWMA-t      0.990   110     2   1.82% [ 0.50%,  6.39%]    0.4390   0.7141   green    1.163
-  book delta-linear     0.950  3077   152   4.94% [ 4.23%,  5.76%]    0.8781   0.9677   green    1.022
-  book delta-linear     0.975  3077    76   2.47% [ 1.98%,  3.08%]    0.9148   0.7361   green    1.055
-  book delta-linear     0.990  3077    39   1.27% [ 0.93%,  1.73%]    0.1522   0.0931   green    1.008
-  overnight EWMA-N Berkowitz p = 0.3305 (110 sessions)
-  overnight EWMA-t Berkowitz p = 0.3095 (110 sessions)
+  overnight EWMA-t      0.990   110     2   1.82% [ 0.50%,  6.39%]    0.4390   0.7141   green    1.164
+  book delta-linear     0.950  3077   152   4.94% [ 4.23%,  5.76%]    0.8781   0.9714   green    1.019
+  book delta-linear     0.975  3077    74   2.40% [ 1.92%,  3.01%]    0.7340   0.6541   green    1.058
+  book delta-linear     0.990  3077    39   1.27% [ 0.93%,  1.73%]    0.1522   0.0931   green    1.005
+  overnight EWMA-N Berkowitz p = 0.3321 (110 sessions)
+  overnight EWMA-t Berkowitz p = 0.3086 (110 sessions)
 
 EWMA parameters (111 daily re-estimations; diurnal profile pooled)
-  lambda (EWMA-N / EWMA-t): last 0.9724, range 0.9341 to 0.9837 (median 0.9634); half-life 24.8 bars
-  nu (EWMA-t):              last 10.07, range 5.16 to 11.06 (median 6.75), fitted on 840 standardized outcomes
+  lambda (EWMA-N / EWMA-t): last 0.9746, range 0.9336 to 0.9876 (median 0.9624); half-life 27.0 bars
+  nu (EWMA-t):              last 10.04, range 4.90 to 10.94 (median 6.75), fitted on 840 standardized outcomes
   overnight:                lambda 0.9744, nu 5.25
   EWMA-N (ref):             lambda 0.94 fixed, raw returns, Normal
 
 Data-quality layer
   feed rows: 62970 accepted, 0 duplicates discarded, 0 out of order (accepted), 0 delayed past the bar close (discarded), 0 off-grid
-  cells: 0 GAP, 0 STALE; jumps with |z| > 6: 10 SUSPECT decided by the next bar -> 0 bad ticks excluded (SPIKE), 10 real shocks kept, 0 undecided; 0 in market-wide moves (kept at once)
-  modes: NORMAL 4195 bars (99.93%), DEGRADED 3 (0.07%), FREEZE 0 (0.00%); 0 forecasts kept frozen
-  alerts: 2 (0 critical, 1 warning) -> alerts.csv; events -> dq_events.csv
-    2026-05-04 11:30:00 XAGR3  SHOCK_KEPT move of +1.55% confirmed by the next bar (+1.16%): real shock, kept
-    2026-05-04 12:15:00 XVAR3  SHOCK_KEPT move of +2.47% confirmed by the next bar (+2.47%): real shock, kept
-    2026-06-03 10:30:00 XVAR3  SHOCK_KEPT move of -9.69% confirmed by the next bar (-11.44%): real shock, kept
-    2026-06-18 12:00:00 XLOG3  SHOCK_KEPT move of -3.81% confirmed by the next bar (-2.08%): real shock, kept
-    2026-07-17 10:15:00 XBAN4  SHOCK_KEPT move of -2.75% confirmed by the next bar (-1.35%): real shock, kept
-    2026-07-17 10:15:00 XAGR3  SHOCK_KEPT move of -2.63% confirmed by the next bar (-2.36%): real shock, kept
-    2026-08-21 13:15:00 XVAR3  SHOCK_KEPT move of -8.70% confirmed by the next bar (-9.88%): real shock, kept
-    2026-09-03 12:45:00 XSAU3  SHOCK_KEPT move of +1.91% confirmed by the next bar (+2.53%): real shock, kept
-    2026-09-04 13:00:00 XAGR3  SHOCK_KEPT move of +2.12% confirmed by the next bar (+1.86%): real shock, kept
-    2026-10-02 16:45:00 XTEC3  SHOCK_KEPT move of -4.55% confirmed by the next bar (-3.66%): real shock, kept
+  cells: 0 GAP, 0 STALE
+  jump filter (z 10, shared with garch_t and realized_caviar): isolated jumps held 7 (bad ticks removed 0, genuine moves accepted one bar late 7, held at a session's last bar 0), market moves kept 22 (jump_events.csv)
+  modes: NORMAL 4198 bars (100.00%), DEGRADED 0 (0.00%), FREEZE 0 (0.00%); 0 forecasts kept frozen
+  alerts: 0 (0 critical, 0 warning) -> alerts.csv; events -> dq_events.csv
+    2026-03-09 15:30:00 XSAU3  SHOCK_KEPT move of -1.57% confirmed by the next bar: real shock, let in one bar late
+    2026-03-16 12:15:00 XVAR3  SHOCK_KEPT move of -2.64% confirmed by the next bar: real shock, let in one bar late
+    2026-03-16 16:30:00 XVAR3  SHOCK_KEPT move of +3.21% confirmed by the next bar: real shock, let in one bar late
+    2026-04-09 16:45:00 XPET3  SHOCK_KEPT move of -4.17% (|z| = 11.3) with other stocks jumping together: market move, kept
+    2026-04-09 16:45:00 XBAN4  SHOCK_KEPT move of -3.79% (|z| = 11.9) with other stocks jumping together: market move, kept
+    2026-04-09 16:45:00 XMIN3  SHOCK_KEPT move of -4.64% (|z| = 11.4) with other stocks jumping together: market move, kept
+    2026-04-09 16:45:00 XSID3  SHOCK_KEPT move of -4.92% (|z| = 11.2) with other stocks jumping together: market move, kept
+    2026-04-09 16:45:00 XVAR3  SHOCK_KEPT move of -4.95% (|z| = 10.5) with other stocks jumping together: market move, kept
+    2026-04-09 16:45:00 XTEC3  SHOCK_KEPT move of -5.32% (|z| = 12.5) with other stocks jumping together: market move, kept
+    2026-04-09 16:45:00 XSAU3  SHOCK_KEPT move of -3.60% (|z| = 12.8) with other stocks jumping together: market move, kept
+    2026-04-09 16:45:00 XLOG3  SHOCK_KEPT move of -4.81% (|z| = 14.6) with other stocks jumping together: market move, kept
+    2026-04-10 10:45:00 XPET3  SHOCK_KEPT move of -5.46% (|z| = 10.1) with other stocks jumping together: market move, kept
+    2026-04-10 10:45:00 XBAN4  SHOCK_KEPT move of -5.09% (|z| = 10.3) with other stocks jumping together: market move, kept
+    2026-04-10 10:45:00 XMIN3  SHOCK_KEPT move of -6.19% (|z| = 10.2) with other stocks jumping together: market move, kept
+    2026-04-10 10:45:00 XTEC3  SHOCK_KEPT move of -6.49% (|z| = 10.7) with other stocks jumping together: market move, kept
+    2026-04-10 10:45:00 XAGR3  SHOCK_KEPT move of -5.00% (|z| = 10.9) with other stocks jumping together: market move, kept
+    2026-04-10 10:45:00 XSAU3  SHOCK_KEPT move of -4.90% (|z| = 11.2) with other stocks jumping together: market move, kept
+    2026-04-10 10:45:00 XLOG3  SHOCK_KEPT move of -5.36% (|z| = 11.6) with other stocks jumping together: market move, kept
+    2026-04-10 16:15:00 XPET3  SHOCK_KEPT move of +4.07% (|z| = 10.4) with other stocks jumping together: market move, kept
+    2026-04-10 16:15:00 XELE3  SHOCK_KEPT move of +2.29% (|z| = 10.1) with other stocks jumping together: market move, kept
+    2026-04-10 16:15:00 XBAN4  SHOCK_KEPT move of +3.69% (|z| = 10.4) with other stocks jumping together: market move, kept
+    2026-04-10 16:15:00 XVAR3  SHOCK_KEPT move of +5.16% (|z| = 10.8) with other stocks jumping together: market move, kept
+    2026-04-10 16:15:00 XTEC3  SHOCK_KEPT move of +4.37% (|z| = 10.1) with other stocks jumping together: market move, kept
+    2026-04-10 16:15:00 XSAU3  SHOCK_KEPT move of +3.41% (|z| = 10.8) with other stocks jumping together: market move, kept
+    2026-04-10 16:15:00 XLOG3  SHOCK_KEPT move of +5.08% (|z| = 15.2) with other stocks jumping together: market move, kept
+    2026-06-03 11:45:00 XVAR3  SHOCK_KEPT move of +7.60% confirmed by the next bar: real shock, let in one bar late
+    2026-06-18 12:00:00 XLOG3  SHOCK_KEPT move of -3.81% confirmed by the next bar: real shock, let in one bar late
+    2026-08-21 13:15:00 XVAR3  SHOCK_KEPT move of -8.70% confirmed by the next bar: real shock, let in one bar late
+    2026-08-21 16:45:00 XVAR3  SHOCK_KEPT move of +4.91% confirmed by the next bar: real shock, let in one bar late
 
-Last forecast (2026-10-02 17:00:00 -> next bar): sigma ref 17890 / EWMA 29992; VaR99 ref 41619, N 69772, t 74111; ES99 ref 47681, N 79935, t 90143 (nu 10.07)
+Last forecast (2026-10-02 17:00:00 -> next bar), VaR / ES 99:
+  EWMA-N (ref)   sigma      17890  VaR      41619  ES      47681
+  EWMA-N         sigma      30027  VaR      69854  ES      80029
+  EWMA-t         sigma      30027  VaR      74208  ES      90276
 
 Performance (15 assets)
-  per-bar update (fills + DQ + filters + VaR/ES of 3 models): p50 1.50 us, p95 4.30 us, p99 15.93 us, max 164.20 us
-  end-of-day refit (profile + lambda + nu + filters + overnight): p50 5.42 ms, p95 7.48 ms, max 9.58 ms
-  replay: 4198 bars, 3077 forecasts scored (1 unscored: target bar never printed; 0 overnight unscored), 21 fills applied (0 unknown), engine 0.627 s, wall 0.892 s
+  per-bar update (fills + jump filter + DQ score + models + VaR/ES): p50 2.10 us, p95 4.60 us, p99 14.93 us, max 125.10 us
+  end-of-day refit (profile + lambda + nu + filters + overnight): p50 4.95 ms, p95 6.53 ms, max 40.88 ms
+  replay: 4198 bars, 3077 forecasts scored (1 unscored: target bar never printed; 0 overnight unscored), 21 fills applied (0 unknown), engine 0.618 s, wall 0.851 s
 
 outputs written to ewma/results/synthetic (report: report.txt)

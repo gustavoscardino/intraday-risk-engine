@@ -71,7 +71,9 @@ garch_t/
     ├── CMakeLists.txt       build recipe
     ├── include/garcht/      library interface (.hpp), one file per topic:
     │   ├── garch.hpp            GARCH(1,1)-t model: estimation and filter
-    │   ├── portfolio.hpp        portfolio engine (the core of the system)
+    │   ├── portfolio.hpp        portfolio engine: the GARCH-t/EVT model (the core of the system)
+    │   ├── models.hpp           the engine's VaR models behind the common model interface
+    │   ├── data_quality.hpp     the shared jump filter (common/) on a bar panel
     │   ├── risk.hpp             VaR and ES (Normal, t, extreme value tail)
     │   ├── backtest.hpp         Kupiec, Christoffersen, Berkowitz and Acerbi–Szekely tests
     │   ├── replay.hpp           the 15-minute cycle over a history
@@ -82,7 +84,7 @@ garch_t/
     │   └── math.hpp, optimize.hpp, random.hpp   math, optimizer, random numbers
     ├── src/                 implementation of each .hpp above (.cpp with the same name)
     ├── apps/                the programs in bin/ (one .cpp per program)
-    ├── tests/               automated tests (59 tests, 4047 checks)
+    ├── tests/               automated tests (60 tests, 4058 checks)
     └── tools/               fetch_b3_yahoo.py: downloads recent real B3 data
 ```
 
@@ -100,9 +102,11 @@ for each 15-minute bar:
   1. measures the P&L of the bar that just closed and compares it with the VaR forecast for it
   2. at the open: records the "gap" (jump between yesterday's close and today's open)
   3. applies the trades (fills) executed in the bar: the portfolio changes
-  4. updates each stock's model and the correlation between stocks (microseconds)
+  4. the jump filter decides the bar's prints; every model (GARCH-t/EVT and the EWMA-N (ref)
+     baseline) updates: each stock's GARCH and the correlation between stocks (microseconds)
   5. at the end of the day: re-estimates all models on the most recent sessions (about 40 ms)
-  6. forecasts volatility, VaR and ES for the next bar; with options, runs the book's Monte Carlo
+  6. forecasts volatility, VaR and ES of every model for the next bar; with options, the book's
+     Monte Carlo runs off the bar thread, after the VaR is published
   7. at the close: also forecasts the overnight risk
 at the end: backtest of all forecasts + report
 ```
@@ -181,6 +185,7 @@ themselves: `--data synthetic` becomes `data/synthetic`. Results go to
 | `--no-overnight` | skips the overnight risk | computed |
 | `--es-sims N` | simulations for the p-value of the ES test (0 = no p-value) | 2000 |
 | `--session auto\|HH:MM,MIN,N` | trading session: open, minutes per bar, bars per day | detected |
+| `--resample` | the price file has samples finer than the `--session` grid (e.g. 5-second prices): each bar takes the first open, the high, the low, the last close and the summed volume of its samples | off |
 | `--utc-offset MIN` | time zone used to convert timestamps that carry one (`Z`, `-03:00`) | −180 (São Paulo) |
 | `--threads N` | threads for the daily re-estimation | all cores |
 | `--daily` | prints a per-day summary | — |
@@ -188,10 +193,12 @@ themselves: `--data synthetic` becomes `data/synthetic`. Results go to
 
 Invalid values are rejected with an error message, never silently replaced by the default.
 
-**Jump filter (on by default).** A wrong print (one close far off, the next bar back to normal)
+**Jump filter (on by default).** The filter is shared by the three engines of the repository
+(`common/include/riskcommon/jump_filter.hpp`). A wrong print (one close far off, the next bar back to normal)
 enters a GARCH as two extreme shocks, the tick and its reversal, and inflates the variance for many
 bars; `--z-clip` only shrinks them. The filter holds a stock's isolated jump (beyond 10 times the
-robust scale of its recent returns at that time of day) for one bar: if the next bar undoes it, the
+robust scale of its returns of the last 10 sessions at that time of day, calibrated at each session's
+close) for one bar: if the next bar undoes it, the
 print never enters the model; if the new level holds, the move enters one bar late. Several stocks
 jumping together are a market move and enter at once. A jump held at the last bar of a session
 never enters the intraday model (the overnight gap starts from the last close kept). Every decision
@@ -199,20 +206,21 @@ is written to `jump_events.csv` and counted in the report's `data protection` li
 
 The filter changes only what the model sees. The backtest scores every forecast on the P&L of the
 prices as printed, so the filter cannot hide a loss (an automated test checks that the P&L is
-identical with the filter on and off); the tail calibration learns from the outcomes of the
-validated prices, so a held print never reaches it. On faulty copies of the data
+identical with the filter on and off); the positions are marked at the validated prices and the
+tail calibration learns from their outcomes, so a held print never reaches them. The filter's
+decision on each bar is part of the timed bar update. On faulty copies of the data
 (`data/tools/inject_faults.py`), share of the VaR 99% forecasts more than 5% away from the same
 configuration on the clean data:
 
 | Faulty copy of the data | `--no-jump-filter` | `--no-jump-filter --z-clip 6` | filter (default) |
 |---|---|---|---|
 | b3_real, 10 bad ticks | 75.2% | 82.3% | 0.3% |
-| b3_real, all recoverable faults together | 66.7% | 38.0% | 8.9% |
+| b3_real, all recoverable faults together | 66.7% | 38.0% | 9.5% |
 | synthetic, 10 bad ticks | 29.4% | 20.1% | 0.0% |
 
 The cost: a genuine move confined to one stock reaches the VaR one bar late. On the clean b3_real
-the filter held 18 jumps in 87 sessions (one a bad tick, 16 genuine moves, one at a session's last
-bar) and 2% of the forecasts differ by more than 5% from the unfiltered run; the coverage stays
+the filter held 20 jumps in 87 sessions (one a bad tick, 17 genuine moves, two at a session's last
+bar) and 3.4% of the forecasts differ by more than 5% from the unfiltered run; the coverage stays
 green at every level (99%: 1.15% with the filter, 1.07% without). An
 accepted move enters the model at its full size, as the return since the last good close. The
 decision on each bar uses only the bars up to it, so it works the same live.
@@ -315,7 +323,7 @@ and, with options, `book MC full reval` (book revalued by Monte Carlo) and `book
 
 | File | One row per… | Main columns |
 |---|---|---|
-| `risk_15m.csv` | forecast (bar) | `forecast_time` (when it was made), `target_time` (bar forecast), `net_exposure`, `sigma` (std of the P&L, BRL), `var_95/975/99`, `es_95/975/99`, the same measures for the EWMA (`ewma_*`), `realized_pnl` (the P&L that happened) and, with options, `book_mc_var_*`, `book_delta_var_*`, `book_realized_pnl` |
+| `risk_15m.csv` | forecast (bar) | `forecast_time` (when it was made), `target_time` (bar forecast), `net_exposure`; one block per model (common/README.md): GARCH-t/EVT `sigma` (std of the P&L, BRL), `nu`, `var_95/975/99`, `es_95/975/99`, then the EWMA-N (ref) baseline `ref_sigma`, `ref_var_*`, `ref_es_*`; `realized_pnl` (the P&L that happened) and, with options, `book_mc_var_*`, `book_delta_var_*`, `book_realized_pnl`, `mc_us` |
 | `risk_overnight.csv` | session | `sigma_gap` (risk of the opening jump), `sigma_first_bar`, `sigma`, `var_*`, `es_*`, `realized_pnl` |
 | `backtest_summary.csv` | model × level | everything in the backtest block, plus rates and p-values by time of day |
 | `garch_params_daily.csv` | stock × day | parameters estimated each day (`omega`, `alpha`, `beta`, `nu`), robust standard errors (`rse_*`), `source`, `status` |
@@ -374,10 +382,25 @@ tail calibrated on the current portfolio. It is added to the first bar of the ne
 
 **Options.** Monte Carlo with 10 thousand scenarios from the joint distribution forecast by the
 model, repricing each option with Black–Scholes. Time to expiry counts B3 business days. The
-delta-linear approximation is computed alongside, for comparison.
+delta-linear approximation is computed alongside, for comparison. The revaluation runs off the bar
+thread, after the VaR of the bar is published (a worker thread live; after the bars in an offline
+replay, with the inputs of its bar, in bar order): the records are the same as on the bar thread
+(automated test), and the bar update keeps its own cost.
 
-**Project reference.** EWMA covariance of the returns (λ = 0.94) with a Normal distribution,
-computed in parallel for comparison.
+**Project reference.** The RiskMetrics baseline (EWMA covariance of the returns, λ = 0.94, Normal),
+the same implementation as in the ewma engine (`common/`), runs beside GARCH-t behind the common
+model interface (`source/include/garcht/models.hpp`).
+
+**Other grids.** `--session` sets any grid of whole-minute bars and `--resample` aggregates finer
+samples (e.g. 5-second prices) into its bars. A 5-minute VaR updated every minute, the target grid
+of the project, is five runs on 5-minute grids opening one minute apart, each with non-overlapping
+targets:
+
+```
+bin\intraday_risk.exe --prices prices_5s.csv --resample --session 10:00,5,84 --out results\phase0
+bin\intraday_risk.exe --prices prices_5s.csv --resample --session 10:01,5,83 --out results\phase1
+...                                                         (10:02, 10:03, 10:04)
+```
 
 ---
 
@@ -396,14 +419,14 @@ At the open, EWMA-N reaches 5.2% of exceptions at 99%; GARCH-t stays at 1.2%.
 
 | Model | 95% VaR | 97.5% VaR | 99% VaR | ES test (p) | Traffic light |
 |---|---|---|---|---|---|
-| **GARCH-t** | 4.74% | 2.22% | 1.15% | 0.25 | green at all three levels |
+| **GARCH-t** | 4.74% | 2.22% | 1.15% | 0.24 | green at all three levels |
 | EWMA-N (ref) | 4.97% | 3.13% | 1.68% | 0.0005 (rejected) | yellow at 99% |
 
-The Berkowitz test of the whole distribution is at the limit for GARCH-t (p = 0.045; 0.06 with
+The Berkowitz test of the whole distribution is at the limit for GARCH-t (p = 0.042; 0.06 with
 `--no-jump-filter`) and rejects EWMA-N clearly (p = 0.001).
 
-**Synthetic market** (`results/synthetic`): GARCH-t 5.26% / 2.37% / 0.88%, Berkowitz p = 0.68.
-With the degraded feed (and `--z-clip 6`): 5.30% / 2.53% / 0.91%, Berkowitz p = 0.38, with no
+**Synthetic market** (`results/synthetic`): GARCH-t 5.17% / 2.37% / 0.88%, Berkowitz p = 0.67.
+With the degraded feed (and `--z-clip 6`): 5.23% / 2.53% / 0.91%, Berkowitz p = 0.41, with no
 run-time failure.
 The Monte Carlo study measures the model alone, on markets with no faulty prints, so it runs with
 the jump filter off (the library default).
@@ -412,8 +435,8 @@ the jump filter off (the library default).
 
 ## Tests and validation
 
-`build.bat` (or `build.sh`) rebuilds and runs **59 automated tests (4047 checks)** and 7 end-to-end
-tests. They cover:
+`build.bat` (or `build.sh`) rebuilds and runs **60 automated tests (4058 checks)**, the tests of the
+shared library (`common/`) and 7 end-to-end tests. They cover:
 
 - **Math functions:** compared with SciPy and with 40-digit reference values (mpmath).
 - **Estimation:** matches the Python `arch` package (`results/arch_crosscheck.txt`, produced with
@@ -430,6 +453,10 @@ tests. They cover:
   session's last bar and a market move are each classified as expected; the decisions are causal;
   the scored P&L is the same with the filter on and off; with the filter on, bad ticks leave the
   VaR where the same market without them puts it.
+- **Model interface and option book:** the models are registered and reported in order; the option
+  revaluation off the bar thread gives the records of the one on the bar thread, bit for bit.
+- **Other grids:** 5-second samples aggregate into 1-minute bars as expected; the synthetic market
+  split into 5-minute sub-bars and resampled to its 15-minute grid is the same panel.
 
 It compiles with no warnings on GCC, Clang and Visual Studio, for Windows, Linux and macOS.
 
@@ -437,10 +464,10 @@ It compiles with no warnings on GCC, Clang and Visual Studio, for Windows, Linux
 
 | Operation | Time |
 |---|---|
-| Update at each bar (trades, filters, correlation, VaR/ES) | about 4 µs |
-| Full daily re-estimation | about 40 ms |
-| Monte Carlo of the option book (10 thousand scenarios) | about 6.5 ms per bar |
-| Portfolio of 200 stocks, per bar | about 160 µs |
+| Update at each bar (trades, jump filter, GARCH filters, correlation, VaR/ES of both models) | about 2.5 µs |
+| Full daily re-estimation | about 30-40 ms |
+| Monte Carlo of the option book (10 thousand scenarios), off the bar thread | about 7 ms per bar |
+| Portfolio of 200 stocks, per bar (the GARCH-t model alone, `benchmark`) | about 90 µs |
 
 ---
 
@@ -455,8 +482,10 @@ engine.on_overnight(opening_gaps);                          // once per session,
 engine.on_bar(slot, bar_returns);                           // every 15 min; NaN = no trade
 engine.observe_outcome(realized_pnl, previous_forecast);    // feeds the tail calibration
 if (end_of_day) engine.refit(exposures_in_brl);             // daily re-estimation
-PortfolioRisk r = engine.compute(next_slot, exposures_in_brl);   // r.sigma, r.garch[k].var, r.garch[k].es
+PortfolioRisk r = engine.compute(next_slot, exposures_in_brl);   // r.sigma, r.measures[k].var, r.measures[k].es
 OvernightRisk o = engine.compute_overnight(exposures_in_brl);    // at the close
+// or every model of the engine behind the common interface (common/include/riskcommon/model.hpp):
+auto models = make_models(tickers, EngineConfig{});         // GARCH-t/EVT, EWMA-N (ref)
 ```
 
 Several threads can query the engine at the same time while another one feeds it. The complete
@@ -469,7 +498,7 @@ project, add `source/` to its CMake (`add_subdirectory`) and link to the `garcht
 
 - **Short real history.** Yahoo keeps only ~60 sessions of 15-minute bars; `fetch_b3_yahoo.py`
   appends new sessions, and `b3_real` has 87. On these data VaR and ES pass at every level; the
-  Berkowitz test of the whole distribution is at the limit (p = 0.045); a longer B3 history would
+  Berkowitz test of the whole distribution is at the limit (p = 0.042); a longer B3 history would
   make the validation firmer.
 - **Live feed and trading hours.** The live mode takes the session grid from the history, the file
   replay from the whole file: if the hours change inside the file (see below), give `--session`.
@@ -478,9 +507,11 @@ project, add `source/` to its CMake (`add_subdirectory`) and link to the `garcht
 - **B3 holidays** are registered for 2025–2027 (function `is_b3_holiday` in
   `source/src/market_data.cpp`).
 - **Options:** Black–Scholes with a fixed implied volatility per contract, no volatility surface.
-- **Data quality:** the project's NORMAL / DEGRADED / FREEZE modes belong to the data-quality layer.
-  The engine provides its inputs: source and status of each model, inactive stocks, unscored
-  forecasts.
+- **Data quality:** the project's NORMAL / DEGRADED / FREEZE modes belong to the ewma engine's
+  data-quality layer; this engine shares the jump filter with it and provides the inputs of the
+  modes: source and status of each model, inactive stocks, unscored forecasts.
+- **Horizon:** one bar. Longer horizons on finer data are reached with staggered grids (see "Other
+  grids"), not with overlapping multi-bar forecasts.
 
 ---
 
