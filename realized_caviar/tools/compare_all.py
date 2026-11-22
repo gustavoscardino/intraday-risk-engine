@@ -10,7 +10,8 @@ default would depend on the length of the file), and consolidates:
   by_stock.csv         the backtest of every stock and model
   by_hour.csv          exceptions per hour of the target start, pooled over the stocks
   diebold_mariano.csv  every pair of models: per stock and pooled, the mean pinball-loss
-                       difference, the DM statistic (Newey-West variance) and its p-value
+                       difference, the DM statistic (Newey-West variance), its p-value and the
+                       Holm-adjusted p-value (multiple comparisons)
   report.txt           the same as readable tables, with the configuration of the run
 
 Raw runs go to realized_caviar/results/comparison/ (not versioned); the consolidated tables to
@@ -73,6 +74,18 @@ def diebold_mariano(d):
         return n, mean, float("nan"), float("nan")
     stat = mean / math.sqrt(lrv / n)
     return n, mean, stat, 2 * norm_sf(abs(stat))
+
+
+def holm(p_values):
+    """Holm step-down adjusted p-values (family-wise error rate), in the input order. NaN stays NaN
+    and does not count in the family size."""
+    finite = sorted((p, i) for i, p in enumerate(p_values) if not math.isnan(p))
+    adjusted = [float("nan")] * len(p_values)
+    running = 0.0
+    for rank, (p, i) in enumerate(finite):
+        running = max(running, min(1.0, (len(finite) - rank) * p))
+        adjusted[i] = running
+    return adjusted
 
 
 def run_stock(exe, dataset, ticker, confidence, raw_root):
@@ -177,6 +190,16 @@ def main():
             dm_rows.append({"dataset": ds, "scope": "pooled", "model_a": a, "model_b": b, "n": n,
                             "mean_loss_diff": mean, "dm_stat": stat, "p_value": p})
 
+    # ---- Holm correction for multiple comparisons. Families: per dataset, the pooled tests of
+    # every pair of models; per dataset and pair, the tests of every stock.
+    families = defaultdict(list)
+    for r in dm_rows:
+        key = (r["dataset"], "pooled") if r["scope"] == "pooled" else (r["dataset"], r["model_a"], r["model_b"])
+        families[key].append(r)
+    for rows in families.values():
+        for r, p in zip(rows, holm([r["p_value"] for r in rows])):
+            r["p_holm"] = p
+
     # ---- outputs
     args.out.mkdir(parents=True, exist_ok=True)
 
@@ -209,17 +232,23 @@ def main():
                          f" {s['cc_rejections']:3d}/{s['stocks']:<3d} {1e4 * s['mean_pinball']:13.4f} {s['lowest_pinball_stocks']:6d}/{s['stocks']:<5d}"
                          f" {s['median_latency_ns']:10.1f}")
         lines.append("  Diebold-Mariano on the pinball loss (negative difference = model A better):")
-        lines.append(f"    {'A vs B':34} {'pooled diff (bp)':>17} {'DM':>7} {'p':>8}   per stock, significant at 5%: A better / B better / neither")
+        lines.append(f"    {'A vs B':34} {'pooled diff (bp)':>17} {'DM':>7} {'p':>8} {'p Holm':>8}"
+                     "   per stock, significant at 5% (raw p | Holm p): A better / B better / neither")
         for r in (x for x in dm_rows if x["dataset"] == ds and x["scope"] == "pooled"):
             per = [x for x in dm_rows if x["dataset"] == ds and x["scope"] != "pooled" and x["model_a"] == r["model_a"] and x["model_b"] == r["model_b"]]
-            a_better = sum(x["p_value"] < 0.05 and x["mean_loss_diff"] < 0 for x in per)
-            b_better = sum(x["p_value"] < 0.05 and x["mean_loss_diff"] > 0 for x in per)
+
+            def counts(key):
+                a_better = sum(x[key] < 0.05 and x["mean_loss_diff"] < 0 for x in per)
+                b_better = sum(x[key] < 0.05 and x["mean_loss_diff"] > 0 for x in per)
+                return f"{a_better} / {b_better} / {len(per) - a_better - b_better}"
             lines.append(f"    {r['model_a'] + ' vs ' + r['model_b']:34} {1e4 * r['mean_loss_diff']:17.4f} {r['dm_stat']:7.2f} {r['p_value']:8.4f}"
-                         f"   {a_better} / {b_better} / {len(per) - a_better - b_better}")
+                         f" {r['p_holm']:8.4f}   {counts('p_value')} | {counts('p_holm')}")
         lines.append("")
     lines += [
         "Notes: the pooled test uses, at each target time, the mean loss difference over the stocks (it accounts",
         "for the stocks moving together). p-values are asymptotic (normal), Newey-West variance with Bartlett weights.",
+        "p Holm: Holm-adjusted for multiple comparisons (family-wise 5%); families are, per dataset, the pooled tests of",
+        "the six pairs of models, and, per dataset and pair, the tests of the individual stocks.",
         "Latency: median over the stocks of each run's model-stage mean (batches of 1000 updates); machine-dependent.",
     ]
     (args.out / "report.txt").write_text("\n".join(lines) + "\n", encoding="utf-8")
