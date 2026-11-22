@@ -187,7 +187,7 @@ def _f_latency_ok(m: M):
                        + ") and the daily refit at most " + ", ".join(f"{lab(v)} {m[v, 'refit_max_ms']:.0f} ms" for v in
                                                                       defaults() if m.has((v, "refit_max_ms")))
                        + ", against 15-minute bars: at this scale performance does not constrain the designs. "
-                       "Timings vary by a factor of two between sessions on the reference laptop, so verdicts near a "
+                       "Timings vary between sessions on the same machine (up to a factor of two), so verdicts near a "
                        "threshold are marked PARTIAL.", ["P1", "P2", "P3"])
 
 
@@ -399,12 +399,11 @@ def _f_clip_tradeoff(m: M):
                    f"On the faulty feed, {m['garch_t_nojump', 'degraded_share_dev5_pct']:.1f}% of the unprotected "
                    f"GARCH-t forecasts stray more than 5%; clipping shocks at 6 sd leaves "
                    f"{m['garch_t_zclip6', 'degraded_share_dev5_pct']:.1f}% and the jump filter (default) "
-                   f"{m['garch_t', 'degraded_share_dev5_pct']:.2f}%." + r3 + " On genuine shocks clipping keeps a "
-                   f"lowest VaR ratio of {m['garch_t_zclip6', 'shock_min_ratio']:.3f} for "
-                   f"{m['garch_t_zclip6', 'r2_bars_affected']:.0f} bars, the filter "
-                   f"{m['garch_t', 'shock_min_ratio']:.3f} for {m['garch_t', 'r2_bars_affected']:.0f} bars: it delays a "
-                   "move confined to one stock by one bar, then lets it in at full size, while clipping shrinks "
-                   "every large shock for as long as it is in the variance.", ["R1", "R2", "R3"])
+                   f"{m['garch_t', 'degraded_share_dev5_pct']:.2f}%." + r3 + " At the genuine shocks of the clean "
+                   f"feed, the lowest ratio to the unprotected VaR is {m['garch_t_zclip6', 'shock_min_ratio']:.3f} "
+                   f"with clipping and {m['garch_t', 'shock_min_ratio']:.3f} with the filter: the filter delays a move "
+                   "confined to one stock by one bar, then lets it in at full size, while clipping shrinks every "
+                   "large shock for as long as it is in the variance.", ["R1", "R2", "R3"])
 
 
 def _f_fault_catalogue(m: M):
@@ -420,9 +419,10 @@ def _f_fault_catalogue(m: M):
     listing = "; ".join(f"{lab(v)}: {m.detail(v, 'r3_damaged_pct')}" for v in vs)
     if bad:
         return Finding("risk", "R-9", "Moderate doses of every recoverable fault still move the VaR",
-                       f"On faulty copies of both datasets with missing, duplicated, out-of-order and late rows, halts, "
-                       f"frozen quotes, bad ticks, corrupt values and early-ending sessions together ({listing}), "
-                       f"{names(bad)} stay above {limit:.0f}% of forecasts more than 5% away from the clean run. "
+                       "On faulty copies of both datasets with missing, duplicated, out-of-order and late rows, halts, "
+                       "frozen quotes, bad ticks, corrupt values and early-ending sessions together, "
+                       f"{names(bad)} stay above {limit:.0f}% of forecasts more than 5% away from the clean run "
+                       f"({listing}). "
                        "atam/results/faults/ shows which fault does it, one kind at a time: missing data is the "
                        "residual problem (no protection can recover a print that never arrives).", ["R3"])
     return Finding("non-risk", "N7", "Every engine absorbs the fault catalogue",
@@ -430,10 +430,45 @@ def _f_fault_catalogue(m: M):
                    "forecasts more than 5% away from the clean run.", ["R3"])
 
 
+def _f_unprinted_bar(m: M):
+    vs = [v for v in [default_variant("garch_t")] if v and m.has((v, "r1_off_after_unprinted"), (v, "degraded_share_dev5_pct"))
+          and m[v, "degraded_share_dev5_pct"] > 1 and m[v, "r1_share_dev5_other_pct"] <= 1]
+    if not vs:
+        return None
+    v = vs[0]
+    return Finding("sensitivity", "S-6", "An unprinted bar widens the next forecast on purpose",
+                   f"On the faulty feed {m[v, 'degraded_share_dev5_pct']:.2f}% of the {lab(v)} forecasts move more than "
+                   f"5% from the clean-feed ones, but {m[v, 'r1_off_after_unprinted']:.0f} of them are issued at or "
+                   "right after a bar in which a stock did not print; without those the share is "
+                   f"{m[v, 'r1_share_dev5_other_pct']:.2f}%. The engine marks a stock that skips a bar at its last "
+                   "print, so the P&L of its next bar spans two bars, and it adds the variance of the unprinted bar "
+                   "to that forecast: the clean-feed VaR covers one bar, the faulty-feed one covers the P&L it is "
+                   "actually scored on. R1 counts this deliberate response as a deviation; the threshold would be "
+                   "met if the scenario compared forecasts of the same P&L horizon.", ["R1"])
+
+
+def _f_book_cache(m: M):
+    vs = [v for v in [default_variant("garch_t")] if v and m.has((v, "latency_p99_us_no_book"), (v, "latency_p99_us"))
+          and m[v, "latency_p99_us"] > 2 * m[v, "latency_p99_us_no_book"]]
+    if not vs:
+        return None
+    g = default_variant("garch_t")
+    mc = (f" (the revaluation itself takes {m[g, 'mc_revaluation_p50_us'] / 1e3:.1f} ms per bar at the median)"
+          if m.has((g, "mc_revaluation_p50_us")) else "")
+    return Finding("sensitivity", "S-7", "The option revaluation slows down the bar update it is not part of",
+                   "With the option book, the Monte Carlo revaluation runs on the same thread between two bar updates"
+                   + mc + " and evicts the engine's data from the processor caches, so the next update starts cold: "
+                   + "; ".join(f"{lab(v)} p99 {m[v, 'latency_p99_us']:.1f} us with the book, "
+                               f"{m[v, 'latency_p99_us_no_book']:.1f} us without it (p50 {m[v, 'latency_p50_us']:.1f} "
+                               f"vs {m[v, 'latency_p50_us_no_book']:.1f} us)" for v in vs)
+                   + ". Running the revaluation on another core after the VaR is published would keep the bar update "
+                   "at its own cost.", ["P1"])
+
+
 FINDING_RULES = [_f_hidden_shock, _f_no_value_lookahead, _f_deterministic, _f_same_pipeline, _f_matched, _f_latency_ok, _f_model_cost,
                  _f_window_from_file, _f_end_of_data, _f_dq_policy, _f_no_interface, _f_grid, _f_no_dq_in_comparison,
                  _f_boundaries, _f_missing_policy, _f_fill_recalibration, _f_opening_hour, _f_reuse, _f_dq_tradeoff,
-                 _f_clip_tradeoff, _f_fault_catalogue]
+                 _f_clip_tradeoff, _f_fault_catalogue, _f_unprinted_bar, _f_book_cache]
 
 
 # ----------------------------------------------------------------------------- trade-off map
@@ -484,6 +519,13 @@ def tradeoff_rows(m: M) -> tuple[list[str], list[tuple[str, str, dict]]]:
     if m[g, "latency_max_us"] > 3 * m[g, "latency_max_without_fill_bars_us"]:
         rows.append(("Tail recalibration on fills\ninside the bar cycle", "GARCH-t", {
             P1: ("-", f"up to {m[g, 'latency_max_us']:,.0f} us\nvs {m[g, 'latency_p50_us']:.0f} us median")}))
+    if m.has((g, "latency_p99_us_no_book")) and m[g, "latency_p99_us"] > 2 * m[g, "latency_p99_us_no_book"]:
+        rows.append(("Option revaluation on the\nbar-update thread", "GARCH-t", {
+            P1: ("-", f"p99 {m[g, 'latency_p99_us']:.1f} us vs\n{m[g, 'latency_p99_us_no_book']:.1f} us without")}))
+    if m.has((g, "r1_off_after_unprinted")) and m[g, "r1_off_after_unprinted"] > 0:
+        rows.append(("Unprinted bar: its variance\nadded to the next forecast", "GARCH-t", {
+            R1: ("~", f"{m[g, 'r1_off_after_unprinted']:.0f} forecasts off;\n"
+                      f"{m[g, 'r1_share_dev5_other_pct']:.2f}% otherwise")}))
     rows += [
         ("Compiles ewma and garch_t\nsources", "Realized-CAViaR", {
             CP: ("+", "same loader and\nestimators"),
@@ -508,8 +550,8 @@ def fig_utility_tree(tree: list[dict]) -> str:
 
     fig = plt.figure(figsize=SLIDE)
     heading(fig, "Utility tree: the quality ruler the three architectures are measured against",
-            "Business drivers -> quality attributes -> scenarios with a measurable response. (Importance, "
-            "Difficulty): H = high, M = medium, L = low; bold = (H,H) or (H,M), analysed first")
+            "Business drivers -> quality attributes -> scenarios with a measurable response.\n"
+            "(Importance, Difficulty): H = high, M = medium, L = low; bold = (H,H) or (H,M), analysed first")
     ax = fig.add_axes([0.0, 0.0, 1.0, 0.86])
     ax.set_xlim(0, 1)
     ax.set_ylim(0, 1)

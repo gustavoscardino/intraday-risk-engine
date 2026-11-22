@@ -1,16 +1,18 @@
 R1 - faulty feed (prices_15m_degraded.csv) vs clean feed, main-model VaR 99% forecast by forecast
-  EWMA (DQ on)             0.04% of 2517 portfolio forecasts off by >5% (>1%:  9.10%), max     7.86% at 2026-07-28 11:30:00; 0 issued from one feed only (counted as off)
-  EWMA (DQ off)            8.34% of 2517 portfolio forecasts off by >5% (>1%: 40.44%), max    50.25% at 2026-07-28 11:45:00; 0 issued from one feed only (counted as off)
-  GARCH-t                 26.42% of 2517 portfolio forecasts off by >5% (>1%: 65.95%), max   108.57% at 2026-07-28 11:45:00; 0 issued from one feed only (counted as off)
-  GARCH-t (clip 6 sd)     13.63% of 2517 portfolio forecasts off by >5% (>1%: 64.56%), max    59.43% at 2026-07-28 11:45:00; 0 issued from one feed only (counted as off)
-  Realized-CAViaR         24.68% of 32340 single-stock forecasts of 15 stocks off by >5% (>1%: 59.80%), max   532.31% at 2026-07-08 14:45:00 (XPET3); 685 issued from one feed only (counted as off)
+  EWMA (DQ on)             0.03% of 3077 portfolio forecasts off by >5% (>1%: 10.63%), max     6.88% at 2026-07-28 11:30:00; 0 issued from one feed only (counted as off); 0 of the 1 off follow an unprinted bar (0.03% otherwise)
+  EWMA (DQ off)           10.01% of 3077 portfolio forecasts off by >5% (>1%: 36.40%), max    48.17% at 2026-07-28 12:15:00; 0 issued from one feed only (counted as off); 25 of the 308 off follow an unprinted bar (9.20% otherwise)
+  GARCH-t (filter on)      1.46% of 3077 portfolio forecasts off by >5% (>1%: 23.92%), max    24.21% at 2026-08-07 11:15:00; 0 issued from one feed only (counted as off); 38 of the 45 off follow an unprinted bar (0.23% otherwise)
+  GARCH-t (filter off)    25.64% of 3077 portfolio forecasts off by >5% (>1%: 58.34%), max   113.00% at 2026-07-28 11:45:00; 0 issued from one feed only (counted as off); 103 of the 789 off follow an unprinted bar (22.29% otherwise)
+  GARCH-t (clip 6 sd)     16.02% of 3077 portfolio forecasts off by >5% (>1%: 52.39%), max    60.33% at 2026-07-28 11:45:00; 0 issued from one feed only (counted as off); 87 of the 493 off follow an unprinted bar (13.19% otherwise)
+  Realized-CAViaR         17.98% of 39570 single-stock forecasts of 15 stocks off by >5% (>1%: 50.18%), max   340.55% at 2026-09-21 16:15:00 (XTEC3); 353 issued from one feed only (counted as off); 45 of the 6763 off follow an unprinted bar (17.87% otherwise)
   feed faults: 2026-07-08 13:45:00 bad tick on XPET3 close; 2026-07-28 11:30:00 bad tick on XBAN4 close; 2026-09-04 12:00:00 XCON3 price frozen for bars 8-17; 2026-09-21 15:15:00 bad tick on XTEC3 close
 
 R2 - genuine shocks on the clean feed: VaR issued at the shock bar vs the same engine unprotected
-  EWMA (DQ on)           market crash (portfolio): ratio 1.000; XVAR3 earnings shock (portfolio): ratio 1.021; clean-feed forecasts more than 5% below unprotected: 0 (reference: EWMA (DQ off))
+  EWMA (DQ on)           market crash (portfolio): ratio 1.000; XVAR3 earnings shock (portfolio): ratio 1.020; clean-feed forecasts more than 5% below unprotected: 0 (reference: EWMA (DQ off))
   EWMA (DQ off)          market crash (portfolio): ratio 1.000; XVAR3 earnings shock (portfolio): ratio 1.000; clean-feed forecasts more than 5% below unprotected: 0 (no protection to switch off; the filters take every printed bar, so the shock enters at once)
-  GARCH-t                market crash (portfolio): ratio 1.000; XVAR3 earnings shock (portfolio): ratio 1.000; clean-feed forecasts more than 5% below unprotected: 0 (no protection to switch off; the filters take every printed bar, so the shock enters at once)
-  GARCH-t (clip 6 sd)    market crash (portfolio): ratio 1.000; XVAR3 earnings shock (portfolio): ratio 0.962; clean-feed forecasts more than 5% below unprotected: 0 (reference: GARCH-t)
-  Realized-CAViaR        market crash (XPET3): ratio 1.000, NEVER in the features (first forecast of the session 12:00), VaR exception; XVAR3 earnings shock (XVAR3): ratio 1.000, in the features 0 bar(s) later; clean-feed forecasts more than 5% below unprotected: 0 (no protection to switch off; checked instead whether the shock enters the CAViaR features)
+  GARCH-t (filter on)    market crash (portfolio): ratio 0.998; XVAR3 earnings shock (portfolio): ratio 1.017; clean-feed forecasts more than 5% below unprotected: 1 (reference: GARCH-t (filter off))
+  GARCH-t (filter off)   market crash (portfolio): ratio 1.000; XVAR3 earnings shock (portfolio): ratio 1.000; clean-feed forecasts more than 5% below unprotected: 0 (no protection to switch off; the filters take every printed bar, so the shock enters at once)
+  GARCH-t (clip 6 sd)    market crash (portfolio): ratio 1.001; XVAR3 earnings shock (portfolio): ratio 0.973; clean-feed forecasts more than 5% below unprotected: 0 (reference: GARCH-t (filter off))
+  Realized-CAViaR        market crash (XPET3): ratio 1.000, in the features 0 bar(s) later; XVAR3 earnings shock (XVAR3): ratio 1.000, in the features 0 bar(s) later; clean-feed forecasts more than 5% below unprotected: 0 (no protection to switch off; checked instead whether the shock enters the CAViaR features)
   shocks: 2026-07-17 10:15:00 market crash: factor shock of -9 conditional std devs; elevated market volatility regime until day 104; 2026-08-21 13:15:00 XVAR3 earnings shock: -9% idiosyncratic move in one bar
   figures: atam/results/figures/r1_degraded_feed.png, atam/results/figures/r2_genuine_shocks.png

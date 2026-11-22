@@ -168,11 +168,11 @@ def run(fresh: bool = False) -> list[Measurement]:
             ms.append(Measurement("R3", v, "r3_damaged_pct", 100.0, "%", f"the run failed on the {SCORED} scenario"))
             continue
         worst = max(vals, key=vals.get)
-        unit = "single-stock forecasts, every stock pooled" if ENGINES[VARIANTS[v].engine].per_ticker else "portfolio forecasts"
+        unit = "single-stock forecasts (every stock)" if ENGINES[VARIANTS[v].engine].per_ticker else "portfolio forecasts"
         ms.append(Measurement("R3", v, "r3_damaged_pct", vals[worst], "%",
-                              "; ".join(f"{ds} {x:.1f}%" for ds, x in vals.items())
-                              + f" of the {unit} off by more than {DEV_LIMIT:.0f}% (worst: {worst}); lost: "
-                              + "; ".join(f"{ds} {got[ds]['lost_pct']:.1f}%" for ds in vals)))
+                              ", ".join(f"{ds} {x:.1f}%" for ds, x in vals.items())
+                              + f" of the {unit} more than {DEV_LIMIT:.0f}% off, "
+                              + ", ".join(f"{got[ds]['lost_pct']:.1f}%" for ds in vals) + " not issued"))
 
     def cell(r, key, fmt="{:.1f}"):
         x = r.get(key)

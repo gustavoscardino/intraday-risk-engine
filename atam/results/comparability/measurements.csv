@@ -1,15 +1,15 @@
 scenario,variant,metric,value,unit,detail
-Cp1,ewma,baseline_mismatches,6,forecasts,"synthetic: 6 of 2517 differ (data-quality layer: 6); same data-quality policy: 0. B3 real data: 320 of 840 default, 139 same policy (missing-data policy: 139)"
+Cp1,ewma,baseline_mismatches,355,forecasts,"synthetic: 355 of 3077 differ (data protection: 355); same data policy: 0. B3 real data: 1005 of 1308 default, 266 same policy (missing-data policy: 266)"
 Cp1,ewma,baseline_mismatches_same_policy,0,forecasts,
-Cp1,ewma,baseline_mismatches_b3_default,320,forecasts,
-Cp1,ewma,baseline_mismatches_b3_same_policy,139,forecasts,
+Cp1,ewma,baseline_mismatches_b3_default,1005,forecasts,
+Cp1,ewma,baseline_mismatches_b3_same_policy,266,forecasts,
 Cp1,ewma,b3_same_policy_max_diff_pct,12.5939,%,
 Cp1,ewma,b3_partial_bar_max_missing,6,assets,of 15 assets
-Cp1,garch_t,baseline_mismatches,6,forecasts,"synthetic: 6 of 2517 differ (data-quality layer: 6); same data-quality policy: 0. B3 real data: 320 of 840 default, 139 same policy (missing-data policy: 139)"
+Cp1,garch_t,baseline_mismatches,355,forecasts,"synthetic: 355 of 3077 differ (data protection: 355); same data policy: 0. B3 real data: 1005 of 1308 default, 266 same policy (missing-data policy: 266)"
 Cp1,garch_t,baseline_mismatches_same_policy,0,forecasts,
-Cp1,garch_t,baseline_mismatches_b3_default,320,forecasts,
-Cp1,garch_t,baseline_mismatches_b3_same_policy,139,forecasts,
+Cp1,garch_t,baseline_mismatches_b3_default,1005,forecasts,
+Cp1,garch_t,baseline_mismatches_b3_same_policy,266,forecasts,
 Cp1,garch_t,b3_same_policy_max_diff_pct,12.5939,%,
 Cp1,garch_t,b3_partial_bar_max_missing,6,assets,of 15 assets
-Cp1,realized_caviar,baseline_mismatches,0,forecasts,synthetic: 2156 of 2156 target returns equal the shared convention; b3_real: 720 of 720 target returns equal the shared convention; the three models share one target record per forecast by construction
+Cp1,realized_caviar,baseline_mismatches,0,forecasts,synthetic: 2638 of 2638 target returns equal the shared convention; b3_real: 1120 of 1120 target returns equal the shared convention; the three models share one target record per forecast by construction
 Cp1,realized_caviar,evaluated_from_hour,11,h,evaluated targets 11:00-16:45: the opening hour is outside the comparison

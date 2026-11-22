@@ -73,8 +73,15 @@ SLIDE = (12.0, 6.75)  # inches, 16:9
 
 
 def variant_style(variant) -> dict:
-    """Line style of an engine variant: engine hue; dashed when it is not the default configuration."""
-    return {"color": ENGINE_COLOR[variant.engine], "linestyle": "-" if variant.default else (0, (4, 2))}
+    """Line style of an engine variant: engine hue; solid for the default configuration, and a dash
+    pattern of its own for each other configuration of the same engine."""
+    from engines import VARIANTS
+
+    if variant.default:
+        return {"color": ENGINE_COLOR[variant.engine], "linestyle": "-"}
+    others = [v.key for v in VARIANTS.values() if v.engine == variant.engine and not v.default]
+    patterns = [(0, (4, 2)), (0, (1, 1.5)), (0, (6, 2, 1, 2))]
+    return {"color": ENGINE_COLOR[variant.engine], "linestyle": patterns[others.index(variant.key) % len(patterns)]}
 
 
 def heading(fig, title: str, subtitle: str = "") -> None:

@@ -73,7 +73,7 @@ def _figures(dev: dict, clean: dict, shocks: list, faults: list) -> list[str]:
     heading(fig, "R1 - Faulty feed: how far each engine's VaR drifts from the clean-feed VaR",
             "Same synthetic market with missing bars, duplicated and out-of-order rows, a frozen price and three bad "
             "ticks. |VaR 99% (faulty feed) / VaR 99% (clean feed) - 1|,\nmain model of each engine; solid = default "
-            "configuration, dashed = protection switched on/off. Log scale; values below 0.01% drawn at 0.01%")
+            "configuration, dashed or dotted = another configuration (legend). Log scale; values below 0.01% drawn at 0.01%")
     for ax, ek in zip(axes[:, 0], engines):
         for vkey, (series, share, top) in dev.items():
             v = VARIANTS[vkey]
@@ -94,10 +94,11 @@ def _figures(dev: dict, clean: dict, shocks: list, faults: list) -> list[str]:
             ax.axvline(x, color=MUTED, linewidth=0.6, alpha=0.6)
         ax.set_ylabel(f"{ENGINES[ek].label}\ndeviation (%)")
         ax.legend(loc="upper left", fontsize=9.5)
-    for f in faults:
+    for k, f in enumerate(faults):  # alternate heights so that labels of close events do not overlap
         x = dt.datetime.fromisoformat(f["timestamp"])
         label = f["event"].replace("[degraded feed only] ", "").replace(" close", "").replace("price frozen for ", "frozen ")
-        axes[0][0].annotate(label, (x, 1.0), xycoords=("data", "axes fraction"), xytext=(0, 3), textcoords="offset points",
+        axes[0][0].annotate(label, (x, 1.0), xycoords=("data", "axes fraction"), xytext=(0, 3 + 14 * (k % 2)),
+                            textcoords="offset points",
                             ha="center", va="bottom", fontsize=9, color=INK_2)
     axes[-1][0].xaxis.set_major_locator(mdates.MonthLocator())
     axes[-1][0].xaxis.set_major_formatter(mdates.DateFormatter("%b %Y"))
@@ -128,7 +129,7 @@ def _figures(dev: dict, clean: dict, shocks: list, faults: list) -> list[str]:
             lo, hi = min(lo, *ys), max(hi, *ys)
             v = VARIANTS[prot]
             ax.plot(xs, ys, marker="o", markersize=6, markeredgecolor=SURFACE, markeredgewidth=1.5,
-                    label=f"{e.label}: {v.decision}", **variant_style(v))
+                    label=f"{v.label} / {VARIANTS[e.unprotected].label}", **variant_style(v))
             k_far = max(range(len(ys)), key=lambda k: abs(ys[k] - 1.0))  # the largest effect
             if abs(ys[k_far] - 1.0) > 0.005:
                 ax.annotate(f"{ys[k_far]:.3f}", (xs[k_far], ys[k_far]), xytext=(8, 0), textcoords="offset points",
@@ -165,6 +166,16 @@ def shock_in_features(out: Path, ticker: str, t_event: str) -> dict:
             "shock_return": r}
 
 
+def unprinted_bars() -> dict[str, set[str]]:
+    """Bars (close times) at which a stock printed in the clean feed but not in the faulty one, per stock."""
+    def rows(path: Path) -> set[tuple[str, str]]:
+        return {(r["timestamp"], r["ticker"]) for r in read_csv(path)[1]}
+    out: dict[str, set[str]] = {}
+    for t, tk in rows(SYNTHETIC / "prices_15m.csv") - rows(DEGRADED_PRICES):
+        out.setdefault(tk, set()).add(t)
+    return out
+
+
 def _ticker_of(event: str, tickers: list[str], default: str) -> str:
     """The instrument an event names (single-instrument engines replay that one), else the default."""
     return next((t for t in tickers if t in event), default)
@@ -178,6 +189,16 @@ def run(fresh: bool = False) -> list[Measurement]:
     r1 = Section("R1 - faulty feed (prices_15m_degraded.csv) vs clean feed, main-model VaR 99% forecast by forecast")
     r2 = Section("R2 - genuine shocks on the clean feed: VaR issued at the shock bar vs the same engine unprotected")
     rows1, rows2, dev, clean = [], [], {}, {}
+    unprinted = unprinted_bars()
+    all_unprinted = set().union(*unprinted.values()) if unprinted else set()
+    bar_times = sorted({r["timestamp"] for r in read_csv(SYNTHETIC / "prices_15m.csv")[1]})
+    previous = dict(zip(bar_times[1:], bar_times[:-1]))
+
+    def after_unprinted(t: str, tk: str | None) -> bool:
+        """The forecast issued at bar t follows a bar the stock (any stock of a book) did not print: at t
+        or at the bar before. The P&L it is scored on then spans the unprinted bar too."""
+        bars = unprinted.get(tk, set()) if tk else all_unprinted
+        return t in bars or previous.get(t) in bars
 
     def clean_series(vkey: str, ticker: str | None = None) -> dict:
         e = ENGINES[VARIANTS[vkey].engine]
@@ -201,19 +222,29 @@ def run(fresh: bool = False) -> list[Measurement]:
         total = len(devs) + unmatched
         share5 = 100 * (sum(not (x <= DEV_LIMIT) for x in devs) + unmatched) / total
         share1 = 100 * (sum(not (x <= 1.0) for x in devs) + unmatched) / total
+        off = [(t, tk) for t, x, tk in pairs if not (x <= DEV_LIMIT)]
+        off_unprinted = sum(after_unprinted(t, tk) for t, tk in off)
+        share5_rest = 100 * (len(off) - off_unprinted + unmatched) / total
         worst = max((p for p in pairs if not math.isnan(p[1])), key=lambda p: p[1])
         where = f"{worst[0]}" + (f" ({worst[2]})" if worst[2] else "")
         unit = f"single-stock forecasts of {len(tickers)} stocks" if e.per_ticker else "portfolio forecasts"
         dev[v.key] = (sorted(per_time.items()), share5, worst[1])
         rows1.append({"variant": v.key, "unit": unit, "forecasts_compared": len(devs), "unmatched_forecasts": unmatched,
+                      "off_after_unprinted_bar": off_unprinted, "share_dev_gt_5pct_other": round(share5_rest, 3),
                       "share_dev_gt_1pct": round(share1, 3), "share_dev_gt_5pct": round(share5, 3),
                       "median_dev_pct": round(median(devs), 4), "max_dev_pct": round(worst[1], 3), "max_dev_at": where})
         r1.add(f"{v.label:<22} {share5:6.2f}% of {total} {unit} off by >{DEV_LIMIT:.0f}% (>1%: {share1:5.2f}%), "
-               f"max {worst[1]:8.2f}% at {where}; {unmatched} issued from one feed only (counted as off)")
+               f"max {worst[1]:8.2f}% at {where}; {unmatched} issued from one feed only (counted as off); "
+               f"{off_unprinted} of the {len(off)} off follow an unprinted bar ({share5_rest:.2f}% otherwise)")
         ms += [Measurement("R1", v.key, "degraded_share_dev5_pct", share5, "%",
                            f"{total} {unit} ({unmatched} issued from one feed only, counted as off); >1%: "
                            f"{share1:.2f}%; max {worst[1]:.1f}% at {where}"),
                Measurement("R1", v.key, "r1_max_dev_pct", worst[1], "%"),
+               Measurement("R1", v.key, "r1_off_after_unprinted", off_unprinted, "forecasts",
+                           f"of the {len(off)} forecasts off by more than {DEV_LIMIT:.0f}%, issued at or right after a "
+                           "bar a stock did not print in the faulty feed"),
+               Measurement("R1", v.key, "r1_share_dev5_other_pct", share5_rest, "%",
+                           "share of forecasts off by more than 5% that follow no unprinted bar"),
                Measurement("R1", v.key, "r1_share_dev1_pct", share1, "%")]
     for v in variants:
         e = ENGINES[v.engine]

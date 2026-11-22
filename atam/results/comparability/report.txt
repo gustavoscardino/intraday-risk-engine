@@ -1,24 +1,24 @@
 Cp1 - comparability (shared EWMA(0.94) baseline, exposure and realized P&L, forecast by forecast)
   synthetic: 0 bars in which some assets did not print
-    EWMA (DQ on) vs GARCH-t (default configurations): 6 of 2517 forecasts differ; forecasts only in one engine: 0 / 0
-        causes: data-quality layer: 6
-        e.g. 2026-08-21 13:15:00  baseline VaR 99% +3.28%  (data-quality layer: XVAR3)
-        e.g. 2026-09-03 12:45:00  baseline VaR 99% -1.36%  (data-quality layer: XSAU3)
-        e.g. 2026-06-03 10:30:00  baseline VaR 99% +1.02%  (data-quality layer: XVAR3)
-    EWMA (DQ off) vs GARCH-t (same data-quality policy): 0 of 2517 forecasts differ; forecasts only in one engine: 0 / 0
+    EWMA (DQ on) vs GARCH-t (filter on) (default configurations): 355 of 3077 forecasts differ; forecasts only in one engine: 0 / 0
+        causes: data protection: 355
+        e.g. 2026-08-21 13:30:00  baseline VaR 99% -19.49%  (data protection)
+        e.g. 2026-06-03 11:45:00  baseline VaR 99% +6.16%  (data protection)
+        e.g. 2026-08-21 13:15:00  baseline VaR 99% -3.02%  (data protection: XVAR3)
+    EWMA (DQ off) vs GARCH-t (filter off) (same data policy): 0 of 3077 forecasts differ; forecasts only in one engine: 0 / 0
         causes: none
   b3_real: 2 bars in which some assets did not print: 2026-10-05 10:15:00 (6 missing), 2026-10-07 11:30:00 (1 missing)
-    EWMA (DQ on) vs GARCH-t (default configurations): 320 of 840 forecasts differ; forecasts only in one engine: 0 / 0
-        causes: data-quality layer: 181, missing-data policy: 139
-        e.g. 2026-10-05 10:30:00  baseline VaR 99% -12.80%  (missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing))
-        e.g. 2026-10-05 10:15:00  baseline VaR 99% -12.75%  (missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing))
-        e.g. 2026-09-24 15:45:00  baseline VaR 99% -11.02%  (data-quality layer: RADL3)
-    EWMA (DQ off) vs GARCH-t (same data-quality policy): 139 of 840 forecasts differ; forecasts only in one engine: 0 / 0
-        causes: missing-data policy: 139
+    EWMA (DQ on) vs GARCH-t (filter on) (default configurations): 1005 of 1308 forecasts differ; forecasts only in one engine: 0 / 0
+        causes: data protection: 747, missing-data policy: 258
+        e.g. 2026-10-26 11:45:00  baseline VaR 99% +67.00%  (data protection: EQTL3)
+        e.g. 2026-10-26 12:00:00  baseline VaR 99% +65.25%  (data protection: BBAS3)
+        e.g. 2026-10-26 12:30:00  baseline VaR 99% +59.75%  (data protection)
+    EWMA (DQ off) vs GARCH-t (filter off) (same data policy): 266 of 1308 forecasts differ; forecasts only in one engine: 0 / 0
+        causes: missing-data policy: 266
         e.g. 2026-10-05 10:30:00  baseline VaR 99% -12.59%  (missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing))
         e.g. 2026-10-05 10:15:00  baseline VaR 99% -12.55%  (missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing))
         e.g. 2026-10-05 10:45:00  baseline VaR 99% -6.98%  (missing-data policy (partial bar 2026-10-05 10:15:00: 6 assets missing))
   tolerance 0.006 (printed precision); figure: atam/results/figures/cp1_comparability.png
-  Realized-CAViaR (one instrument per run; synthetic XPET3, B3 PETR4): models EWMA-N, GARCH-t, Realized-CAViaR
-    synthetic: 0 of 2156 evaluated target returns differ from the returns re-derived from prices_15m.csv (shared convention); 0 of 2156 forecast times where the models do not share one target record (by construction); evaluated targets 11:00-16:45
-    b3_real: 0 of 720 evaluated target returns differ from the returns re-derived from prices_15m.csv (shared convention); 0 of 720 forecast times where the models do not share one target record (by construction); evaluated targets 11:00-16:45
+  Realized-CAViaR (one instrument per run; synthetic XPET3, B3 PETR4): models EWMA-N, EWMA-t, GARCH-t, Realized-CAViaR
+    synthetic: 0 of 2638 evaluated target returns differ from the returns re-derived from prices_15m.csv (shared convention); 0 of 2638 forecast times where the models do not share one target record (by construction); evaluated targets 11:00-16:45
+    b3_real: 0 of 1120 evaluated target returns differ from the returns re-derived from prices_15m.csv (shared convention); 0 of 1120 forecast times where the models do not share one target record (by construction); evaluated targets 11:00-16:45

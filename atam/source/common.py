@@ -4,6 +4,7 @@ from __future__ import annotations
 import csv
 import hashlib
 import math
+import os
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Iterable, Sequence
@@ -14,7 +15,9 @@ DATA = REPO / "data"
 SYNTHETIC = DATA / "synthetic"
 B3_REAL = DATA / "b3_real"
 DEGRADED_PRICES = SYNTHETIC / "prices_15m_degraded.csv"
-WORK = ATAM_DIR / "work"  # raw engine runs, not versioned
+# raw engine runs, not versioned; ATAM_WORK moves them elsewhere (e.g. off a folder where an antivirus
+# stops freshly built programs from writing)
+WORK = Path(os.environ["ATAM_WORK"]) if os.environ.get("ATAM_WORK") else ATAM_DIR / "work"
 RESULTS = ATAM_DIR / "results"  # versioned evidence
 FIGURES = RESULTS / "figures"
 UTILITY_TREE = ATAM_DIR / "utility_tree.csv"

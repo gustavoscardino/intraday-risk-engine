@@ -1,33 +1,22 @@
 C1 - no look-ahead (forecasts at or before a cut time T must not depend on what follows T)
-  EWMA (DQ on): 435101 cells compared over 3 cuts
+  EWMA (DQ on): 533493 cells compared over 3 cuts
     perturbation              changed      0 cells, missing   0 rows, extra   0 rows   (test power: 100.0% of later forecasts changed)
-    truncation                changed  41943 cells, missing   1 rows, extra 784 rows
-        e.g. risk_15m.csv 2026-05-27 17:00:00 sigma: 37417.0926 -> 38727.9726
-        e.g. risk_15m.csv 2026-05-27 17:00:00 lambda: 0.94558 -> 0.94981
-        e.g. risk_15m.csv 2026-05-27 17:00:00 nu: 6.328 -> 6.770
-    truncation, fixed window  changed      0 cells, missing   1 rows, extra   1 rows
-        e.g. risk_overnight.csv 2026-08-31 17:00:00: forecast missing
-        e.g. risk_overnight.csv 2026-09-01 10:15:00 -> 2026-09-01 10:15:00: forecast not in the reference run
-  GARCH-t: 418787 cells compared over 3 cuts
-    perturbation              changed      0 cells, missing   0 rows, extra   0 rows   (test power: 100.0% of later forecasts changed)
-    truncation                changed  38824 cells, missing   0 rows, extra 783 rows
-        e.g. risk_15m.csv 2026-05-27 17:00:00 sigma: 39327.9078 -> 37572.0627
-        e.g. risk_15m.csv 2026-05-27 17:00:00 nu: 6.2271 -> 6.0327
-        e.g. risk_15m.csv 2026-05-27 17:00:00 var_95: 61755.48 -> 58268.97
+    truncation                changed      0 cells, missing   0 rows, extra   0 rows
     truncation, fixed window  changed      0 cells, missing   0 rows, extra   0 rows
-  Realized-CAViaR (XPET3): 128139 cells compared over 3 cuts
+  GARCH-t (filter on): 512909 cells compared over 3 cuts
     perturbation              changed      0 cells, missing   0 rows, extra   0 rows   (test power: 100.0% of later forecasts changed)
-    truncation                changed  10720 cells, missing   0 rows, extra 648 rows
-        e.g. atam_risk.csv 2026-05-28 11:00:00 var_99: 1217.4344315696562 -> 1233.9600528146261
-        e.g. atam_risk.csv 2026-05-28 11:00:00 quantile: -0.012249058663487217 -> -0.012416365552243886
-        e.g. atam_risk.csv 2026-05-28 11:00:00 ewma_var_99: 862.71514280586246 -> 905.63528442945835
+    truncation                changed      0 cells, missing   0 rows, extra   0 rows
+    truncation, fixed window  changed      0 cells, missing   0 rows, extra   0 rows
+  Realized-CAViaR (XPET3): 190065 cells compared over 3 cuts
+    perturbation              changed      0 cells, missing   0 rows, extra   0 rows   (test power: 100.0% of later forecasts changed)
+    truncation                changed      0 cells, missing   0 rows, extra   0 rows
     truncation, fixed window  changed      0 cells, missing   0 rows, extra   0 rows
 
-  cuts: 2026-06-29 12:00:00 (mid-session); 2026-07-30 17:00:00 (end of session (daily refit)); 2026-09-01 10:15:00 (first bar of a session)
+  cuts: 2026-06-09 12:00:00 (mid-session); 2026-07-16 17:00:00 (end of session (daily refit)); 2026-08-24 10:15:00 (first bar of a session)
   perturbation: log-price random walk, sd 0.005 per bar, seeded by the cut time
   figure: atam/results/figures/c1_no_lookahead.png
 
 Rp1 - reproducibility (the same replay, three runs, every output cell compared)
-  EWMA (DQ on): 3 runs, 203064 cells compared, 0 differ
-  GARCH-t: 3 runs, 200536 cells compared, 0 differ
-  Realized-CAViaR: 3 runs, 322792 cells compared, 0 differ
+  EWMA (DQ on): 3 runs, 247820 cells compared, 0 differ
+  GARCH-t (filter on): 3 runs, 244966 cells compared, 0 differ
+  Realized-CAViaR: 3 runs, 515864 cells compared, 0 differ

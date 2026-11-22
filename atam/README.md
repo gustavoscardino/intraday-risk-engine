@@ -24,14 +24,14 @@ How the nine steps of the method (Kazman, Klein and Clements, 2000) map to this 
 
 | ATAM step | Where |
 |---|---|
-| 1-2. Present the method and the business drivers | this README; `SLIDES.md` |
+| 1-2. Present the method and the business drivers | this README |
 | 3. Present the architectures | `architecture/` (diagrams of the three engines) and the table above |
 | 4. Identify the architectural approaches | `ENGINES` and `VARIANTS` in `source/engines.py`: each variant switches one decision |
 | 5. Generate the utility tree | `utility_tree.csv` (priorities set by the team) |
 | 6. Analyse the approaches | the parts in `source/`; findings in `results/report.txt` |
-| 7. Brainstorm and prioritize scenarios with the stakeholders | open: the utility tree and its thresholds are to be validated with the advisor (questions in `SLIDES.md`) |
+| 7. Brainstorm and prioritize scenarios with the stakeholders | open: the utility tree and its thresholds are to be validated with the advisor: are the scenarios, priorities and thresholds right, and which data policy should the statistical comparison use? |
 | 8. Analyse again with the new priorities | rerun `run.bat` after editing `utility_tree.csv`: thresholds are data |
-| 9. Present the results | `results/report.txt`, `results/figures/`, `results/latex/`, `SLIDES.md` |
+| 9. Present the results | `results/report.txt`, `results/figures/`, `results/latex/` |
 
 Every number in `results/` is produced by `run.bat` / `run.sh`; nothing is typed by hand.
 
@@ -59,9 +59,11 @@ atam\run.bat --only robustness,scorecard   :: some parts only
 (`requirements.txt`, installed by the scripts when missing), CMake and a C++20 compiler. EWMA and
 GARCH-t use their versioned programs in `bin/`; Realized-CAViaR is built from source
 (`realized_caviar/build.bat` the first time, an incremental rebuild afterwards, because it compiles
-sources of ewma and garch_t). A full run takes about an hour on the reference laptop, most of it the
+sources of ewma and garch_t). A full run takes about 45 minutes on a desktop i7 (`results/environment.txt`), most of it the
 fault catalogue (every engine on 30 faulty copies, Realized-CAViaR once per stock); a cached rerun
-takes a few seconds.
+takes a few seconds. The engine runs are kept in `atam/work/`; set `ATAM_WORK` to another folder to
+keep them elsewhere (for example when an antivirus stops freshly built programs from writing in the
+user's documents).
 
 ## What it produces
 
@@ -93,7 +95,7 @@ such capability or does not measure it the way the scenario asks.
 
 **Measurement caveats, stated in the report.**
 
-- Timings depend on the machine and its state; on the reference laptop they vary by up to a factor
+- Timings depend on the machine and its state; on the same machine they vary by up to a factor
   of two between sessions. Use the same quiet machine, on mains power, for numbers that will be quoted.
 - The portfolio engines time a whole bar cycle of 15 stocks; Realized-CAViaR times the model stage of
   one instrument in batches of 1000 (percentiles of batch means). Only the matched model-stage

@@ -138,9 +138,9 @@ def _figure(results: dict, events: dict, partials: dict) -> str:
     fig, axes = plt.subplots(len(datasets), 1, figsize=SLIDE, squeeze=False)
     fig.subplots_adjust(left=0.085, right=0.985, top=0.775, bottom=0.07, hspace=0.42)
     heading(fig, "Cp1 - Comparability: the two pipelines differ only in two input policies",
-            "Shared EWMA(0.94) baseline VaR 99%, EWMA engine vs GARCH-t engine, forecast by forecast. Differences come "
-            "from the data protections (blue: EWMA data-quality layer,\nGARCH-t jump filter) and, on real data, from how "
-            "a bar with missing assets updates the covariance (gray: both protections off)")
+            "Shared EWMA(0.94) baseline VaR 99%, EWMA engine vs GARCH-t engine, forecast by forecast. Blue: default "
+            "configurations, whose data\nprotections differ (EWMA data-quality layer, GARCH-t jump filter); gray: both "
+            "protections off, where only the missing-data policies differ")
     for ax, ds in zip(axes[:, 0], datasets):
         aligned, default = results[ds]["ewma_nodq"], results[ds]["ewma"]
         xs = [x for x, _ in aligned["series"]]
@@ -154,8 +154,12 @@ def _figure(results: dict, events: dict, partials: dict) -> str:
         span = (xs[-1] - xs[0]).total_seconds()
         busy = [dt.datetime.fromisoformat(t) for t in partials.get(ds, {})] if aligned["mismatch"] else []
         tagged = [(x, y, events.get(ds, {}).get(x.strftime("%Y-%m-%d %H:%M:%S"))) for x, y in pts]
-        tagged = [t for t in tagged if t[2] and all(abs((t[0] - b).days) > 3 for b in busy)]
-        for x, y, tag in sorted(tagged, key=lambda t: -abs(t[1]))[:6]:  # label the largest only
+        tagged = [t for t in tagged if t[2] and all(abs((t[0] - b).days) > 14 for b in busy)]
+        shown: list = []  # label the largest differences only, one per week, so that labels do not overlap
+        for x, y, tag in sorted(tagged, key=lambda t: -abs(t[1])):
+            if len(shown) == 4 or any(abs((x - z).days) < 7 for z in shown):
+                continue
+            shown.append(x)
             right = (x - xs[0]).total_seconds() > 0.93 * span
             ax.annotate(f"{tag} (DQ)", (x, y), xytext=(-5 if right else 5, -4 if y < 0 else 4),
                         textcoords="offset points", fontsize=9, color=INK_2, ha="right" if right else "left",

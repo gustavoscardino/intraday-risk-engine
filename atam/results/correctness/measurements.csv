@@ -1,25 +1,25 @@
 scenario,variant,metric,value,unit,detail
-C1,ewma,lookahead_changed_cells,42728,cells,"perturbation 0; truncation 42728 (default window resolved from the file length); truncation with --window-days 60: 0 changed cells, 1 missing and 1 extra rows"
+C1,ewma,lookahead_changed_cells,0,cells,"perturbation 0; truncation 0 (default window resolved from the file length); truncation with --window-days 40: 0 changed cells, 0 missing and 0 extra rows"
 C1,ewma,c1_perturbation_changed,0,cells,
-C1,ewma,c1_truncation_changed,42728,cells,
-C1,ewma,c1_truncation_fixed_window_changed,2,cells,
-C1,ewma,c1_compared_cells,435101,cells,
+C1,ewma,c1_truncation_changed,0,cells,
+C1,ewma,c1_truncation_fixed_window_changed,0,cells,
+C1,ewma,c1_compared_cells,533493,cells,
 C1,ewma,c1_power_pct,100,%,share of forecasts issued after T whose VaR 99% changed under perturbation
-Rp1,ewma,repro_differing_cells,0,cells,"3 runs, 203064 cells compared, timing columns excluded"
-Rp1,ewma,repro_compared_cells,203064,cells,
-C1,garch_t,lookahead_changed_cells,39607,cells,"perturbation 0; truncation 39607 (default window resolved from the file length); truncation with --window-days 60: 0 changed cells, 0 missing and 0 extra rows"
+Rp1,ewma,repro_differing_cells,0,cells,"3 runs, 247820 cells compared, timing columns excluded"
+Rp1,ewma,repro_compared_cells,247820,cells,
+C1,garch_t,lookahead_changed_cells,0,cells,"perturbation 0; truncation 0 (default window resolved from the file length); truncation with --window-days 40: 0 changed cells, 0 missing and 0 extra rows"
 C1,garch_t,c1_perturbation_changed,0,cells,
-C1,garch_t,c1_truncation_changed,39607,cells,
+C1,garch_t,c1_truncation_changed,0,cells,
 C1,garch_t,c1_truncation_fixed_window_changed,0,cells,
-C1,garch_t,c1_compared_cells,418787,cells,
+C1,garch_t,c1_compared_cells,512909,cells,
 C1,garch_t,c1_power_pct,100,%,share of forecasts issued after T whose VaR 99% changed under perturbation
-Rp1,garch_t,repro_differing_cells,0,cells,"3 runs, 200536 cells compared, timing columns excluded"
-Rp1,garch_t,repro_compared_cells,200536,cells,
-C1,realized_caviar,lookahead_changed_cells,11368,cells,"perturbation 0; truncation 11368 (default window resolved from the file length); truncation with --window-days 60: 0 changed cells, 0 missing and 0 extra rows"
+Rp1,garch_t,repro_differing_cells,0,cells,"3 runs, 244966 cells compared, timing columns excluded"
+Rp1,garch_t,repro_compared_cells,244966,cells,
+C1,realized_caviar,lookahead_changed_cells,0,cells,"perturbation 0; truncation 0 (default window resolved from the file length); truncation with --window-days 40: 0 changed cells, 0 missing and 0 extra rows"
 C1,realized_caviar,c1_perturbation_changed,0,cells,
-C1,realized_caviar,c1_truncation_changed,11368,cells,
+C1,realized_caviar,c1_truncation_changed,0,cells,
 C1,realized_caviar,c1_truncation_fixed_window_changed,0,cells,
-C1,realized_caviar,c1_compared_cells,128139,cells,
+C1,realized_caviar,c1_compared_cells,190065,cells,
 C1,realized_caviar,c1_power_pct,100,%,share of forecasts issued after T whose VaR 99% changed under perturbation
-Rp1,realized_caviar,repro_differing_cells,0,cells,"3 runs, 322792 cells compared, timing columns excluded"
-Rp1,realized_caviar,repro_compared_cells,322792,cells,
+Rp1,realized_caviar,repro_differing_cells,0,cells,"3 runs, 515864 cells compared, timing columns excluded"
+Rp1,realized_caviar,repro_compared_cells,515864,cells,

@@ -1,6 +1,7 @@
-variant,unit,forecasts_compared,unmatched_forecasts,share_dev_gt_1pct,share_dev_gt_5pct,median_dev_pct,max_dev_pct,max_dev_at
-ewma,portfolio forecasts,2517,0,9.098,0.04,0.3225,7.86,2026-07-28 11:30:00
-ewma_nodq,portfolio forecasts,2517,0,40.445,8.343,0.7221,50.253,2026-07-28 11:45:00
-garch_t,portfolio forecasts,2517,0,65.952,26.42,2.077,108.567,2026-07-28 11:45:00
-garch_t_zclip6,portfolio forecasts,2517,0,64.561,13.627,1.6011,59.43,2026-07-28 11:45:00
-realized_caviar,single-stock forecasts of 15 stocks,31655,685,59.796,24.682,1.5244,532.311,2026-07-08 14:45:00 (XPET3)
+variant,unit,forecasts_compared,unmatched_forecasts,off_after_unprinted_bar,share_dev_gt_5pct_other,share_dev_gt_1pct,share_dev_gt_5pct,median_dev_pct,max_dev_pct,max_dev_at
+ewma,portfolio forecasts,3077,0,0,0.032,10.627,0.032,0.3242,6.878,2026-07-28 11:30:00
+ewma_nodq,portfolio forecasts,3077,0,25,9.197,36.399,10.01,0.5987,48.174,2026-07-28 12:15:00
+garch_t,portfolio forecasts,3077,0,38,0.227,23.919,1.462,0.5623,24.208,2026-08-07 11:15:00
+garch_t_nojump,portfolio forecasts,3077,0,103,22.294,58.336,25.642,1.4353,113.002,2026-07-28 11:45:00
+garch_t_zclip6,portfolio forecasts,3077,0,87,13.195,52.389,16.022,1.0742,60.333,2026-07-28 11:45:00
+realized_caviar,single-stock forecasts of 15 stocks,39217,353,45,17.87,50.182,17.983,0.9856,340.553,2026-09-21 16:15:00 (XTEC3)

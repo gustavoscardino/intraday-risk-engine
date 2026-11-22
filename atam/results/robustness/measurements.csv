@@ -1,22 +1,37 @@
 scenario,variant,metric,value,unit,detail
-R1,ewma,degraded_share_dev5_pct,0.03972983711,%,"2517 portfolio forecasts (0 issued from one feed only, counted as off); >1%: 9.10%; max 7.9% at 2026-07-28 11:30:00"
-R1,ewma,r1_max_dev_pct,7.860417224,%,
-R1,ewma,r1_share_dev1_pct,9.098132698,%,
-R1,ewma_nodq,degraded_share_dev5_pct,8.343265793,%,"2517 portfolio forecasts (0 issued from one feed only, counted as off); >1%: 40.44%; max 50.3% at 2026-07-28 11:45:00"
-R1,ewma_nodq,r1_max_dev_pct,50.25307396,%,
-R1,ewma_nodq,r1_share_dev1_pct,40.44497418,%,
-R1,garch_t,degraded_share_dev5_pct,26.42034168,%,"2517 portfolio forecasts (0 issued from one feed only, counted as off); >1%: 65.95%; max 108.6% at 2026-07-28 11:45:00"
-R1,garch_t,r1_max_dev_pct,108.5671829,%,
-R1,garch_t,r1_share_dev1_pct,65.9515296,%,
-R1,garch_t_zclip6,degraded_share_dev5_pct,13.62733413,%,"2517 portfolio forecasts (0 issued from one feed only, counted as off); >1%: 64.56%; max 59.4% at 2026-07-28 11:45:00"
-R1,garch_t_zclip6,r1_max_dev_pct,59.42966229,%,
-R1,garch_t_zclip6,r1_share_dev1_pct,64.5609853,%,
-R1,realized_caviar,degraded_share_dev5_pct,24.68150897,%,"32340 single-stock forecasts of 15 stocks (685 issued from one feed only, counted as off); >1%: 59.80%; max 532.3% at 2026-07-08 14:45:00 (XPET3)"
-R1,realized_caviar,r1_max_dev_pct,532.3109435,%,
-R1,realized_caviar,r1_share_dev1_pct,59.79591837,%,
-R2,ewma,shock_min_ratio,1,ratio,market crash (portfolio): ratio 1.000; XVAR3 earnings shock (portfolio): ratio 1.021; reference: EWMA (DQ off)
+R1,ewma,degraded_share_dev5_pct,0.03249918752,%,"3077 portfolio forecasts (0 issued from one feed only, counted as off); >1%: 10.63%; max 6.9% at 2026-07-28 11:30:00"
+R1,ewma,r1_max_dev_pct,6.877742972,%,
+R1,ewma,r1_off_after_unprinted,0,forecasts,"of the 1 forecasts off by more than 5%, issued at or right after a bar a stock did not print in the faulty feed"
+R1,ewma,r1_share_dev5_other_pct,0.03249918752,%,share of forecasts off by more than 5% that follow no unprinted bar
+R1,ewma,r1_share_dev1_pct,10.62723432,%,
+R1,ewma_nodq,degraded_share_dev5_pct,10.00974976,%,"3077 portfolio forecasts (0 issued from one feed only, counted as off); >1%: 36.40%; max 48.2% at 2026-07-28 12:15:00"
+R1,ewma_nodq,r1_max_dev_pct,48.17355921,%,
+R1,ewma_nodq,r1_off_after_unprinted,25,forecasts,"of the 308 forecasts off by more than 5%, issued at or right after a bar a stock did not print in the faulty feed"
+R1,ewma_nodq,r1_share_dev5_other_pct,9.197270068,%,share of forecasts off by more than 5% that follow no unprinted bar
+R1,ewma_nodq,r1_share_dev1_pct,36.39909002,%,
+R1,garch_t,degraded_share_dev5_pct,1.462463438,%,"3077 portfolio forecasts (0 issued from one feed only, counted as off); >1%: 23.92%; max 24.2% at 2026-08-07 11:15:00"
+R1,garch_t,r1_max_dev_pct,24.20798241,%,
+R1,garch_t,r1_off_after_unprinted,38,forecasts,"of the 45 forecasts off by more than 5%, issued at or right after a bar a stock did not print in the faulty feed"
+R1,garch_t,r1_share_dev5_other_pct,0.2274943126,%,share of forecasts off by more than 5% that follow no unprinted bar
+R1,garch_t,r1_share_dev1_pct,23.91940201,%,
+R1,garch_t_nojump,degraded_share_dev5_pct,25.64185895,%,"3077 portfolio forecasts (0 issued from one feed only, counted as off); >1%: 58.34%; max 113.0% at 2026-07-28 11:45:00"
+R1,garch_t_nojump,r1_max_dev_pct,113.0015772,%,
+R1,garch_t_nojump,r1_off_after_unprinted,103,forecasts,"of the 789 forecasts off by more than 5%, issued at or right after a bar a stock did not print in the faulty feed"
+R1,garch_t_nojump,r1_share_dev5_other_pct,22.29444264,%,share of forecasts off by more than 5% that follow no unprinted bar
+R1,garch_t_nojump,r1_share_dev1_pct,58.3360416,%,
+R1,garch_t_zclip6,degraded_share_dev5_pct,16.02209945,%,"3077 portfolio forecasts (0 issued from one feed only, counted as off); >1%: 52.39%; max 60.3% at 2026-07-28 11:45:00"
+R1,garch_t_zclip6,r1_max_dev_pct,60.33340939,%,
+R1,garch_t_zclip6,r1_off_after_unprinted,87,forecasts,"of the 493 forecasts off by more than 5%, issued at or right after a bar a stock did not print in the faulty feed"
+R1,garch_t_zclip6,r1_share_dev5_other_pct,13.19467013,%,share of forecasts off by more than 5% that follow no unprinted bar
+R1,garch_t_zclip6,r1_share_dev1_pct,52.38869028,%,
+R1,realized_caviar,degraded_share_dev5_pct,17.9833207,%,"39570 single-stock forecasts of 15 stocks (353 issued from one feed only, counted as off); >1%: 50.18%; max 340.6% at 2026-09-21 16:15:00 (XTEC3)"
+R1,realized_caviar,r1_max_dev_pct,340.5532897,%,
+R1,realized_caviar,r1_off_after_unprinted,45,forecasts,"of the 6763 forecasts off by more than 5%, issued at or right after a bar a stock did not print in the faulty feed"
+R1,realized_caviar,r1_share_dev5_other_pct,17.86959818,%,share of forecasts off by more than 5% that follow no unprinted bar
+R1,realized_caviar,r1_share_dev1_pct,50.18195603,%,
+R2,ewma,shock_min_ratio,1,ratio,market crash (portfolio): ratio 1.000; XVAR3 earnings shock (portfolio): ratio 1.020; reference: EWMA (DQ off)
 R2,ewma,r2_hidden_shocks,0,shocks,
-R2,ewma,r2_max_effect_pct,2.131318619,%,largest |VaR protected / unprotected - 1| at a shock bar
+R2,ewma,r2_max_effect_pct,1.95337906,%,largest |VaR protected / unprotected - 1| at a shock bar
 R2,ewma,r2_bars_affected,1,bars,bars after a shock with the protected VaR more than 0.5% away from the unprotected one
 R2,ewma,r2_hidden_forecasts,0,forecasts,clean-feed forecasts more than 5% below the unprotected engine
 R2,ewma_nodq,shock_min_ratio,1,ratio,"market crash (portfolio): ratio 1.000; XVAR3 earnings shock (portfolio): ratio 1.000; no protection to switch off; the filters take every printed bar, so the shock enters at once"
@@ -24,18 +39,23 @@ R2,ewma_nodq,r2_hidden_shocks,0,shocks,
 R2,ewma_nodq,r2_max_effect_pct,0,%,largest |VaR protected / unprotected - 1| at a shock bar
 R2,ewma_nodq,r2_bars_affected,0,bars,bars after a shock with the protected VaR more than 0.5% away from the unprotected one
 R2,ewma_nodq,r2_hidden_forecasts,0,forecasts,clean-feed forecasts more than 5% below the unprotected engine
-R2,garch_t,shock_min_ratio,1,ratio,"market crash (portfolio): ratio 1.000; XVAR3 earnings shock (portfolio): ratio 1.000; no protection to switch off; the filters take every printed bar, so the shock enters at once"
+R2,garch_t,shock_min_ratio,0.9975900678,ratio,market crash (portfolio): ratio 0.998; XVAR3 earnings shock (portfolio): ratio 1.017; reference: GARCH-t (filter off)
 R2,garch_t,r2_hidden_shocks,0,shocks,
-R2,garch_t,r2_max_effect_pct,0,%,largest |VaR protected / unprotected - 1| at a shock bar
-R2,garch_t,r2_bars_affected,0,bars,bars after a shock with the protected VaR more than 0.5% away from the unprotected one
-R2,garch_t,r2_hidden_forecasts,0,forecasts,clean-feed forecasts more than 5% below the unprotected engine
-R2,garch_t_zclip6,shock_min_ratio,0.9621877667,ratio,market crash (portfolio): ratio 1.000; XVAR3 earnings shock (portfolio): ratio 0.962; reference: GARCH-t
+R2,garch_t,r2_max_effect_pct,1.660709479,%,largest |VaR protected / unprotected - 1| at a shock bar
+R2,garch_t,r2_bars_affected,21,bars,bars after a shock with the protected VaR more than 0.5% away from the unprotected one
+R2,garch_t,r2_hidden_forecasts,1,forecasts,clean-feed forecasts more than 5% below the unprotected engine
+R2,garch_t_nojump,shock_min_ratio,1,ratio,"market crash (portfolio): ratio 1.000; XVAR3 earnings shock (portfolio): ratio 1.000; no protection to switch off; the filters take every printed bar, so the shock enters at once"
+R2,garch_t_nojump,r2_hidden_shocks,0,shocks,
+R2,garch_t_nojump,r2_max_effect_pct,0,%,largest |VaR protected / unprotected - 1| at a shock bar
+R2,garch_t_nojump,r2_bars_affected,0,bars,bars after a shock with the protected VaR more than 0.5% away from the unprotected one
+R2,garch_t_nojump,r2_hidden_forecasts,0,forecasts,clean-feed forecasts more than 5% below the unprotected engine
+R2,garch_t_zclip6,shock_min_ratio,0.9728395023,ratio,market crash (portfolio): ratio 1.001; XVAR3 earnings shock (portfolio): ratio 0.973; reference: GARCH-t (filter off)
 R2,garch_t_zclip6,r2_hidden_shocks,0,shocks,
-R2,garch_t_zclip6,r2_max_effect_pct,3.781223329,%,largest |VaR protected / unprotected - 1| at a shock bar
+R2,garch_t_zclip6,r2_max_effect_pct,2.716049769,%,largest |VaR protected / unprotected - 1| at a shock bar
 R2,garch_t_zclip6,r2_bars_affected,27,bars,bars after a shock with the protected VaR more than 0.5% away from the unprotected one
 R2,garch_t_zclip6,r2_hidden_forecasts,0,forecasts,clean-feed forecasts more than 5% below the unprotected engine
-R2,realized_caviar,shock_min_ratio,0,ratio,"market crash (XPET3): ratio 1.000, NEVER in the features (first forecast of the session 12:00), VaR exception; XVAR3 earnings shock (XVAR3): ratio 1.000, in the features 0 bar(s) later; no protection to switch off; checked instead whether the shock enters the CAViaR features"
-R2,realized_caviar,r2_hidden_shocks,1,shocks,market crash
+R2,realized_caviar,shock_min_ratio,1,ratio,"market crash (XPET3): ratio 1.000, in the features 0 bar(s) later; XVAR3 earnings shock (XVAR3): ratio 1.000, in the features 0 bar(s) later; no protection to switch off; checked instead whether the shock enters the CAViaR features"
+R2,realized_caviar,r2_hidden_shocks,0,shocks,
 R2,realized_caviar,r2_max_effect_pct,0,%,largest |VaR protected / unprotected - 1| at a shock bar
 R2,realized_caviar,r2_bars_affected,0,bars,bars after a shock with the protected VaR more than 0.5% away from the unprotected one
 R2,realized_caviar,r2_hidden_forecasts,0,forecasts,clean-feed forecasts more than 5% below the unprotected engine

@@ -1,11 +1,13 @@
 variant,event_time,event,forecast_time,var99,var99_unprotected,ratio,bars_to_99pct,bars_affected,next_bar_pnl,exception,exception_unprotected,instrument
-ewma,2026-07-17 10:15:00,market crash: factor shock of -9 conditional std devs; elevated market volatility regime until day 104,2026-07-17 11:00:00,102319.12,102319.12,1,0,0,28690,0,0,portfolio
-ewma,2026-08-21 13:15:00,XVAR3 earnings shock: -9% idiosyncratic move in one bar,2026-08-21 13:15:00,46173.61,45210.04,1.021313186,0,1,-18140,0,0,portfolio
-ewma_nodq,2026-07-17 10:15:00,market crash: factor shock of -9 conditional std devs; elevated market volatility regime until day 104,2026-07-17 11:00:00,102319.12,102319.12,1,0,0,28690,0,0,portfolio
-ewma_nodq,2026-08-21 13:15:00,XVAR3 earnings shock: -9% idiosyncratic move in one bar,2026-08-21 13:15:00,45210.04,45210.04,1,0,0,-18140,0,0,portfolio
-garch_t,2026-07-17 10:15:00,market crash: factor shock of -9 conditional std devs; elevated market volatility regime until day 104,2026-07-17 11:00:00,93355.86,93355.86,1,0,0,28690,0,0,portfolio
-garch_t,2026-08-21 13:15:00,XVAR3 earnings shock: -9% idiosyncratic move in one bar,2026-08-21 13:15:00,54424.45,54424.45,1,0,0,-18140,0,0,portfolio
-garch_t_zclip6,2026-07-17 10:15:00,market crash: factor shock of -9 conditional std devs; elevated market volatility regime until day 104,2026-07-17 11:00:00,93391.76,93355.86,1.00038455,0,0,28690,0,0,portfolio
-garch_t_zclip6,2026-08-21 13:15:00,XVAR3 earnings shock: -9% idiosyncratic move in one bar,2026-08-21 13:15:00,52366.54,54424.45,0.9621877667,2,27,-18140,0,0,portfolio
-realized_caviar,2026-07-17 10:15:00,market crash: factor shock of -9 conditional std devs; elevated market volatility regime until day 104,2026-07-17 12:00:00,788.0086314,788.0086314,1,0,0,-813.272609,1,1,XPET3
-realized_caviar,2026-08-21 13:15:00,XVAR3 earnings shock: -9% idiosyncratic move in one bar,2026-08-21 13:15:00,1825.311867,1825.311867,1,0,0,-1173.020528,0,0,XVAR3
+ewma,2026-07-17 10:15:00,market crash: factor shock of -9 conditional std devs; elevated market volatility regime until day 104,2026-07-17 11:00:00,108648.7,108648.7,1,0,0,28690,0,0,portfolio
+ewma,2026-08-21 13:15:00,XVAR3 earnings shock: -9% idiosyncratic move in one bar,2026-08-21 13:15:00,46399.88,45510.88,1.019533791,0,1,-18140,0,0,portfolio
+ewma_nodq,2026-07-17 10:15:00,market crash: factor shock of -9 conditional std devs; elevated market volatility regime until day 104,2026-07-17 11:00:00,108648.7,108648.7,1,0,0,28690,0,0,portfolio
+ewma_nodq,2026-08-21 13:15:00,XVAR3 earnings shock: -9% idiosyncratic move in one bar,2026-08-21 13:15:00,45510.88,45510.88,1,0,0,-18140,0,0,portfolio
+garch_t,2026-07-17 10:15:00,market crash: factor shock of -9 conditional std devs; elevated market volatility regime until day 104,2026-07-17 11:00:00,105209.39,105463.55,0.9975900678,0,3,28690,0,0,portfolio
+garch_t,2026-08-21 13:15:00,XVAR3 earnings shock: -9% idiosyncratic move in one bar,2026-08-21 13:15:00,58465.44,57510.36,1.016607095,0,21,-18140,0,0,portfolio
+garch_t_nojump,2026-07-17 10:15:00,market crash: factor shock of -9 conditional std devs; elevated market volatility regime until day 104,2026-07-17 11:00:00,105463.55,105463.55,1,0,0,28690,0,0,portfolio
+garch_t_nojump,2026-08-21 13:15:00,XVAR3 earnings shock: -9% idiosyncratic move in one bar,2026-08-21 13:15:00,57510.36,57510.36,1,0,0,-18140,0,0,portfolio
+garch_t_zclip6,2026-07-17 10:15:00,market crash: factor shock of -9 conditional std devs; elevated market volatility regime until day 104,2026-07-17 11:00:00,105527.6,105463.55,1.000607319,0,0,28690,0,0,portfolio
+garch_t_zclip6,2026-08-21 13:15:00,XVAR3 earnings shock: -9% idiosyncratic move in one bar,2026-08-21 13:15:00,55948.35,57510.36,0.9728395023,1,27,-18140,0,0,portfolio
+realized_caviar,2026-07-17 10:15:00,market crash: factor shock of -9 conditional std devs; elevated market volatility regime until day 104,2026-07-17 11:00:00,1176.783421,1176.783421,1,0,0,390.752198,0,0,XPET3
+realized_caviar,2026-08-21 13:15:00,XVAR3 earnings shock: -9% idiosyncratic move in one bar,2026-08-21 13:15:00,1855.692566,1855.692566,1,0,0,-1173.020528,0,0,XVAR3

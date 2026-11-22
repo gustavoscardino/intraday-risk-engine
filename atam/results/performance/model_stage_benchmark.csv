@@ -1,4 +1,5 @@
 variant,model,mean_ns,p50_ns,p95_ns,p99_ns,state_bytes,updates_per_second
-realized_caviar,Realized-CAViaR,27.855,26.8,29.1,47.1,40,35900068.57
-realized_caviar,EWMA-N,45.316,44.9,45.3,55.2,240,22067334.06
-realized_caviar,GARCH-t,40.023,39.7,42.3,57,280,24985570.83
+realized_caviar,Realized-CAViaR,20.305,17.5,33.1,46.5,40,49249317.28
+realized_caviar,EWMA-N,33.362,27,58.3,85.6,240,29973907.71
+realized_caviar,GARCH-t,28.296,24.5,51.3,65.5,280,35340746.64
+realized_caviar,EWMA-t,32.634,27,55.1,80.3,248,30642653.04

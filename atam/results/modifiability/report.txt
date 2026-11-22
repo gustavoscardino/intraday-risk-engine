@@ -1,5 +1,5 @@
 M1 / M2 - modifiability (static analysis of the engines' source code)
-  EWMA: 9 modules, 23 include edges, 2979 lines of library code, 790 of programs, 586 of tests
+  EWMA: 9 modules, 23 include edges, 2999 lines of library code, 809 of programs, 612 of tests
     M1: common model interface: no; files outside the model layer (ewma, risk, seasonality) that name a specific model's result: 5
         ewma/source/apps/ewma_risk.cpp
         ewma/source/include/ewmar/engine.hpp
@@ -8,8 +8,8 @@ M1 / M2 - modifiability (static analysis of the engines' source code)
         ewma/source/src/replay.cpp
     M2: target grid reachable by configuration: no
         ewma/source/apps/ewma_risk.cpp:10: bar length is set in whole minutes (--session HH:MM,BAR_MIN,BARS): 5-second sampling needs code
-        ewma/source/src/replay.cpp:365: the forecast horizon is one bar ahead (next_slot = slot + 1): a 5-minute horizon issued every minute needs code (overlapping horizons)
-  GARCH-t: 11 modules, 38 include edges, 5854 lines of library code, 1267 of programs, 1663 of tests
+        ewma/source/src/replay.cpp:368: the forecast horizon is one bar ahead (next_slot = slot + 1): a 5-minute horizon issued every minute needs code (overlapping horizons)
+  GARCH-t: 12 modules, 41 include edges, 6402 lines of library code, 1511 of programs, 1903 of tests
     M1: common model interface: no; files outside the model layer (garch, risk, seasonality) that name a specific model's result: 5
         garch_t/source/apps/intraday_risk.cpp
         garch_t/source/include/garcht/portfolio.hpp
@@ -18,13 +18,13 @@ M1 / M2 - modifiability (static analysis of the engines' source code)
         garch_t/source/src/replay.cpp
     M2: target grid reachable by configuration: no
         garch_t/source/apps/intraday_risk.cpp:10: bar length is set in whole minutes (--session HH:MM,BAR_MIN,BARS): 5-second sampling needs code
-        garch_t/source/src/replay.cpp:284: the forecast horizon is one bar ahead (next_slot = slot + 1): a 5-minute horizon issued every minute needs code (overlapping horizons)
-  Realized-CAViaR: 4 modules, 4 include edges, 979 lines of library code, 111 of programs, 210 of tests
-    M1: common model interface: no; files outside the model layer (model) that name a specific model's result: 2
+        garch_t/source/src/replay.cpp:331: the forecast horizon is one bar ahead (next_slot = slot + 1): a 5-minute horizon issued every minute needs code (overlapping horizons)
+  Realized-CAViaR: 4 modules, 5 include edges, 1059 lines of library code, 111 of programs, 233 of tests
+    M1: common model interface: yes; files outside the model layer (model) that name a specific model's result: 2
         realized_caviar/source/include/rcaviar/replay.hpp
         realized_caviar/source/src/replay.cpp
     M2: target grid reachable by configuration: yes
-        realized_caviar/source/src/replay.cpp:137: high-frequency mode (--prices) takes 5-second prices
-        realized_caviar/source/src/replay.cpp:37: forecasts every minute in five 1-minute phases of a 5-minute horizon
-        realized_caviar/source/src/shared_data.cpp:13: the shared-data mode accepts 15-minute bars only
+        realized_caviar/source/src/replay.cpp:155: high-frequency mode (--prices) takes 5-second prices
+        realized_caviar/source/src/replay.cpp:38: forecasts every minute in five 1-minute phases of a 5-minute horizon
+        realized_caviar/source/src/shared_data.cpp:14: the shared-data mode accepts 15-minute bars only
     reuse: compiles 9 source files of other modules: ewma/source/src/ewma.cpp, ewma/source/src/math.cpp, ewma/source/src/seasonality.cpp, garch_t/source/src/backtest.cpp, garch_t/source/src/garch.cpp, garch_t/source/src/market_data.cpp, garch_t/source/src/math.cpp, garch_t/source/src/optimize.cpp, garch_t/source/src/risk.cpp

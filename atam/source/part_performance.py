@@ -20,6 +20,7 @@ from collections import defaultdict
 
 from common import RESULTS, SYNTHETIC, Measurement, Section, median, percentile, read_csv, to_float, write_csv, write_text
 from engines import ENGINES, REPS, VARIANTS, clean_runs, default_variants, run_benchmark
+from engines import run as run_engine
 
 
 def parse_ewma_bench(text: str) -> dict[int, dict]:
@@ -72,10 +73,10 @@ def _figure(lat: dict, bench: dict) -> str:
 
     fig, (a1, a2) = plt.subplots(1, 2, figsize=SLIDE, gridspec_kw={"width_ratios": [1, 1.15]})
     fig.subplots_adjust(left=0.075, right=0.985, top=0.775, bottom=0.11, wspace=0.22)
-    heading(fig, "P1/P2 - Portfolio engines: VaR updated in microseconds; GARCH-t has the heavier tail",
+    heading(fig, "P1/P2 - Portfolio engines: VaR updated in microseconds; the option book sets the latency tail",
             "Left: per-bar engine latency in the replay of the synthetic market (15 stocks, intraday bars, end-of-"
-            "session refit excluded), median of three runs.\nRight: median per-bar latency from each engine's "
-            "benchmark program as the book grows (log-log), median of three runs")
+            "session refit excluded), median of three runs;\ndiamonds: the same replay without the option book (S-7). "
+            "Right: median per-bar latency from each engine's benchmark program as the book grows")
     keys = list(lat)
     stats = ["p50", "p95", "p99"]
     width = 0.36
@@ -86,6 +87,10 @@ def _figure(lat: dict, bench: dict) -> str:
         a1.bar(xs, ys, width=width - 0.04, color=ENGINE_COLOR[v.engine], label=v.label)
         for x, y in zip(xs, ys):
             a1.text(x, y, f"{y:.1f}", ha="center", va="bottom", fontsize=10, color=INK_2)
+        if "nb50" in lat[vkey]:
+            a1.scatter([xs[0], xs[2]], [lat[vkey]["nb50"], lat[vkey]["nb99"]], marker="D", s=46, zorder=5,
+                       facecolor=SURFACE, edgecolor=ENGINE_COLOR[v.engine], linewidths=1.6,
+                       label=f"{v.label}, no option book")
     a1.axhline(10, color=MUTED, linewidth=0.8)
     a1.text(-0.45, 10, "P1 limit 10 us", ha="left", va="bottom", fontsize=9.5, color=INK_2)
     a1.set_xticks(range(len(stats)), stats)
@@ -103,6 +108,7 @@ def _figure(lat: dict, bench: dict) -> str:
     a2.axhline(1000, color=MUTED, linewidth=0.8)
     a2.text(200, 1000, "P2 limit 1 ms (200 assets) ", ha="right", va="bottom", fontsize=9, color=INK_2)
     a2.set_xticks([15, 50, 200], ["15", "50", "200"])
+    a2.xaxis.set_minor_formatter(plt.NullFormatter())
     a2.set_xlabel("assets in the book")
     a2.set_ylabel("median per-bar latency (us)")
     a2.legend(loc="lower right")
@@ -259,6 +265,23 @@ def run(fresh: bool = False) -> list[Measurement]:
                                   "per-bar Monte Carlo revaluation of the option book, timed apart from update_us"))
             s.add(f"{'':<14} option book revalued by Monte Carlo at every bar, outside update_us: median "
                   f"{median(mc) / 1e3:.2f} ms per bar")
+        # the same replay without the option book: the bar update alone, with no Monte Carlo revaluation
+        # between two bars to evict the engine's data from the processor caches
+        nb = []
+        for i in range(1, REPS + 1):
+            out = run_engine(v.key, f"synthetic_nobook_rep{i}", SYNTHETIC, fresh=fresh, extra=("--no-options",))
+            _, fr = read_csv(out / "risk_15m.csv")
+            eod = _eod_rows(fr)
+            us = [to_float(r["update_us"]) for r in fr if r["forecast_time"] not in eod]
+            nb.append({"p50": percentile(us, 50), "p99": percentile(us, 99)})
+        nb50, nb99 = median([p["p50"] for p in nb]), median([p["p99"] for p in nb])
+        lat[v.key].update({"nb50": nb50, "nb99": nb99})
+        s.add(f"{'':<14} without the option book (--no-options): p50 {nb50:.2f} us, p99 {nb99:.2f} us (median of "
+              f"{len(nb)} runs)")
+        ms += [Measurement("P1", v.key, "latency_p50_us_no_book", nb50, "us",
+                           "same replay without the option book (--no-options), median of runs"),
+               Measurement("P1", v.key, "latency_p99_us_no_book", nb99, "us",
+                           "same replay without the option book (--no-options), median of runs")]
         ms += [Measurement("P1", v.key, "latency_p99_us", agg["p99"], "us",
                            f"p50 {agg['p50']:.2f}, p95 {agg['p95']:.2f}, p99 {agg['p99']:.2f}, max {agg['max']:.1f} us; "
                            f"median of {len(runs)} runs ({per_run[0]['n']} intraday bars each)"),
