@@ -1972,6 +1972,27 @@ TEST(jump_filter_bad_tick_genuine_shock_and_market_move) {
     CHECK(same_pnl);
     CHECK(var_differs > 0);
     CHECK(on.jump_events.size() == filter.events().size());
+
+    // Regression: with the filter on, the two bad ticks must not damage the risk estimate (their
+    // printed P&L must not reach the tail calibration either). The same market without them gives
+    // VaRs within 5% at all but the bars of the ticks (marked at the printed price); with the filter
+    // off the ticks move the VaR more than 5% for many bars.
+    ReplayInput clean_in = in;
+    clean_in.bars.close[(bar + 8) * n + 0] /= 1.08;
+    clean_in.bars.close[(bar + 28) * n + 2] /= 1.08;
+    rc.jump_filter = true;
+    const ReplayResult clean_on = run_replay(clean_in, rc);
+    rc.jump_filter = false;
+    const ReplayResult clean_off = run_replay(clean_in, rc);
+    auto damaged = [](const ReplayResult& a, const ReplayResult& b) {
+        size_t k = 0;
+        for (size_t i = 0; i < a.forecasts.size() && i < b.forecasts.size(); ++i)
+            k += std::fabs(a.forecasts[i].garch[2].var / b.forecasts[i].garch[2].var - 1.0) > 0.05;
+        return k;
+    };
+    CHECK(clean_on.forecasts.size() == on.forecasts.size());
+    CHECK(damaged(on, clean_on) <= 2);
+    CHECK(damaged(off, clean_off) >= 5);
 }
 
 // ------------------------------------------------------------------ runner

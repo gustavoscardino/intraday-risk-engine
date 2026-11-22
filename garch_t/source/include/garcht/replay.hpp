@@ -129,12 +129,14 @@ public:
     ReplaySession(const ReplaySession&) = delete;
     ReplaySession& operator=(const ReplaySession&) = delete;
 
-    // Bar t of `panel` has closed. ret / slot / gaps: bar_returns and overnight_returns of the panel,
-    // or of its jump-filtered copy (the model's view); the P&L and the marks come from `panel`. Both
-    // are causal: their row t depends on rows <= t only. eod: t is the last on-grid bar of its
+    // Bar t of `panel` has closed. ret / slot / gaps: bar_returns and overnight_returns of the
+    // model's view (`model_view`, e.g. the jump-filtered copy; null = `panel` itself). The forecasts
+    // are scored on the P&L of `panel` (the prices as printed) and the positions marked at its
+    // prices; the tail calibration learns from the P&L of the model's view. Both inputs are causal:
+    // their row t depends on rows <= t only. eod: t is the last on-grid bar of its
     // session, so the daily refit runs before the forecast and the overnight forecast after it.
     void step(const BarPanel& panel, const std::vector<double>& ret, const std::vector<int>& slot,
-              const std::vector<double>& gaps, size_t t, bool eod);
+              const std::vector<double>& gaps, size_t t, bool eod, const BarPanel* model_view = nullptr);
     // A feed learns that a session ended early (halt, truncated feed) only when the next one
     // starts: this runs the end-of-session work (daily refit, overnight forecast) for the last bar
     // stepped, if it has not run yet. The forecast already issued at that bar targets a bar that

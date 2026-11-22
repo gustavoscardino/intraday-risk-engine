@@ -76,6 +76,8 @@ struct ReplaySession::State {
     std::unique_ptr<IntradayRiskEngine> engine;
     std::vector<double> qty, last_px, expo, xbook;
     std::vector<int> px_date;  // session date of last_px[i]
+    std::vector<double> model_px;   // last close of the model's view (jump filter: validated prices)
+    std::vector<int> model_px_date;
     std::vector<double> missing_row;
     size_t next_fill = 0;
     PortfolioRisk risk, book_delta_risk;
@@ -137,6 +139,8 @@ struct ReplaySession::State {
         expo.assign(n, 0.0);
         xbook.assign(n, 0.0);
         px_date.assign(n, -1);
+        model_px.assign(n, kNaN);
+        model_px_date.assign(n, -1);
         missing_row.assign(n, kNaN);
         fc_qty.assign(n, 0.0);
         fc_spot.assign(n, kNaN);
@@ -188,7 +192,7 @@ struct ReplaySession::State {
     }
 
     void step(const BarPanel& panel, const std::vector<double>& ret, const std::vector<int>& slot,
-              const std::vector<double>& gaps, size_t t, bool eod) {
+              const std::vector<double>& gaps, size_t t, bool eod, const BarPanel& view) {
         // Off-grid rows (pre-open prints, an extended closing call, irregular stamps) are
         // ignored everywhere -- returns, gaps and P&L -- so the three stay consistent.
         if (slot[t] < 0) {
@@ -224,13 +228,20 @@ struct ReplaySession::State {
 
         // ---- 2. intraday outcome of the bar that just closed (overnight gap excluded): the
         // reference is the asset's previous close of this session, else this bar's open
-        double pnl = 0.0;
-        for (size_t i = 0; i < n; ++i) {
-            const double c = panel.at(panel.close, t, i);
-            if (!valid_price(c)) continue;
-            const double ref = px_date[i] == panel.date[t] ? last_px[i] : panel.at(panel.open, t, i);
-            if (valid_price(ref)) pnl += fc_qty[i] * (c - ref);
-        }
+        auto bar_pnl = [&](const BarPanel& p, const std::vector<double>& px, const std::vector<int>& date) {
+            double v = 0.0;
+            for (size_t i = 0; i < n; ++i) {
+                const double c = p.at(p.close, t, i);
+                if (!valid_price(c)) continue;
+                const double ref = date[i] == p.date[t] ? px[i] : p.at(p.open, t, i);
+                if (valid_price(ref)) v += fc_qty[i] * (c - ref);
+            }
+            return v;
+        };
+        // the forecast is scored on the prices as printed; the tail calibration learns from the
+        // outcome of the model's view, so a held bad print never reaches the tail
+        const double pnl = bar_pnl(panel, last_px, px_date);
+        const double model_pnl = &view == &panel ? pnl : bar_pnl(view, model_px, model_px_date);
         if (have_fc) {
             if (contiguous && fc.target_slot == slot[t]) {
                 fc.pnl = pnl;
@@ -251,7 +262,7 @@ struct ReplaySession::State {
                     }
                     fc.book_pnl = pnl + (v1 - v0);
                 }
-                engine->observe_outcome(pnl, fc_risk);
+                engine->observe_outcome(model_pnl, fc_risk);
                 res.forecasts.push_back(fc);
             } else {
                 ++res.unscored;  // the targeted bar never printed (halt, gap, late opening)
@@ -263,6 +274,11 @@ struct ReplaySession::State {
             if (valid_price(c)) {
                 last_px[i] = c;
                 px_date[i] = panel.date[t];
+            }
+            const double m = view.at(view.close, t, i);
+            if (valid_price(m)) {
+                model_px[i] = m;
+                model_px_date[i] = view.date[t];
             }
         }
 
@@ -409,8 +425,8 @@ ReplaySession::ReplaySession(const ReplayInput& in, const ReplayConfig& cfg, con
 ReplaySession::~ReplaySession() = default;
 
 void ReplaySession::step(const BarPanel& panel, const std::vector<double>& ret, const std::vector<int>& slot,
-                         const std::vector<double>& gaps, size_t t, bool eod) {
-    s_->step(panel, ret, slot, gaps, t, eod);
+                         const std::vector<double>& gaps, size_t t, bool eod, const BarPanel* model_view) {
+    s_->step(panel, ret, slot, gaps, t, eod, model_view ? *model_view : panel);
 }
 
 void ReplaySession::end_session(const BarPanel& panel) {
@@ -504,7 +520,7 @@ ReplayResult run_replay(const ReplayInput& in, const ReplayConfig& cfg_in) {
     const std::vector<char> eod = end_of_session_flags(panel, slot);
 
     ReplaySession replay(in, cfg_in, session);
-    for (size_t t = 0; t < T; ++t) replay.step(panel, ret, slot, gaps, t, eod[t] != 0);
+    for (size_t t = 0; t < T; ++t) replay.step(panel, ret, slot, gaps, t, eod[t] != 0, &model_view);
     ReplayResult res = replay.finish();
     if (cfg_in.jump_filter) res.jump_events = filter.events();
     res.wall_seconds = std::chrono::duration<double>(std::chrono::steady_clock::now() - t_wall).count();
@@ -558,7 +574,7 @@ ReplayResult run_live(const ReplayInput& history, const ReplayConfig& cfg,
     {   // the history, as run_replay would (its last bar ends its session)
         const std::vector<char> eod = end_of_session_flags(panel, slot);
         for (size_t t = 0; t < panel.num_bars(); ++t) {
-            replay.step(panel, ret, slot, gaps, t, eod[t] != 0);
+            replay.step(panel, ret, slot, gaps, t, eod[t] != 0, &model_view);
             if (slot[t] >= 0) grid_date = panel.date[t];
         }
     }
@@ -605,12 +621,12 @@ ReplayResult run_live(const ReplayInput& history, const ReplayConfig& cfg,
             overnight_returns(model_view, slot, gaps);
             const size_t t = panel.num_bars() - 1;
             if (slot[t] < 0) {
-                replay.step(panel, ret, slot, gaps, t, false);  // off-grid: counted and ignored
+                replay.step(panel, ret, slot, gaps, t, false, &model_view);  // off-grid: counted and ignored
                 continue;
             }
             // a new session started while the previous one had not reached its last slot
             if (replay.session_open() && panel.date[t] != grid_date) replay.end_session(panel);
-            replay.step(panel, ret, slot, gaps, t, slot[t] == session.bars_per_day - 1);
+            replay.step(panel, ret, slot, gaps, t, slot[t] == session.bars_per_day - 1, &model_view);
             grid_date = panel.date[t];
             if (on_bar) on_bar(panel, t, replay.issued());
         }

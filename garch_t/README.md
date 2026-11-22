@@ -82,7 +82,7 @@ garch_t/
     │   └── math.hpp, optimize.hpp, random.hpp   math, optimizer, random numbers
     ├── src/                 implementation of each .hpp above (.cpp with the same name)
     ├── apps/                the programs in bin/ (one .cpp per program)
-    ├── tests/               automated tests (59 tests, 4044 checks)
+    ├── tests/               automated tests (59 tests, 4047 checks)
     └── tools/               fetch_b3_yahoo.py: downloads recent real B3 data
 ```
 
@@ -199,17 +199,21 @@ is written to `jump_events.csv` and counted in the report's `data protection` li
 
 The filter changes only what the model sees. The backtest scores every forecast on the P&L of the
 prices as printed, so the filter cannot hide a loss (an automated test checks that the P&L is
-identical with the filter on and off). On the fault catalogue (`atam/results/faults/`):
+identical with the filter on and off); the tail calibration learns from the outcomes of the
+validated prices, so a held print never reaches it. On faulty copies of the data
+(`data/tools/inject_faults.py`), share of the VaR 99% forecasts more than 5% away from the same
+configuration on the clean data:
 
 | Faulty copy of the data | `--no-jump-filter` | `--no-jump-filter --z-clip 6` | filter (default) |
 |---|---|---|---|
-| b3_real, 10 bad ticks: forecasts off by more than 5% | 77.6% | 85.4% | 0.2% |
-| b3_real, all recoverable faults together | 60.0% | 52.6% | 7.3% |
-| synthetic, 10 bad ticks | 24.5% | 0.3% | 0.0% |
+| b3_real, 10 bad ticks | 75.2% | 82.3% | 0.3% |
+| b3_real, all recoverable faults together | 66.7% | 38.0% | 8.9% |
+| synthetic, 10 bad ticks | 29.4% | 20.1% | 0.0% |
 
 The cost: a genuine move confined to one stock reaches the VaR one bar late. On the clean b3_real
 the filter held 18 jumps in 87 sessions (one a bad tick, 16 genuine moves, one at a session's last
-bar); the coverage stays green at every level (99%: 1.15% with the filter, 1.07% without). An
+bar) and 2% of the forecasts differ by more than 5% from the unfiltered run; the coverage stays
+green at every level (99%: 1.15% with the filter, 1.07% without). An
 accepted move enters the model at its full size, as the return since the last good close. The
 decision on each bar uses only the bars up to it, so it works the same live.
 
@@ -270,7 +274,7 @@ open in Excel).
 
 ```
   model            conf   exc    rate            95% CI expected  Kupiec p     CC p  ES Z2 p    zone ES ratio
-  GARCH-t/EVT     0.990    27   0.88% [ 0.60%,  1.27%]    1.00%    0.4854   0.3898   0.6907   green    1.045
+  GARCH-t/EVT     0.990    27   0.88% [ 0.60%,  1.27%]    1.00%    0.4854   0.3898   0.6877   green    1.043
   EWMA-N (ref)    0.990    50   1.62% [ 1.23%,  2.14%]    1.00%    0.0014   0.0059   0.0005  yellow    1.247
 ```
 
@@ -392,14 +396,15 @@ At the open, EWMA-N reaches 5.2% of exceptions at 99%; GARCH-t stays at 1.2%.
 
 | Model | 95% VaR | 97.5% VaR | 99% VaR | ES test (p) | Traffic light |
 |---|---|---|---|---|---|
-| **GARCH-t** | 4.66% | 2.14% | 1.15% | 0.26 | green at all three levels |
+| **GARCH-t** | 4.74% | 2.22% | 1.15% | 0.25 | green at all three levels |
 | EWMA-N (ref) | 4.97% | 3.13% | 1.68% | 0.0005 (rejected) | yellow at 99% |
 
 The Berkowitz test of the whole distribution is at the limit for GARCH-t (p = 0.045; 0.06 with
 `--no-jump-filter`) and rejects EWMA-N clearly (p = 0.001).
 
-**Synthetic market** (`results/synthetic`): GARCH-t 5.17% / 2.37% / 0.88%, Berkowitz p = 0.63.
-With the degraded feed (and `--z-clip 6`): 5.20% / 2.44% / 0.84%, with no run-time failure.
+**Synthetic market** (`results/synthetic`): GARCH-t 5.26% / 2.37% / 0.88%, Berkowitz p = 0.68.
+With the degraded feed (and `--z-clip 6`): 5.30% / 2.53% / 0.91%, Berkowitz p = 0.38, with no
+run-time failure.
 The Monte Carlo study measures the model alone, on markets with no faulty prints, so it runs with
 the jump filter off (the library default).
 
@@ -407,7 +412,7 @@ the jump filter off (the library default).
 
 ## Tests and validation
 
-`build.bat` (or `build.sh`) rebuilds and runs **59 automated tests (4044 checks)** and 7 end-to-end
+`build.bat` (or `build.sh`) rebuilds and runs **59 automated tests (4047 checks)** and 7 end-to-end
 tests. They cover:
 
 - **Math functions:** compared with SciPy and with 40-digit reference values (mpmath).
@@ -423,7 +428,8 @@ tests. They cover:
   and dropped.
 - **Jump filter:** a bad tick (also at a session's first bar), a genuine shift, a move at a
   session's last bar and a market move are each classified as expected; the decisions are causal;
-  the scored P&L is the same with the filter on and off.
+  the scored P&L is the same with the filter on and off; with the filter on, bad ticks leave the
+  VaR where the same market without them puts it.
 
 It compiles with no warnings on GCC, Clang and Visual Studio, for Windows, Linux and macOS.
 
