@@ -82,7 +82,7 @@ garch_t/
     │   └── math.hpp, optimize.hpp, random.hpp   math, optimizer, random numbers
     ├── src/                 implementation of each .hpp above (.cpp with the same name)
     ├── apps/                the programs in bin/ (one .cpp per program)
-    ├── tests/               automated tests (57 tests, 4012 checks)
+    ├── tests/               automated tests (58 tests, 4020 checks)
     └── tools/               fetch_b3_yahoo.py: downloads recent real B3 data
 ```
 
@@ -182,8 +182,25 @@ themselves: `--data synthetic` becomes `data/synthetic`. Results go to
 | `--utc-offset MIN` | time zone used to convert timestamps that carry one (`Z`, `-03:00`) | −180 (São Paulo) |
 | `--threads N` | threads for the daily re-estimation | all cores |
 | `--daily` | prints a per-day summary | — |
+| `--live HOST:PORT` | takes the bars from a live market-data feed as they close (see below) | off (reads the file) |
 
 Invalid values are rejected with an error message, never silently replaced by the default.
+
+**Live feed.** `--live` connects to a feed server and computes the VaR at each bar as it arrives,
+printing one line per bar. `data/tools/feed_server.py` turns any dataset into such a feed (the same
+protocol a broker adapter would follow); the dataset's sessions before the first one the feed sends
+are the calibration history:
+
+```
+python ..\data\tools\feed_server.py --data b3_real --from 2026-11-03 --bar-seconds 1
+bin\intraday_risk.exe --data b3_real --live 127.0.0.1:9000       (in a second window)
+```
+
+Each bar is closed when the feed's clock passes it; a row that arrives after that is late and is
+dropped (counted in the report), a repeated row keeps the first. On a clean feed the live run gives
+exactly the same results as the replay of the file (checked by an automated test, and end to end on
+`b3_real`). Serve a folder written by `data/tools/inject_faults.py` to see the engine on a faulty
+live feed.
 
 ### 4. Using your own data
 
@@ -357,7 +374,7 @@ With the degraded feed: 5.20% / 2.46% / 1.07%, with no run-time failure.
 
 ## Tests and validation
 
-`build.bat` (or `build.sh`) rebuilds and runs **57 automated tests (4012 checks)** and 7 end-to-end
+`build.bat` (or `build.sh`) rebuilds and runs **58 automated tests (4020 checks)** and 7 end-to-end
 tests. They cover:
 
 - **Math functions:** compared with SciPy and with 40-digit reference values (mpmath).
@@ -368,6 +385,8 @@ tests. They cover:
 - **Options:** Black–Scholes against known values and put-call parity.
 - **Robustness:** faulty data, halted stock, new listing, assorted CSV formats and time zones,
   several threads at once, folders with accented names.
+- **Live feed:** the same market fed row by row, with a session cut short, gives exactly the
+  forecasts of the file replay; late and repeated rows are counted and dropped.
 
 It compiles with no warnings on GCC, Clang and Visual Studio, for Windows, Linux and macOS.
 

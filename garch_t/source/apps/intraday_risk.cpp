@@ -7,9 +7,11 @@
 //                 [--dist t|normal] [--corr ewma|dcc|constant] [--corr-lambda L]
 //                 [--tail oos|insample] [--tail-model evt|t] [--diurnal per-asset|pooled] [--no-diurnal] [--z-clip Z] [--threads N]
 //                 [--options FILE] [--no-options] [--mc N] [--no-overnight] [--es-sims N]
-//                 [--session auto|HH:MM,BAR_MIN,BARS] [--utc-offset MIN] [--daily]
+//                 [--session auto|HH:MM,BAR_MIN,BARS] [--utc-offset MIN] [--daily] [--live HOST:PORT]
 //
 // With no arguments: dataset data/synthetic, results in garch_t/results/synthetic.
+// --live: the bars come from a market-data feed (data/tools/feed_server.py) as they close; the
+// dataset's sessions before the first one the feed sends are the calibration history.
 #include <algorithm>
 #include <cctype>
 #include <cerrno>
@@ -28,6 +30,7 @@
 #include "cli.hpp"
 #include "garcht/garcht.hpp"
 #include "paths.hpp"
+#include "tcp_lines.hpp"
 
 using namespace garcht;
 
@@ -35,6 +38,7 @@ namespace {
 
 struct Options {
     std::string data = "synthetic", prices, out, options;  // data: dataset name or folder
+    std::string live;                                      // HOST:PORT of a live feed
     bool daily = false, no_options = false, window_given = false, help = false;
     int es_sims = 2000;
     int utc_offset = -180;
@@ -47,7 +51,7 @@ void usage() {
                  "                     [--dist t|normal] [--corr ewma|dcc|constant] [--corr-lambda L]\n"
                  "                     [--tail oos|insample] [--tail-model evt|t] [--diurnal per-asset|pooled] [--no-diurnal] [--z-clip Z] [--threads N]\n"
                  "                     [--options FILE] [--no-options] [--mc N] [--no-overnight] [--es-sims N]\n"
-                 "                     [--session auto|HH:MM,BAR_MIN,BARS] [--utc-offset MIN] [--daily]\n"
+                 "                     [--session auto|HH:MM,BAR_MIN,BARS] [--utc-offset MIN] [--daily] [--live HOST:PORT]\n"
                  "  --data NAME|DIR   dataset: a name searched as data/NAME next to garch_t (default\n"
                  "                    synthetic; also b3_real) or any folder with assets.csv and prices_15m.csv\n"
                  "  --out DIR         output folder (default garch_t/results/NAME)\n"
@@ -57,7 +61,9 @@ void usage() {
                  "  --session         HH:MM = session open (local time), bar minutes, bars per session\n"
                  "  --utc-offset MIN  local offset applied to timestamps that carry a zone (Z, +hh:mm);\n"
                  "                    timestamps without a zone are taken as local time already\n"
-                 "  --es-sims N       simulations for the Acerbi-Szekely p-values (0 = statistics only)\n");
+                 "  --es-sims N       simulations for the Acerbi-Szekely p-values (0 = statistics only)\n"
+                 "  --live HOST:PORT  take the bars from a live feed (data/tools/feed_server.py) as they close;\n"
+                 "                    the dataset's sessions before the first one it sends are the history\n");
 }
 
 bool parse_args(int argc, char** argv, Options& o) {
@@ -80,6 +86,7 @@ bool parse_args(int argc, char** argv, Options& o) {
             return false;
         } else if (a == "--data") o.data = val();
         else if (a == "--prices") o.prices = val();
+        else if (a == "--live") o.live = val();
         else if (a == "--out") o.out = val();
         else if (a == "--options") o.options = val();
         else if (a == "--window-days") {
@@ -208,6 +215,18 @@ bool file_exists(const std::string& p) {
     return std::filesystem::exists(p, ec);
 }
 
+// The first k bars of a panel (the history of a live run).
+BarPanel head_bars(const BarPanel& p, size_t k) {
+    BarPanel h = p;
+    const size_t n = p.num_assets();
+    h.timestamps.resize(k);
+    h.time_key.resize(k);
+    h.date.resize(k);
+    h.minute.resize(k);
+    for (auto* m : {&h.open, &h.high, &h.low, &h.close, &h.volume}) m->resize(k * n);
+    return h;
+}
+
 std::FILE* g_report = nullptr;  // report.txt: copy of the console report
 
 // printf to the console and to report.txt
@@ -277,6 +296,26 @@ int main(int argc, char** argv) {
         const auto t_load = std::chrono::steady_clock::now();
         in.bars = load_bars_csv(opt.prices, in.tickers, opt.utc_offset);
         const double load_s = std::chrono::duration<double>(std::chrono::steady_clock::now() - t_load).count();
+        std::unique_ptr<TcpLines> feed;
+        std::vector<std::string> received;  // the feed's first lines, read to find where the history ends
+        if (!opt.live.empty()) {
+            feed = std::make_unique<TcpLines>(opt.live);
+            std::string line;
+            int first_live_date = 0;
+            while (!first_live_date && feed->next(line)) {
+                received.push_back(line);
+                TimePoint tp;
+                if (received.size() > 1 && !line.empty() && line[0] != '#' &&
+                    parse_time(line.substr(0, line.find(',')), tp, opt.utc_offset))
+                    first_live_date = tp.ymd;
+            }
+            if (!first_live_date) throw std::runtime_error("the feed at " + opt.live + " sent no bar");
+            size_t k = 0;
+            while (k < in.bars.num_bars() && in.bars.date[k] < first_live_date) ++k;
+            in.bars = head_bars(in.bars, k);
+            say("live feed %s: the history is the dataset before %d-%02d-%02d (%zu bars)\n", opt.live.c_str(),
+                first_live_date / 10000, first_live_date / 100 % 100, first_live_date % 100, k);
+        }
         if (!opt.window_given) {  // half of the sessions, between 20 and 60 days
             std::vector<int> days(in.bars.date.begin(), in.bars.date.end());
             std::sort(days.begin(), days.end());
@@ -291,7 +330,33 @@ int main(int argc, char** argv) {
         if (missing) say("  missing/invalid closes: %zu of %zu cells\n", missing, in.bars.close.size());
 
         // ---------------------------------------------------------------- replay
-        const ReplayResult res = run_replay(in, opt.replay);
+        ReplayResult res;
+        if (!feed) {
+            res = run_replay(in, opt.replay);
+        } else {
+            size_t k99 = confs.size() - 1;
+            for (size_t k = 0; k < confs.size(); ++k)
+                if (std::fabs(confs[k] - 0.99) < 1e-12) k99 = k;
+            size_t next = 0;
+            LiveStats st;
+            std::printf("waiting for bars (VaR / ES %g%% of the next bar, money of the stock positions)\n", 100 * confs[k99]);
+            res = run_live(in, opt.replay, [&](std::string& l) {
+                if (next < received.size()) {
+                    l = received[next++];
+                    return true;
+                }
+                return feed->next(l);
+            }, st, [&](const BarPanel& p, size_t t, const ForecastRecord* f) {
+                if (f)
+                    std::printf("  %s  VaR %12.0f  ES %12.0f  sigma %10.0f\n", p.timestamps[t].c_str(), f->garch[k99].var,
+                                f->garch[k99].es, f->sigma);
+                else
+                    std::printf("  %s  (calibrating: the window is not full yet)\n", p.timestamps[t].c_str());
+                std::fflush(stdout);
+            }, opt.utc_offset);
+            say("live feed: %zu rows, %zu bars; late rows dropped %zu, duplicated %zu, unknown ticker %zu, invalid %zu\n",
+                st.rows, st.bars, st.late, st.duplicates, st.unknown, st.bad);
+        }
         const SessionSpec& ss = res.session;
         say("session: first bar closes %02d:%02d, %d-minute bars, %d bars/day; %zu sessions, window %d days%s\n",
                     (ss.open_minute + ss.bar_minutes) / 60, (ss.open_minute + ss.bar_minutes) % 60, ss.bar_minutes,

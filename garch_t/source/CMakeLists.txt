@@ -83,6 +83,9 @@ endfunction()
 
 garcht_app(generate_data apps/generate_data.cpp)
 garcht_app(intraday_risk apps/intraday_risk.cpp)
+if(WIN32)
+  target_link_libraries(intraday_risk PRIVATE ws2_32)  # --live: TCP feed
+endif()
 garcht_app(fit_series apps/fit_series.cpp)
 garcht_app(benchmark apps/benchmark.cpp)
 garcht_app(monte_carlo apps/monte_carlo.cpp)

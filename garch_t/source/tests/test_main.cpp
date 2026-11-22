@@ -1744,6 +1744,103 @@ TEST(csv_and_input_edge_cases_from_review) {
     CHECK(std::isfinite(es.z2) && std::isnan(es.p2));
 }
 
+// ================================================================== live feed
+
+TEST(live_feed_reproduces_the_file_replay) {
+    // The same market replayed from a whole file and from a feed, bar by bar after a history: the
+    // forecasts, overnight forecasts and daily refits must be identical, including a session the
+    // feed cuts 6 bars early (its end is only learnt when the next session starts).
+    SyntheticConfig c;
+    c.days = 45;
+    c.degraded_copy = false;
+    const SyntheticMarket m = generate_market(c);
+    std::vector<BarRow> rows = m.rows;
+    std::stable_sort(rows.begin(), rows.end(), [](const BarRow& a, const BarRow& b) { return a.time.key() < b.time.key(); });
+    std::vector<int> days;
+    for (const BarRow& r : rows)
+        if (days.empty() || r.time.ymd != days.back()) days.push_back(r.time.ymd);
+    const int live_from = days[30], cut_day = days[36];
+    int cut_minute = 0;
+    for (const BarRow& r : rows)
+        if (r.time.ymd == cut_day) cut_minute = std::max(cut_minute, r.time.minute);
+    cut_minute -= 6 * 15;
+    rows.erase(std::remove_if(rows.begin(), rows.end(),
+                              [&](const BarRow& r) { return r.time.ymd == cut_day && r.time.minute > cut_minute; }),
+               rows.end());
+
+    ReplayInput full;
+    full.tickers = m.tickers();
+    full.bars = build_panel(rows, full.tickers);
+    full.initial_quantity = m.initial_quantity;
+    full.fills = m.fills;
+    ReplayConfig rc;
+    rc.window_days = 20;
+    rc.engine.threads = 2;
+    const ReplayResult batch = run_replay(full, rc);
+
+    ReplayInput history = full;
+    std::vector<BarRow> past;
+    for (const BarRow& r : rows)
+        if (r.time.ymd < live_from) past.push_back(r);
+    history.bars = build_panel(past, history.tickers);
+    std::vector<std::string> lines = {"timestamp,ticker,open,high,low,close,volume"};
+    char buf[256];
+    std::string clock;
+    for (const BarRow& r : rows) {
+        if (r.time.ymd < live_from) continue;
+        const std::string ts = r.time.str();
+        if (!clock.empty() && ts != clock) lines.push_back("#clock " + clock);
+        clock = ts;
+        std::snprintf(buf, sizeof buf, "%s,%s,%.17g,%.17g,%.17g,%.17g,%.17g", ts.c_str(), r.ticker.c_str(), r.open,
+                      r.high, r.low, r.close, r.volume);
+        lines.push_back(buf);
+    }
+    lines.push_back("#clock " + clock);
+    lines.push_back("#end");
+    size_t next = 0;
+    LiveStats st;
+    size_t live_bars = 0;
+    const ReplayResult live = run_live(history, rc, [&](std::string& l) {
+        if (next >= lines.size()) return false;
+        l = lines[next++];
+        return true;
+    }, st, [&](const BarPanel&, size_t, const ForecastRecord* f) { live_bars += f != nullptr; });
+
+    CHECK(st.late == 0 && st.duplicates == 0 && st.bad == 0 && st.unknown == 0);
+    CHECK(live_bars > 0 && st.bars == live_bars);  // every live bar is on the grid and issues a forecast
+    CHECK(batch.forecasts.size() == live.forecasts.size() && batch.forecasts.size() > 200);
+    bool same = batch.forecasts.size() == live.forecasts.size();
+    for (size_t i = 0; same && i < batch.forecasts.size(); ++i) {
+        const ForecastRecord &a = batch.forecasts[i], &b = live.forecasts[i];
+        same = a.forecast_time == b.forecast_time && a.target_time == b.target_time && a.pnl == b.pnl &&
+               a.sigma == b.sigma && a.garch[2].var == b.garch[2].var && a.ewma[2].var == b.ewma[2].var;
+    }
+    CHECK(same);
+    bool same_on = batch.overnight.size() == live.overnight.size();
+    for (size_t i = 0; same_on && i < batch.overnight.size(); ++i)
+        same_on = batch.overnight[i].forecast_time == live.overnight[i].forecast_time &&
+                  batch.overnight[i].risk.sigma == live.overnight[i].risk.sigma && batch.overnight[i].pnl == live.overnight[i].pnl;
+    CHECK(same_on);
+    CHECK(batch.daily.size() == live.daily.size());
+    CHECK(batch.unscored == live.unscored && batch.sessions == live.sessions);
+
+    // A row that arrives after the feed's clock passed its bar is late: dropped and counted.
+    std::vector<std::string> late_lines = lines;
+    const auto first_clock = std::find_if(late_lines.begin(), late_lines.end(), [](const std::string& l) { return l.rfind("#clock", 0) == 0; });
+    const std::string moved = *(first_clock - 1);
+    late_lines.erase(first_clock - 1);
+    late_lines.insert(std::find_if(late_lines.begin(), late_lines.end(), [](const std::string& l) { return l.rfind("#clock", 0) == 0; }) + 1, moved);
+    late_lines.insert(late_lines.begin() + 5, late_lines[4]);  // and a duplicated row
+    next = 0;
+    LiveStats st2;
+    run_live(history, rc, [&](std::string& l) {
+        if (next >= late_lines.size()) return false;
+        l = late_lines[next++];
+        return true;
+    }, st2);
+    CHECK(st2.late == 1 && st2.duplicates == 1);
+}
+
 // ------------------------------------------------------------------ runner
 int main(int argc, char** argv) {
     const std::string filter = argc > 1 ? argv[1] : "";

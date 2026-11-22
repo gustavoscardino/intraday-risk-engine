@@ -14,7 +14,9 @@
 #pragma once
 
 #include <cstdint>
+#include <functional>
 #include <limits>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -110,6 +112,57 @@ struct ReplayResult {
 
 // Throws std::runtime_error if the data has no more sessions than the window.
 ReplayResult run_replay(const ReplayInput& in, const ReplayConfig& cfg);
+
+// The cycle above, one bar at a time: run_replay drives it over a whole panel, run_live over bars
+// assembled from a feed as they arrive. A step only reads the panel up to its own bar.
+class ReplaySession {
+public:
+    // in.bars is not read (the bars come with each step); session: the grid of the bars.
+    ReplaySession(const ReplayInput& in, const ReplayConfig& cfg, const SessionSpec& session);
+    ~ReplaySession();
+    ReplaySession(const ReplaySession&) = delete;
+    ReplaySession& operator=(const ReplaySession&) = delete;
+
+    // Bar t of `panel` has closed. ret / slot / gaps: bar_returns and overnight_returns of the panel
+    // (both causal: their row t depends on rows <= t only). eod: t is the last on-grid bar of its
+    // session, so the daily refit runs before the forecast and the overnight forecast after it.
+    void step(const BarPanel& panel, const std::vector<double>& ret, const std::vector<int>& slot,
+              const std::vector<double>& gaps, size_t t, bool eod);
+    // A feed learns that a session ended early (halt, truncated feed) only when the next one
+    // starts: this runs the end-of-session work (daily refit, overnight forecast) for the last bar
+    // stepped, if it has not run yet. The forecast already issued at that bar targets a bar that
+    // never prints, so the scored forecasts are the same as with eod known in advance.
+    void end_session(const BarPanel& panel);
+    // True between the first bar of a session and its end-of-session work.
+    bool session_open() const;
+    // The forecast issued at the last bar stepped (its outcome still unknown); null if none.
+    const ForecastRecord* issued() const;
+    // The result so far, with the engine's state after the last bar.
+    ReplayResult finish();
+
+private:
+    struct State;
+    std::unique_ptr<State> s_;
+};
+
+// Live replay from a market-data feed (data/tools/feed_server.py). The history in `history.bars`
+// is stepped first (calibration); then each line of the feed comes from next_line until it
+// returns false or the feed sends #end:
+//     timestamp,ticker,open,high,low,close,volume   header (columns in any order)
+//     <row>                                          one bar of one stock
+//     #clock <timestamp>                             every bar closing at or before it is complete
+// A bar is assembled from its rows and stepped when the feed's clock passes it; a row of a bar
+// already stepped is late and dropped (the feed's problem, counted), a repeated (bar, stock) keeps
+// the first row, rows not after the history are counted and ignored. The session grid comes from
+// the history (cfg.detect_session) or cfg.session. on_bar(panel, t, issued) runs after each live
+// on-grid bar, with the forecast issued at it (null while the engine is not ready).
+struct LiveStats {
+    size_t rows = 0, bars = 0, late = 0, duplicates = 0, unknown = 0, bad = 0, before_history = 0;
+};
+ReplayResult run_live(const ReplayInput& history, const ReplayConfig& cfg,
+                      const std::function<bool(std::string&)>& next_line, LiveStats& stats,
+                      const std::function<void(const BarPanel&, size_t, const ForecastRecord*)>& on_bar = {},
+                      int exchange_utc_offset_min = -180);
 
 struct ModelBacktest {
     std::string model;  // e.g. "GARCH-t", "EWMA-N (ref)", "overnight", "book MC", "book delta"
