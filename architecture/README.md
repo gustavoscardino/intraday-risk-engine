@@ -34,7 +34,7 @@ flowchart LR
     subgraph Dados["data/ (compartilhado pelos módulos)"]
         direction TB
         SY["synthetic/<br/>15 ações fictícias · 150 pregões<br/>carteira · fills · opções<br/>feed limpo e feed com falhas"]
-        B3["b3_real/<br/>15 ações da B3 · 60 pregões<br/>(Yahoo Finance)"]
+        B3["b3_real/<br/>15 ações da B3 · 87 pregões<br/>(Yahoo Finance)"]
         SY ~~~ B3
     end
 
@@ -185,19 +185,21 @@ flowchart LR
 Organização do código do `garch_t` (módulo do colega), levantada a partir dos `#include` de
 `garch_t/source/`. Cada caixa é um par `include/garcht/<nome>.hpp` + `src/<nome>.cpp`. O
 núcleo é o `portfolio` (`IntradayRiskEngine`); `synthetic` gera o mercado fictício usado por
-todos os módulos, e `revaluation` reavalia as opções por Monte Carlo.
+todos os módulos, `revaluation` reavalia as opções por Monte Carlo e `data_quality` segura por uma
+barra o salto isolado de uma ação (descartado se reverter, aceito com uma barra de atraso se não).
 
 ```mermaid
 flowchart TB
     subgraph Apps["Programas (apps/)"]
-        IR["intraday_risk<br/>replay + relatório"]
+        IR["intraday_risk<br/>replay do arquivo ou feed ao vivo (TCP) + relatório"]
         MC["monte_carlo<br/>estudo em vários mercados"]
         GD["generate_data<br/>gera o mercado sintético"]
         FS["fit_series<br/>ajusta um GARCH a uma série"]
         BM["benchmark<br/>velocidade"]
     end
 
-    REP["replay<br/>ciclo de 15 min + backtest de todas as previsões"]
+    REP["replay<br/>ciclo de 15 min (arquivo ou ao vivo) + backtest de todas as previsões"]
+    DQ["data_quality<br/>filtro de saltos: segura um salto isolado por uma barra"]
 
     subgraph Nucleo["Núcleo"]
         PF["portfolio<br/>IntradayRiskEngine: on_bar · refit · compute<br/>correlação EWMA/DCC · cauda EVT · overnight"]
@@ -219,7 +221,7 @@ flowchart TB
     GD --> SY
     FS --> GA
     BM --> PF
-    REP --> PF & BT & RV & SY
+    REP --> PF & BT & RV & SY & DQ
     PF --> SE & GA & RK
     BT & RV --> RK
     SY --> RV

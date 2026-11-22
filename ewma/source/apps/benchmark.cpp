@@ -35,7 +35,7 @@ int main(int argc, char** argv) {
             return 2;
         }
     }
-    const int K = 28, window_days = 60;
+    const int K = 28, window_days = 40;  // the estimation window of every engine
     std::printf("EWMA engine benchmark: %d sessions of %d bars, window %d sessions, 3 models (ref, N, t)\n", days, K,
                 window_days);
     std::printf("%8s %14s %14s %14s %14s %14s\n", "assets", "bar p50 (us)", "bar p95 (us)", "bar p99 (us)",

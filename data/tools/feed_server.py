@@ -77,7 +77,7 @@ def main():
                 with conn:
                     serve_one(conn, lines, header, args.bar_seconds)
                 print("feed finished", flush=True)
-            except (BrokenPipeError, ConnectionResetError):
+            except ConnectionError:  # reset, broken pipe or aborted (Windows) by the client
                 print("client disconnected", flush=True)
             if args.once:
                 break

@@ -8,7 +8,8 @@ tool.
 data/
 ├── synthetic/    fictitious market: 15 stocks, 150 sessions, with a portfolio, trades and options
 ├── b3_real/      real B3 data: 15 stocks, 87 sessions
-└── tools/        inject_faults.py: faulty copies of the datasets, to test robustness
+└── tools/        inject_faults.py: faulty copies of the datasets, to test robustness;
+                  feed_server.py: serves a dataset as a live market-data feed (TCP)
 ```
 
 ## `synthetic/` — fictitious market
@@ -71,7 +72,7 @@ the truth.
 | `missing_1pct`, `missing_5pct`, `missing_20pct` | 1%, 5% or 20% of the rows never arrive |
 | `halt` | a stock has no row for a whole session (3 times) |
 | `duplicates` | 2% of the rows arrive twice |
-| `out_of_order` | 1% of the rows arrive after rows of the next bar |
+| `out_of_order` | about 0.6% of the rows arrive after rows of the next bar |
 | `delay` | 0.5% of the rows arrive 2–4 bars late |
 | `stale` | a quote freezes (same price, volume 0) for 10 bars (3 times) |
 | `bad_ticks` | 10 single wrong closes, 5–10% off; the next bar is right again |

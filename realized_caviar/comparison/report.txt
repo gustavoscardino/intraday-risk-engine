@@ -1,7 +1,7 @@
 Matched comparison: Realized-CAViaR, EWMA-N, EWMA-t and GARCH-t on every stock
 VaR confidence 0.99 (expected exception rate 1.00%); daily rolling calibration;
 estimation window fixed per dataset: synthetic 40 sessions, b3_real 40 sessions.
-Code: commit fa42066; machine: Intel64 Family 6 Model 94 Stepping 3, GenuineIntel.
+Code: commit bfb3592; machine: Intel64 Family 6 Model 94 Stepping 3, GenuineIntel.
 Targets: 15-minute bars from 11:00 to 17:00 (CAViaR needs one hour of the session); every model on the same targets.
 
 synthetic: 15 stocks

@@ -303,6 +303,11 @@ Detection on the faulty feed (`results/synthetic_degraded/dq_detection.csv`):
 | frozen XCON3, day 130 (`STALE`) | 10 bars | 10 (2 flagged after the fact, already used) |
 | bad ticks XPET3, XBAN4, XTEC3 (`SPIKE`) | 3 | 3 (100%) |
 
+The clean file has no arrival order, so the injected out-of-order and late rows are taken from the
+order in which the faulty file delivers them, with the same rule the layer applies: those two lines
+check that the rule runs as specified, not that it finds every fault. The independent measure, against
+the list of every fault written by `data/tools/inject_faults.py`, is in `atam/results/faults/`.
+
 No false bad tick on the clean file: the −9σ crash and the −9% shock are kept (a market move and a
 shock not reverted). FREEZE is never triggered: no bar loses 40% of the exposure's data.
 
@@ -334,13 +339,14 @@ replays (clean, faulty with and without DQ, B3). They cover:
   hysteresis; bad tick vs real jump inside a replay.
 - **Data:** CSV formats, decimal comma, time zones, B3 calendar, return conventions.
 
-**Performance** (`results/benchmark.txt`):
+**Performance** (`results/benchmark.txt`, 40-session window; timings vary by up to a factor of two
+between sessions on the same laptop):
 
-| Stocks | Update per bar (median) | Daily re-estimation |
+| Stocks | Update per bar (median) | Daily re-estimation (median) |
 |---|---|---|
-| 15 | under 1 µs | about 4 ms |
-| 50 | about 3 µs | about 12 ms |
-| 200 | about 60 µs | about 85 ms |
+| 15 | under 1 µs | about 6 ms |
+| 50 | about 6 µs | about 18 ms |
+| 200 | about 130 µs | about 120 ms |
 
 ---
 

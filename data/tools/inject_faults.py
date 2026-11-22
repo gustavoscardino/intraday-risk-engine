@@ -50,7 +50,9 @@ class Feed:
 
 def num(x):
     """A price or volume written back with the precision of the source file."""
-    return f"{x:.4f}".rstrip("0").rstrip(".") if x == x else ""
+    if x != x:
+        return ""
+    return f"{x:.4f}".rstrip("0").rstrip(".") or "0"
 
 
 def pick(rng, items, k):
@@ -108,6 +110,8 @@ def out_of_order(rate, reach=20):
                     f.mark("OUT_OF_ORDER", rows[i], f"after {rows[j][T]}")
                     moved.add(id(rows[i]))
                     rows.insert(j, rows.pop(i))
+                    # the rows it now arrives after stay where they are, so the truth holds
+                    moved.update(id(r) for r in rows[i:j])
     return apply
 
 
@@ -235,7 +239,7 @@ SCENARIOS = {
     "missing_20pct": ([missing(0.20)], "20% of the rows missing at random"),
     "halt": ([halt], "a stock without any row for a whole session (3 times)"),
     "duplicates": ([duplicates(0.02)], "2% of the rows delivered twice"),
-    "out_of_order": ([out_of_order(0.01)], "1% of the rows delivered after rows of the next bar"),
+    "out_of_order": ([out_of_order(0.01)], "about 0.6% of the rows delivered after rows of the next bar"),
     "delay": ([delay(0.005)], "0.5% of the rows delivered 2-4 bars late"),
     "stale": ([stale], "a frozen quote (volume 0) for 10 bars, 3 times"),
     "bad_ticks": ([bad_ticks], "10 single wrong closes, 5-10% off"),
@@ -244,7 +248,7 @@ SCENARIOS = {
     "bad_values": ([bad_values(0.005)], "0.5% of the rows with a zero, negative, empty or non-numeric field"),
     "unadjusted_split": ([unadjusted_split], "a 2-for-1 split not adjusted: one stock's prices halve from a session's open on"),
     "late_listing": ([late_listing], "a stock absent from the first quarter of the sessions"),
-    "everything": ([missing(0.01), halt, stale, bad_ticks, truncated, bad_values(0.002), duplicates(0.005),
+    "everything": ([missing(0.01), halt, truncated, stale, bad_ticks, bad_values(0.002), duplicates(0.005),
                     out_of_order(0.003), delay(0.002)], "moderate doses of every recoverable fault together"),
 }
 

@@ -78,7 +78,7 @@ SharedData read_shared_data(const std::string& folder, const std::string& ticker
     std::vector<int> dates;
     for (int date:panel.date) if (dates.empty() || date!=dates.back()) dates.push_back(date);
     // default: 40 sessions, the same window in every engine (half of the sessions if fewer)
-    const auto days=window_days==0?(dates.size()>40?std::size_t{40}:dates.size()/2):static_cast<std::size_t>(window_days);
+    const auto days=window_days==0?(dates.size()>40?std::size_t{40}:std::max<std::size_t>(5,dates.size()/2)):static_cast<std::size_t>(window_days);
     if (days==0 || days>=dates.size()) throw std::invalid_argument("training window must leave out-of-sample sessions");
     std::int64_t cutoff=0;
     for (std::size_t i=0;i<panel.num_bars();++i) if (panel.date[i]==dates[days-1]) cutoff=panel.time_key[i]/1000;

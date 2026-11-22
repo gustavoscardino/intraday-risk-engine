@@ -14,7 +14,7 @@ $views = @(
     @{ f = '03_ciclo_15min'; t = '3. EWMA: ciclo de 15 minutos';
        d = 'O que acontece a cada barra fechada. A atualização leva cerca de 1 µs; a re-estimação do fim do dia, cerca de 4 ms (15 ações).' },
     @{ f = '04_modulos_garch_t'; t = '4. GARCH-t: módulos';
-       d = 'Organização do código do garch_t, levantada a partir dos #include de garch_t/source/. O núcleo é o portfolio (IntradayRiskEngine); synthetic gera o mercado fictício usado por todos os módulos; revaluation reavalia as opções por Monte Carlo.' },
+       d = 'Organização do código do garch_t, levantada a partir dos #include de garch_t/source/. O núcleo é o portfolio (IntradayRiskEngine); synthetic gera o mercado fictício usado por todos os módulos; revaluation reavalia as opções por Monte Carlo; data_quality segura por uma barra o salto isolado de uma ação.' },
     @{ f = '05_realized_caviar'; t = '5. Realized-CAViaR';
        d = 'Terceira técnica e comparação central (C++20): o Realized-CAViaR estima o quantil de 1% do retorno por uma recursão com o retorno agregado R e a variância realizada RV; EWMA-N, EWMA-t e GARCH-t de uma ação, sobre retornos divididos pelo perfil diurno, são calibrados no mesmo calendário e avaliados nos mesmos alvos. Latência medida em lotes.' }
 )
