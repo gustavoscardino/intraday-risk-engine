@@ -7,7 +7,7 @@ tool.
 ```
 data/
 ├── synthetic/    fictitious market: 15 stocks, 150 sessions, with a portfolio, trades and options
-└── b3_real/      real B3 data: 15 stocks, 60 sessions
+└── b3_real/      real B3 data: 15 stocks, 87 sessions
 ```
 
 ## `synthetic/` — fictitious market
@@ -37,12 +37,15 @@ data/
 
 - **15 stocks:** PETR4, PRIO3, VALE3, GGBR4, SUZB3, ITUB4, BBDC4, BBAS3, B3SA3, ABEV3, RADL3,
   RENT3, WEGE3, SBSP3 and EQTL3.
-- **60 trading sessions** from 2026-07-17 to 2026-10-09, 15-minute bars (Yahoo Finance), São Paulo
+- **87 trading sessions** from 2026-07-17 to 2026-11-19, 15-minute bars (Yahoo Finance), São Paulo
   local time.
+- **Real imperfections are kept as they are:** bars without trades have no row; 2026-07-31 has bars
+  only from 13:00 on, and 2026-10-26 and 2026-11-16 only from 11:00 on.
 - **Portfolio:** about BRL 700 thousand in each stock and a short position in B3SA3. No trades and
   no options.
-- To download a more recent period: `python garch_t/source/tools/fetch_b3_yahoo.py` (Yahoo keeps
-  only the last ~60 sessions of 15-minute bars).
+- **To add more recent sessions:** `python garch_t/source/tools/fetch_b3_yahoo.py`. Yahoo keeps only
+  the last ~60 sessions of 15-minute bars, so the script keeps every session already in the file and
+  appends the new ones; run it at least every two months and the history keeps growing.
 
 ## File formats
 

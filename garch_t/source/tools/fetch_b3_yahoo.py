@@ -2,16 +2,21 @@
 them in the engine's CSV format.
 
 Usage:
-    python fetch_b3_yahoo.py [--out DIR] [--range 60d] [--notional 700000]
+    python fetch_b3_yahoo.py [--out DIR] [--range 60d] [--notional 700000] [--replace]
 
-DIR defaults to the dataset folder next to garch_t (data/b3_real), which it replaces.
+DIR defaults to the dataset folder next to garch_t (data/b3_real).
+
+Yahoo keeps only the last ~60 sessions of 15-minute bars, so by default the dataset GROWS: the
+sessions already in DIR/prices_15m.csv are kept as they are and only the sessions after its last
+day are appended (assets.csv and portfolio_initial.csv are kept too). Today's session is left out
+while it may still be trading. --replace rebuilds the folder from the download alone.
 
 Writes DIR/assets.csv, DIR/prices_15m.csv (bar *close* times, Sao Paulo local time),
 DIR/portfolio_initial.csv (roughly equal notional, one short hedge) and an empty
 DIR/fills.csv. Only the Python standard library is used.
 
-Yahoo limits 15-minute history to the last 60 days. Timestamps from Yahoo are bar *start*
-times in UTC; they are converted to the exchange's local time and shifted to the close.
+Timestamps from Yahoo are bar *start* times in UTC; they are converted to the exchange's local
+time and shifted to the close.
 """
 import argparse
 import csv
@@ -107,15 +112,22 @@ def main():
     ap.add_argument("--out", default=os.path.join(here, "..", "..", "..", "data", "b3_real"))
     ap.add_argument("--range", default="60d")
     ap.add_argument("--notional", type=float, default=700000.0)
+    ap.add_argument("--replace", action="store_true", help="rebuild from the download alone instead of appending")
     args = ap.parse_args()
     os.makedirs(args.out, exist_ok=True)
+    prices_path = os.path.join(args.out, "prices_15m.csv")
+    existing = []
+    if not args.replace and os.path.exists(prices_path):
+        with open(prices_path, newline="") as f:
+            existing = [tuple(r) for r in csv.reader(f)][1:]
 
     with ThreadPoolExecutor(max_workers=5) as pool:
         payloads = list(pool.map(lambda t: fetch(t[0], args.range), TICKERS))
 
+    today = (datetime.now(timezone.utc) - timedelta(hours=3)).strftime("%Y-%m-%d")  # Sao Paulo date
     all_rows, last_price = [], {}
     for (sym, _, _), payload in zip(TICKERS, payloads):
-        rows = to_rows(sym, payload) if payload else []
+        rows = [r for r in (to_rows(sym, payload) if payload else []) if r[0][:10] < today]
         if not rows:
             print(f"warning: no data for {sym}", file=sys.stderr)
             continue
@@ -123,12 +135,23 @@ def main():
         first_day = rows[0][0][:10]
         last_price[sym] = next(r[5] for r in rows if r[0][:10] == first_day)
     all_rows.sort(key=lambda r: (r[0], r[1]))
+    formatted = [(ts, sym, f"{o:.4f}", f"{h:.4f}", f"{l:.4f}", f"{c:.4f}", str(v)) for ts, sym, o, h, l, c, v in all_rows]
 
-    with open(os.path.join(args.out, "prices_15m.csv"), "w", newline="") as f:
+    if existing:  # keep every session already in the file; append only the later sessions
+        last_day = max(r[0][:10] for r in existing)
+        added = [r for r in formatted if r[0][:10] > last_day]
+        new_days = sorted({r[0][:10] for r in added})
+        print(f"kept {len({r[0][:10] for r in existing})} sessions up to {last_day}; "
+              f"appended {len(new_days)} sessions" + (f" ({new_days[0]} .. {new_days[-1]})" if new_days else ""))
+        formatted = sorted(existing + added, key=lambda r: (r[0], r[1]))
+    with open(prices_path, "w", newline="") as f:
         w = csv.writer(f)
         w.writerow(["timestamp", "ticker", "open", "high", "low", "close", "volume"])
-        for ts, sym, o, h, l, c, v in all_rows:
-            w.writerow([ts, sym, f"{o:.4f}", f"{h:.4f}", f"{l:.4f}", f"{c:.4f}", v])
+        w.writerows(formatted)
+    days = sorted({r[0][:10] for r in formatted})
+    print(f"{len(formatted)} bars, {len(days)} sessions ({days[0]} .. {days[-1]}) -> {os.path.abspath(args.out)}")
+    if existing and os.path.exists(os.path.join(args.out, "assets.csv")) and os.path.exists(os.path.join(args.out, "portfolio_initial.csv")):
+        return  # the stocks and the initial portfolio stay as they were
     with open(os.path.join(args.out, "assets.csv"), "w", newline="") as f:
         w = csv.writer(f)
         w.writerow(["ticker", "name", "sector", "market_beta"])
@@ -145,10 +168,6 @@ def main():
             w.writerow([sym, -qty // 2 if sym == SHORT_HEDGE else qty])
     with open(os.path.join(args.out, "fills.csv"), "w", newline="") as f:
         f.write("fill_id,timestamp,ticker,side,quantity,price\n")
-
-    days = sorted({r[0][:10] for r in all_rows})
-    print(f"{len(all_rows)} bars, {len(last_price)} tickers, {len(days)} sessions "
-          f"({days[0]} .. {days[-1]}) -> {os.path.abspath(args.out)}")
 
 
 if __name__ == "__main__":
