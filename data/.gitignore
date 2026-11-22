@@ -1,0 +1,2 @@
+# faulty copies of the datasets, recreated by tools/inject_faults.py
+faults/

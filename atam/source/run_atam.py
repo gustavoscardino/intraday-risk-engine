@@ -2,7 +2,7 @@
 
 usage: python run_atam.py [--only PART[,PART...]] [--fresh]
 
-Parts (in order): environment, correctness, comparability, robustness, performance,
+Parts (in order): environment, correctness, comparability, robustness, faults, performance,
 modifiability, scorecard. Each part runs the engines it needs (cached in atam/work/), writes its
 evidence to atam/results/<part>/ and its figures to atam/results/figures/. The scorecard part
 joins the measurements with the utility tree (atam/utility_tree.csv) and writes
@@ -19,7 +19,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from common import write_measurements  # noqa: E402
 
-PARTS = ["environment", "correctness", "comparability", "robustness", "performance", "modifiability", "scorecard"]
+PARTS = ["environment", "correctness", "comparability", "robustness", "faults", "performance", "modifiability", "scorecard"]
 
 
 def main(argv: list[str]) -> int:

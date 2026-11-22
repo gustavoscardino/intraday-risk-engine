@@ -7,7 +7,8 @@ tool.
 ```
 data/
 ├── synthetic/    fictitious market: 15 stocks, 150 sessions, with a portfolio, trades and options
-└── b3_real/      real B3 data: 15 stocks, 87 sessions
+├── b3_real/      real B3 data: 15 stocks, 87 sessions
+└── tools/        inject_faults.py: faulty copies of the datasets, to test robustness
 ```
 
 ## `synthetic/` — fictitious market
@@ -46,6 +47,46 @@ data/
 - **To add more recent sessions:** `python garch_t/source/tools/fetch_b3_yahoo.py`. Yahoo keeps only
   the last ~60 sessions of 15-minute bars, so the script keeps every session already in the file and
   appends the new ones; run it at least every two months and the history keeps growing.
+
+## Faulty copies — testing robustness
+
+A real market-data feed fails in many ways. `tools/inject_faults.py` writes one faulty copy of a
+dataset per kind of problem, so each engine can be run on it and compared with its run on the clean
+data:
+
+```
+python data/tools/inject_faults.py            # every scenario, for synthetic and b3_real
+python data/tools/inject_faults.py --list     # what each scenario does
+python data/tools/inject_faults.py --data b3_real --only bad_ticks,stale
+```
+
+Each copy is a complete dataset folder, `data/faults/<dataset>/<scenario>/`, that any engine reads
+with `--data` (for example `garch_t\bin\intraday_risk.exe --data data\faults\b3_real\stale`). Next
+to the faulty `prices_15m.csv` it holds `faults.csv`, the list of every fault injected (`fault`,
+`timestamp` of the affected bar, `ticker`, `detail`), so a data-quality check can be scored against
+the truth.
+
+| Scenario | What goes wrong |
+|---|---|
+| `missing_1pct`, `missing_5pct`, `missing_20pct` | 1%, 5% or 20% of the rows never arrive |
+| `halt` | a stock has no row for a whole session (3 times) |
+| `duplicates` | 2% of the rows arrive twice |
+| `out_of_order` | 1% of the rows arrive after rows of the next bar |
+| `delay` | 0.5% of the rows arrive 2–4 bars late |
+| `stale` | a quote freezes (same price, volume 0) for 10 bars (3 times) |
+| `bad_ticks` | 10 single wrong closes, 5–10% off; the next bar is right again |
+| `truncated` | the feed stops 2 hours before the close (3 sessions) |
+| `clock_shift` | one session stamped one hour late (a time-zone error) |
+| `bad_values` | 0.5% of the rows with a zero, negative, empty or non-numeric field |
+| `unadjusted_split` | a 2-for-1 split the feed did not adjust: one stock's prices halve from a session's open on (a fake −50% overnight gap; the position's value halves) |
+| `late_listing` | a stock only starts trading after the first quarter of the sessions |
+| `everything` | moderate doses of every recoverable fault together |
+
+The faults are drawn with a fixed seed, so the same command always writes the same files; the
+copies are not versioned (they take about 85 MB) and the script recreates them in a few seconds.
+The rows are in **arrival order**: an engine that reads the file as a feed sees late and
+out-of-order rows where they arrived. The ATAM evaluation runs every engine on every copy
+(`atam/results/faults/`).
 
 ## File formats
 
