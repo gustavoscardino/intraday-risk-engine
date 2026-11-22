@@ -19,6 +19,7 @@ EwmaNormalModel::EwmaNormalModel(size_t assets, const ModelConfig& cfg)
 }
 
 void EwmaNormalModel::on_bar(int slot, const double* r) {
+    cached_ = false;  // a_ is used below, and the covariance changes
     if (!ready_) return;
     for (size_t i = 0; i < n_; ++i) a_[i] = r[i] / diurnal_.factor(slot, i);
     Sy_.update(a_.data(), lambda_);
@@ -27,6 +28,7 @@ void EwmaNormalModel::on_bar(int slot, const double* r) {
 void EwmaNormalModel::refit(const riskcommon::History& h, const double* expo) {
     const size_t n = n_, W = h.bars;
     if (W < 4 || h.assets != n) return;
+    cached_ = false;
     const std::vector<double> R(h.returns, h.returns + W * n);
     const std::vector<int> slots(h.slots, h.slots + W);
 
@@ -89,15 +91,26 @@ double EwmaNormalModel::sigma(int slot, const double* x, std::vector<double>* st
                               std::vector<double>* asset_sigma) const {
     const size_t n = n_;
     const std::vector<double>& S = Sy_.matrix();
-    for (size_t i = 0; i < n; ++i) a_[i] = (std::isfinite(x[i]) ? x[i] : 0.0) * diurnal_.factor(slot, i);
-    double var = 0.0;
-    for (size_t i = 0; i < n; ++i) {
-        double acc = 0.0;
-        for (size_t j = 0; j < n; ++j) acc += S[i * n + j] * a_[j];
-        Sa_[i] = acc;
-        var += a_[i] * acc;
+    // EWMA-N, EWMA-t and the risk decomposition ask for the same sigma at every bar: computed once
+    const bool hit = cached_ && slot == cached_slot_ &&
+                     std::equal(x, x + n, cached_x_.begin(), [](double a, double b) {
+                         return a == b || (std::isnan(a) && std::isnan(b));
+                     });
+    if (!hit) {
+        for (size_t i = 0; i < n; ++i) a_[i] = (std::isfinite(x[i]) ? x[i] : 0.0) * diurnal_.factor(slot, i);
+        double var = 0.0;
+        for (size_t i = 0; i < n; ++i) {
+            double acc = 0.0;
+            for (size_t j = 0; j < n; ++j) acc += S[i * n + j] * a_[j];
+            Sa_[i] = acc;
+            var += a_[i] * acc;
+        }
+        cached_sigma_ = std::sqrt(std::max(var, 0.0));
+        cached_slot_ = slot;
+        cached_x_.assign(x, x + n);
+        cached_ = true;
     }
-    const double sig = std::sqrt(std::max(var, 0.0));
+    const double sig = cached_sigma_;
     if (standalone && contrib && asset_sigma) {
         standalone->assign(n, kNaN);
         contrib->assign(n, kNaN);

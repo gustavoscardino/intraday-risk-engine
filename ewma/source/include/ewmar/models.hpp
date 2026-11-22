@@ -67,7 +67,12 @@ private:
     EwmaCovariance Sy_;
     std::vector<TailFactors> fac_;
     std::vector<double> u_;
-    mutable std::vector<double> a_, Sa_;  // scratch
+    mutable std::vector<double> a_, Sa_;  // a_ = x * s_slot and S a_ of the last sigma() (scratch in on_bar)
+    // the last sigma(): valid until the next bar or refit, for the same slot and exposures
+    mutable bool cached_ = false;
+    mutable int cached_slot_ = -1;
+    mutable std::vector<double> cached_x_;
+    mutable double cached_sigma_ = 0.0;
 };
 
 class EwmaStudentModel : public riskcommon::PortfolioModel {
