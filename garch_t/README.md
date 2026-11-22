@@ -35,7 +35,7 @@ value theory, and data with gaps or errors.
 
 3. Open the results:
    - `results/synthetic/report.txt` — fictitious market of 15 stocks, 150 trading sessions;
-   - `results/b3_real/report.txt` — 15 real B3 stocks, 60 trading sessions.
+   - `results/b3_real/report.txt` — 15 real B3 stocks, 87 trading sessions.
 
 `run.bat` takes about 30 seconds.
 
@@ -261,8 +261,8 @@ open in Excel).
 
 ```
   model            conf   exc    rate            95% CI expected  Kupiec p     CC p  ES Z2 p    zone ES ratio
-  GARCH-t/EVT     0.990    26   1.03% [ 0.71%,  1.51%]    1.00%    0.8686   0.5392   0.2924   green    1.077
-  EWMA-N (ref)    0.990    34   1.35% [ 0.97%,  1.88%]    1.00%    0.0931   0.1533   0.0005  yellow    1.312
+  GARCH-t/EVT     0.990    26   0.84% [ 0.58%,  1.24%]    1.00%    0.3746   0.5402   0.7426   green    1.055
+  EWMA-N (ref)    0.990    50   1.62% [ 1.23%,  2.14%]    1.00%    0.0014   0.0059   0.0005  yellow    1.247
 ```
 
 | Column | Meaning |
@@ -370,24 +370,27 @@ computed in parallel for comparison.
 
 ## Results
 
-**Simulated markets** (`results/monte_carlo_realistic`; 60 markets, 151 thousand forecasts per model):
+**Simulated markets** (`results/monte_carlo_realistic`; 60 markets, 185 thousand forecasts per model):
 
 | Model | 95% VaR exceptions | 97.5% VaR | 99% VaR | ES test rejections at 99% | Berkowitz rejections |
 |---|---|---|---|---|---|
-| **GARCH-t** | 5.10% | 2.49% | 0.97% | 3% | 5% (as expected for a correct model) |
-| EWMA-N (ref) | 5.00% | 3.07% | 1.80% | 100% | 100% |
+| **GARCH-t** | 5.12% | 2.50% | 1.02% | 5% (as expected for a correct model) | 13% |
+| EWMA-N (ref) | 5.01% | 3.09% | 1.81% | 100% | 100% |
 
-At the open, EWMA-N reaches 5.4% of exceptions at 99%; GARCH-t stays at 1.3%.
+At the open, EWMA-N reaches 5.2% of exceptions at 99%; GARCH-t stays at 1.2%.
 
-**Real B3 data** (`results/b3_real`; 840 out-of-sample forecasts):
+**Real B3 data** (`results/b3_real`; 87 sessions, 1,308 out-of-sample forecasts):
 
 | Model | 95% VaR | 97.5% VaR | 99% VaR | ES test (p) | Traffic light |
 |---|---|---|---|---|---|
-| **GARCH-t** | 5.60% | 2.74% | 1.07% | 0.21 | green at all three levels |
-| EWMA-N (ref) | 4.29% | 3.33% | 2.02% | 0.0005 (rejected) | yellow at 99% |
+| **GARCH-t** | 4.89% | 2.22% | 1.07% | 0.31 | green at all three levels |
+| EWMA-N (ref) | 4.82% | 3.21% | 1.68% | 0.0005 (rejected) | yellow at 97.5% and 99% |
 
-**Synthetic market** (`results/synthetic`): GARCH-t 5.16% / 2.42% / 1.03%, Berkowitz p = 0.76.
-With the degraded feed: 5.20% / 2.46% / 1.07%, with no run-time failure.
+The Berkowitz test of the whole distribution does not reject GARCH-t (p = 0.06); it rejects
+EWMA-N (p = 0.004).
+
+**Synthetic market** (`results/synthetic`): GARCH-t 5.17% / 2.37% / 0.84%, Berkowitz p = 0.61.
+With the degraded feed (and `--z-clip 6`): 5.04% / 2.44% / 0.84%, with no run-time failure.
 
 ---
 
@@ -443,9 +446,9 @@ project, add `source/` to its CMake (`add_subdirectory`) and link to the `garcht
 
 ## Known limitations
 
-- **Short real history.** Yahoo only provides ~60 sessions of 15-minute bars. On these data the VaR
-  and ES pass, but the Berkowitz test (the most demanding one) still rejects, because of a few days
-  with strong jumps. A long B3 history is needed for the final validation.
+- **Short real history.** Yahoo keeps only ~60 sessions of 15-minute bars; `fetch_b3_yahoo.py`
+  appends new sessions, and `b3_real` has 87. On these data VaR, ES and the Berkowitz test pass
+  (Berkowitz p = 0.06, close to the limit); a longer B3 history would make the validation firmer.
 - **B3 trading hours.** The close moves between 17:00 and 18:00 with US daylight saving time. For a
   period crossing the change, run each part separately with `--session`.
 - **B3 holidays** are registered for 2025–2027 (function `is_b3_holiday` in

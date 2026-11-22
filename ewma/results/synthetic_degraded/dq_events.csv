@@ -177,6 +177,10 @@ time,ticker,flag,detail
 2026-04-29 17:00:00,XPAP3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
 2026-04-30 12:15:00,XAGR3,GAP,no row for this bar
 2026-04-30 14:15:00,XBAN4,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
+2026-05-04 11:30:00,XAGR3,SUSPECT,"|z| = 6.7 above the limit: update winsorized, decided with the next bar"
+2026-05-04 11:30:00,XAGR3,SHOCK_KEPT,"move of +1.55% confirmed by the next bar (+1.16%): real shock, kept"
+2026-05-04 12:15:00,XVAR3,SUSPECT,"|z| = 6.9 above the limit: update winsorized, decided with the next bar"
+2026-05-04 12:15:00,XVAR3,SHOCK_KEPT,"move of +2.47% confirmed by the next bar (+2.47%): real shock, kept"
 2026-05-04 12:30:00,XAGR3,DUPLICATE,repeated row discarded (file line 17762)
 2026-05-04 13:00:00,XSID3,DUPLICATE,repeated row discarded (file line 17788)
 2026-05-04 13:30:00,XELE3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
@@ -271,7 +275,7 @@ time,ticker,flag,detail
 2026-06-01 14:15:00,XTEC3,DUPLICATE,repeated row discarded (file line 26238)
 2026-06-01 14:30:00,XPAP3,GAP,no row for this bar
 2026-06-02 15:15:00,XVAR3,GAP,no row for this bar
-2026-06-03 10:30:00,XVAR3,SUSPECT,"|z| = 6.7 above the limit: update winsorized, decided with the next bar"
+2026-06-03 10:30:00,XVAR3,SUSPECT,"|z| = 6.4 above the limit: update winsorized, decided with the next bar"
 2026-06-03 10:30:00,XVAR3,SHOCK_KEPT,"move of -9.69% confirmed by the next bar (-11.44%): real shock, kept"
 2026-06-03 11:15:00,XBAN4,GAP,no row for this bar
 2026-06-03 16:00:00,XAGR3,GAP,no row for this bar
@@ -305,7 +309,7 @@ time,ticker,flag,detail
 2026-06-17 12:45:00,XLOG3,GAP,no row for this bar
 2026-06-17 14:45:00,XSEG3,DUPLICATE,repeated row discarded (file line 30875)
 2026-06-17 15:15:00,XSEG3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
-2026-06-18 12:00:00,XLOG3,SUSPECT,"|z| = 7.4 above the limit: update winsorized, decided with the next bar"
+2026-06-18 12:00:00,XLOG3,SUSPECT,"|z| = 7.8 above the limit: update winsorized, decided with the next bar"
 2026-06-18 12:00:00,XLOG3,SHOCK_KEPT,"move of -3.81% confirmed by the next bar (-2.08%): real shock, kept"
 2026-06-18 13:15:00,XMIN3,GAP,no row for this bar
 2026-06-18 16:45:00,XIMB3,GAP,no row for this bar
@@ -367,7 +371,7 @@ time,ticker,flag,detail
 2026-07-08 10:15:00,XCON3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
 2026-07-08 11:30:00,XPAP3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
 2026-07-08 13:15:00,XSID3,GAP,no row for this bar
-2026-07-08 13:45:00,XPET3,SUSPECT,"|z| = 20.2 above the limit: update winsorized, decided with the next bar"
+2026-07-08 13:45:00,XPET3,SUSPECT,"|z| = 19.8 above the limit: update winsorized, decided with the next bar"
 2026-07-08 13:45:00,XPET3,SPIKE,bad tick: move of +6.44% reverted by the next bar (-0.42% left): price excluded
 2026-07-08 14:45:00,XSID3,DUPLICATE,repeated row discarded (file line 37159)
 2026-07-08 15:30:00,XELE3,GAP,no row for this bar
@@ -407,8 +411,6 @@ time,ticker,flag,detail
 2026-07-16 16:15:00,XTEL3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
 2026-07-16 16:15:00,XTEC3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
 2026-07-16 16:15:00,XAGR3,GAP,no row for this bar
-2026-07-17 10:15:00,XSAU3,SUSPECT,"|z| = 6.1 above the limit: update winsorized, decided with the next bar"
-2026-07-17 10:15:00,XSAU3,SHOCK_KEPT,"move of -3.11% confirmed by the next bar (-2.81%): real shock, kept"
 2026-07-17 12:45:00,XAGR3,GAP,no row for this bar
 2026-07-17 15:15:00,XSID3,GAP,no row for this bar
 2026-07-17 15:45:00,XAGR3,GAP,no row for this bar
@@ -429,7 +431,7 @@ time,ticker,flag,detail
 2026-07-27 11:45:00,XELE3,GAP,no row for this bar
 2026-07-27 14:45:00,XVAR3,GAP,no row for this bar
 2026-07-27 15:45:00,XVAR3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
-2026-07-28 11:30:00,XBAN4,SUSPECT,"|z| = 13.3 above the limit: update winsorized, decided with the next bar"
+2026-07-28 11:30:00,XBAN4,SUSPECT,"|z| = 13.8 above the limit: update winsorized, decided with the next bar"
 2026-07-28 11:30:00,XBAN4,SPIKE,bad tick: move of -7.07% reverted by the next bar (-0.24% left): price excluded
 2026-07-28 12:45:00,XPET3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
 2026-07-28 14:00:00,XCON3,GAP,no row for this bar
@@ -493,7 +495,7 @@ time,ticker,flag,detail
 2026-08-20 11:00:00,XLOG3,GAP,no row for this bar
 2026-08-20 14:15:00,XVAR3,GAP,no row for this bar
 2026-08-21 13:15:00,XSAU3,DUPLICATE,repeated row discarded (file line 50446)
-2026-08-21 13:15:00,XVAR3,SUSPECT,"|z| = 28.5 above the limit: update winsorized, decided with the next bar"
+2026-08-21 13:15:00,XVAR3,SUSPECT,"|z| = 27.6 above the limit: update winsorized, decided with the next bar"
 2026-08-21 13:15:00,XVAR3,SHOCK_KEPT,"move of -8.70% confirmed by the next bar (-9.88%): real shock, kept"
 2026-08-24 16:45:00,XSID3,GAP,no row for this bar
 2026-08-24 17:00:00,XTEL3,DUPLICATE,repeated row discarded (file line 51088)
@@ -525,7 +527,7 @@ time,ticker,flag,detail
 2026-09-03 12:15:00,XTEL3,DELAY,"arrived 2 bars late, after the bar closed: discarded"
 2026-09-03 12:15:00,XTEL3,GAP,no row for this bar
 2026-09-03 12:30:00,XVAR3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
-2026-09-03 12:45:00,XSAU3,SUSPECT,"|z| = 6.7 above the limit: update winsorized, decided with the next bar"
+2026-09-03 12:45:00,XSAU3,SUSPECT,"|z| = 6.8 above the limit: update winsorized, decided with the next bar"
 2026-09-03 12:45:00,XSAU3,SHOCK_KEPT,"move of +1.91% confirmed by the next bar (+2.53%): real shock, kept"
 2026-09-03 13:45:00,XSEG3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
 2026-09-03 16:45:00,XTEC3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
@@ -533,7 +535,7 @@ time,ticker,flag,detail
 2026-09-04 12:30:00,XCON3,STALE,frozen quote (flagged retroactively; already used)
 2026-09-04 12:45:00,XCON3,STALE,close unchanged with volume 0 for 3 bars: price ignored
 2026-09-04 13:00:00,XCON3,STALE,close unchanged with volume 0 for 4 bars: price ignored
-2026-09-04 13:00:00,XAGR3,SUSPECT,"|z| = 6.2 above the limit: update winsorized, decided with the next bar"
+2026-09-04 13:00:00,XAGR3,SUSPECT,"|z| = 6.3 above the limit: update winsorized, decided with the next bar"
 2026-09-04 13:00:00,XAGR3,SHOCK_KEPT,"move of +2.12% confirmed by the next bar (+1.86%): real shock, kept"
 2026-09-04 13:15:00,XCON3,STALE,close unchanged with volume 0 for 5 bars: price ignored
 2026-09-04 13:30:00,XCON3,STALE,close unchanged with volume 0 for 6 bars: price ignored
@@ -557,8 +559,6 @@ time,ticker,flag,detail
 2026-09-11 13:45:00,XIMB3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
 2026-09-11 16:45:00,XTEL3,DUPLICATE,repeated row discarded (file line 56535)
 2026-09-14 12:15:00,XSID3,GAP,no row for this bar
-2026-09-14 13:30:00,XSID3,SUSPECT,"|z| = 6.1 above the limit: update winsorized, decided with the next bar"
-2026-09-14 13:30:00,XSID3,SHOCK_KEPT,"move of -2.33% confirmed by the next bar (-2.55%): real shock, kept"
 2026-09-14 14:30:00,XTEC3,GAP,no row for this bar
 2026-09-15 10:45:00,XPAP3,OUT_OF_ORDER,arrived 1 bar(s) after a newer row; accepted
 2026-09-15 12:30:00,XSEG3,DUPLICATE,repeated row discarded (file line 57113)
@@ -578,7 +578,7 @@ time,ticker,flag,detail
 2026-09-18 16:00:00,XCON3,DUPLICATE,repeated row discarded (file line 58588)
 2026-09-21 12:30:00,XPET3,GAP,no row for this bar
 2026-09-21 13:00:00,XTEC3,DUPLICATE,repeated row discarded (file line 58829)
-2026-09-21 15:15:00,XTEC3,SUSPECT,"|z| = 22.0 above the limit: update winsorized, decided with the next bar"
+2026-09-21 15:15:00,XTEC3,SUSPECT,"|z| = 22.6 above the limit: update winsorized, decided with the next bar"
 2026-09-21 15:15:00,XTEC3,SPIKE,bad tick: move of +9.60% reverted by the next bar (-0.22% left): price excluded
 2026-09-22 13:45:00,XIMB3,DUPLICATE,repeated row discarded (file line 59300)
 2026-09-22 15:15:00,XSID3,DUPLICATE,repeated row discarded (file line 59383)
@@ -617,5 +617,5 @@ time,ticker,flag,detail
 2026-10-02 10:45:00,XSAU3,DUPLICATE,repeated row discarded (file line 62480)
 2026-10-02 13:45:00,XCON3,GAP,no row for this bar
 2026-10-02 14:30:00,XTEC3,DUPLICATE,repeated row discarded (file line 62701)
-2026-10-02 16:45:00,XTEC3,SUSPECT,"|z| = 7.8 above the limit: update winsorized, decided with the next bar"
+2026-10-02 16:45:00,XTEC3,SUSPECT,"|z| = 8.1 above the limit: update winsorized, decided with the next bar"
 2026-10-02 16:45:00,XTEC3,SHOCK_KEPT,"move of -4.55% confirmed by the next bar (-3.66%): real shock, kept"

@@ -39,7 +39,7 @@ line by line.
    - `results/synthetic/` — fictitious market of 15 stocks, 150 sessions, clean feed;
    - `results/synthetic_degraded/` — the same market with a faulty feed, data-quality layer on;
    - `results/synthetic_degraded_nodq/` — the faulty feed with the layer off;
-   - `results/b3_real/` — 15 real B3 stocks, 60 sessions.
+   - `results/b3_real/` — 15 real B3 stocks, 87 sessions.
 
 `run.bat` takes a few seconds.
 
@@ -264,31 +264,31 @@ only after 3 bars that qualify for it):
 
 ## Results
 
-### Synthetic market (`results/synthetic`, 2517 out-of-sample forecasts)
+### Synthetic market (`results/synthetic`, 3077 out-of-sample forecasts)
 
 | Model | 95% VaR | 97.5% VaR | 99% VaR | zone 99% | ES test p (99%) | ES ratio (99%) | Berkowitz p |
 |---|---|---|---|---|---|---|---|
-| EWMA-N (ref) | 4.69% | 2.46% | 1.35% | yellow | 0.0005 | 1.31 | 0.002 |
-| EWMA-N | 4.65% | 2.50% | 1.51% | yellow | 0.0005 | 1.17 | 0.095 |
-| **EWMA-t** | 5.13% | 2.22% | 1.19% | **green** | **0.17** | **1.04** | **0.45** |
-| GARCH-t/EVT (`garch_t`) | 5.16% | 2.42% | 1.03% | green | 0.29 | 1.08 | 0.76 |
+| EWMA-N (ref) | 4.61% | 2.66% | 1.62% | yellow | 0.0005 | 1.25 | 0.0003 |
+| EWMA-N | 4.68% | 2.70% | 1.72% | red | 0.0005 | 1.14 | 0.026 |
+| **EWMA-t** | 4.94% | 2.57% | 1.17% | **green** | **0.19** | **1.03** | **0.21** |
+| GARCH-t/EVT (`garch_t`) | 5.17% | 2.37% | 0.84% | green | 0.74 | 1.06 | 0.61 |
 
-- EWMA-N (ref) reproduces the `garch_t` reference exactly: 118 / 62 / 34 exceptions.
-- Removing the U profile fixes the open: at 99%, exceptions in the first 3 bars fall from 4.1%
-  (ref) to 2.6% (EWMA-N) and 1.9% (EWMA-t).
-- The t tail fixes the ES: its test passes and the ES ratio goes from 1.17 to 1.04.
+- EWMA-N (ref) reproduces the `garch_t` reference exactly: 142 / 82 / 50 exceptions.
+- Removing the U profile fixes the open: at 99%, exceptions in the first 3 bars fall from 5.2%
+  (ref) to 2.7% (EWMA-N) and 1.8% (EWMA-t).
+- The t tail fixes the ES: its test passes and the ES ratio goes from 1.14 to 1.03.
 
-### Real B3 data (`results/b3_real`, 840 forecasts)
+### Real B3 data (`results/b3_real`, 87 sessions, 1308 forecasts)
 
 | Model | 95% VaR | 97.5% VaR | 99% VaR | zone 99% | ES test p (99%) | ES ratio (99%) |
 |---|---|---|---|---|---|---|
-| EWMA-N (ref) | 4.29% | 3.33% | 2.02% | yellow | 0.0005 | 1.32 |
-| EWMA-N | 4.76% | 2.98% | 1.43% | green | 0.013 | 1.28 |
-| **EWMA-t** | 5.00% | 2.86% | 1.31% | green | **0.083** | **1.18** |
-| GARCH-t/EVT (`garch_t`) | 5.60% | 2.74% | 1.07% | green | 0.21 | 1.18 |
+| EWMA-N (ref) | 4.82% | 3.21% | 1.68% | yellow | 0.0005 | 1.31 |
+| EWMA-N | 5.50% | 2.98% | 1.99% | yellow | 0.0005 | 1.24 |
+| **EWMA-t** | 5.58% | 2.75% | 1.38% | green | 0.033 | **1.17** |
+| GARCH-t/EVT (`garch_t`) | 4.89% | 2.22% | 1.07% | green | 0.31 | 1.02 |
 
-EWMA-N (ref) again equals the `garch_t` reference (36 / 28 / 17). At the open, EWMA-N (ref) has
-12.2% of exceptions at 99%; EWMA-N and EWMA-t, 2.2%.
+EWMA-N (ref) again equals the `garch_t` reference (63 / 42 / 22). At the open, EWMA-N (ref) has
+6.7% of exceptions at 99%; EWMA-N and EWMA-t, 1.5%.
 
 ### Data-quality experiment (same market, three runs)
 
@@ -298,7 +298,8 @@ Detection on the faulty feed (`results/synthetic_degraded/dq_detection.csv`):
 |---|---|---|
 | missing rows (`GAP`) | 285 | 285 (100%) |
 | duplicates | 171 | 171 (100%) |
-| out-of-order rows | 129 | 126 accepted as `OUT_OF_ORDER`; 3 arrived after their bar closed (`DELAY`) |
+| out-of-order rows | 126 | 126 (100%), accepted as `OUT_OF_ORDER` |
+| late rows, arrived after their bar closed (`DELAY`) | 3 | 3 (100%), discarded |
 | frozen XCON3, day 130 (`STALE`) | 10 bars | 10 (2 flagged after the fact, already used) |
 | bad ticks XPET3, XBAN4, XTEC3 (`SPIKE`) | 3 | 3 (100%) |
 
@@ -307,12 +308,12 @@ shock not reverted). FREEZE is never triggered: no bar loses 40% of the exposure
 
 | Run (EWMA-t) | 95% / 97.5% / 99% exceptions | VaR 99 vs clean run: mean / max deviation | bars off by > 1% |
 |---|---|---|---|
-| clean feed | 129 / 56 / 30 | — | — |
-| faulty feed, DQ on | 127 / 56 / 29 | 0.48% / 8.0% | 267 |
-| faulty feed, DQ off | 123 / 57 / 27 | 2.74% / 51.0% | 980 |
+| clean feed | 152 / 79 / 36 | — | — |
+| faulty feed, DQ on | 151 / 77 / 36 | 0.52% / 6.8% | 377 |
+| faulty feed, DQ off | 146 / 79 / 39 | 2.56% / 48.7% | 1153 |
 
-Without the layer, each bad tick inflates the variance for hours (VaR up to 51% too high); with it,
-the largest difference is 8%, at the bar where the bad tick was still undecided.
+Without the layer, each bad tick inflates the variance for hours (VaR up to 49% too high); with it,
+the largest difference is 7%, at the bar where the bad tick was still undecided.
 
 ---
 
@@ -364,8 +365,9 @@ The complete cycle with the data-quality layer is `run_replay()` (`source/includ
 
 ## Known limitations
 
-- **Short real history**: 60 sessions of B3 (Yahoo limit) give 840 forecasts; the Berkowitz test
-  still rejects EWMA-N on them, and EWMA-t is at the edge (p = 0.05).
+- **Short real history**: 87 sessions of B3 give 1308 forecasts. On them the Berkowitz test rejects
+  the three EWMA models (EWMA-t p = 0.010) and the ES test rejects EWMA-t at 99% (p = 0.033), while
+  GARCH-t passes both; a longer history would make the comparison firmer.
 - **One λ for all stocks** (needed to keep the covariance positive semidefinite).
 - **Overnight**: gap and first bar assumed independent.
 - **Bad ticks at the close**: a jump at the last bar is decided with the next day's first bar, so the

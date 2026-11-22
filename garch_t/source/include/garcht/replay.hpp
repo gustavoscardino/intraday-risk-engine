@@ -30,7 +30,7 @@ namespace garcht {
 
 struct ReplayConfig {
     EngineConfig engine;          // bars_per_day / window_bars are derived from the session
-    int window_days = 60;
+    int window_days = 40;          // estimation window in sessions (the same in every engine)
     bool detect_session = true;   // infer the session grid from the data
     SessionSpec session;          // used when detect_session is false
     bool overnight = true;        // forecast and backtest close -> end of next first bar

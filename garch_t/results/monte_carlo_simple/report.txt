@@ -1,30 +1,30 @@
-Monte Carlo study: 30 markets x 150 days (simple profile), window 60 days, 8 threads
-  30 markets in 50.1 s
+Monte Carlo study: 30 markets x 150 days (simple profile), window 40 days, 8 threads
+  30 markets in 37.6 s
 
 Pooled exception rates over 30 markets (95% Wilson intervals) and rejection frequencies at 5%
   model            conf forecasts     rate              95% CI   Kupiec       CC    ES Z2  ES ratio
-  GARCH-t/EVT     0.950     75600   5.015% [ 4.861%,  5.172%]     0.0%     0.0%     0.0%     1.008
-  GARCH-t/EVT     0.975     75600   2.388% [ 2.281%,  2.499%]     0.0%     0.0%     0.0%     1.036
-  GARCH-t/EVT     0.990     75600   0.913% [ 0.847%,  0.983%]     3.3%     0.0%     0.0%     1.100
-  EWMA-N (ref)    0.950     75600   5.052% [ 4.898%,  5.210%]     6.7%    13.3%    83.3%     1.196
-  EWMA-N (ref)    0.975     75600   3.169% [ 3.047%,  3.297%]    56.7%    60.0%   100.0%     1.235
-  EWMA-N (ref)    0.990     75600   1.914% [ 1.819%,  2.014%]   100.0%   100.0%   100.0%     1.272
-  overnight       0.950      2700   6.259% [ 5.406%,  7.237%]     3.3%     0.0%        -     1.248
-  overnight       0.975      2700   3.889% [ 3.223%,  4.686%]     3.3%     0.0%        -     1.297
-  overnight       0.990      2700   2.333% [ 1.828%,  2.974%]    10.0%    13.3%        -     1.261
-  overnight ex-crash  0.950      2670   5.206% [ 4.426%,  6.115%]     0.0%     3.3%        -       nan
-  overnight ex-crash  0.975      2670   2.809% [ 2.247%,  3.507%]     6.7%     0.0%        -       nan
-  overnight ex-crash  0.990      2670   1.236% [ 0.881%,  1.731%]     3.3%     3.3%        -       nan
+  GARCH-t/EVT     0.950     92400   5.111% [ 4.971%,  5.255%]     0.0%     3.3%     0.0%     1.010
+  GARCH-t/EVT     0.975     92400   2.458% [ 2.360%,  2.560%]     0.0%     0.0%     0.0%     1.041
+  GARCH-t/EVT     0.990     92400   1.000% [ 0.938%,  1.066%]     0.0%     0.0%     0.0%     1.092
+  EWMA-N (ref)    0.950     92400   5.074% [ 4.934%,  5.217%]    10.0%    16.7%    86.7%     1.193
+  EWMA-N (ref)    0.975     92400   3.188% [ 3.077%,  3.304%]    56.7%    53.3%   100.0%     1.230
+  EWMA-N (ref)    0.990     92400   1.918% [ 1.831%,  2.008%]   100.0%   100.0%   100.0%     1.267
+  overnight       0.950      3300   6.030% [ 5.268%,  6.895%]     3.3%     3.3%        -     1.223
+  overnight       0.975      3300   3.848% [ 3.244%,  4.560%]     6.7%     3.3%        -     1.257
+  overnight       0.990      3300   2.364% [ 1.898%,  2.940%]    23.3%    13.3%        -     1.229
+  overnight ex-crash  0.950      3270   5.168% [ 4.461%,  5.981%]     3.3%     3.3%        -       nan
+  overnight ex-crash  0.975      3270   2.966% [ 2.438%,  3.605%]     6.7%     0.0%        -       nan
+  overnight ex-crash  0.990      3270   1.468% [ 1.109%,  1.941%]    10.0%     3.3%        -       nan
 
 Pooled exception rate by time of day (open = first 3 bars, close = last 3 bars)
   model            conf       open     midday      close
-  GARCH-t/EVT     0.950     5.210%     5.045%     4.593%
-  GARCH-t/EVT     0.975     2.580%     2.394%     2.148%
-  GARCH-t/EVT     0.990     1.198%     0.901%     0.716%
-  EWMA-N (ref)    0.950    11.086%     3.971%     6.938%
-  EWMA-N (ref)    0.975     8.025%     2.332%     4.457%
-  EWMA-N (ref)    0.990     5.568%     1.338%     2.481%
+  GARCH-t/EVT     0.950     5.545%     5.106%     4.717%
+  GARCH-t/EVT     0.975     2.697%     2.460%     2.202%
+  GARCH-t/EVT     0.990     1.384%     0.966%     0.869%
+  EWMA-N (ref)    0.950    11.192%     3.983%     6.949%
+  EWMA-N (ref)    0.975     7.960%     2.362%     4.475%
+  EWMA-N (ref)    0.990     5.505%     1.342%     2.556%
 
-Berkowitz test rejections at 5%: GARCH 0.0%, EWMA-N 100.0%, overnight 0.0% (of 30 markets)
-Average portfolio nu 6.01; correlation dynamics a 0.0236, b 0.9764 (EWMA: lambda = b)
+Berkowitz test rejections at 5%: GARCH 0.0%, EWMA-N 100.0%, overnight 6.7% (of 30 markets)
+Average portfolio nu 6.22; correlation dynamics a 0.0221, b 0.9779 (EWMA: lambda = b)
 Summary written to garch_t/results/monte_carlo_simple/monte_carlo_summary.csv (report: report.txt)

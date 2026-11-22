@@ -105,7 +105,7 @@ forecast by the factor of the target bar. This is how `ewma` and `garch_t` treat
 intraday returns. Without it, a GARCH-t fitted on raw returns absorbs the U shape
 into fat tails (nu about 5 instead of 7) and its midday VaR is too wide: on the
 15 synthetic stocks it had 0.57% exceptions at 99% (Kupiec rejected for 9 of 15),
-against 0.98% (0 of 15) with the profile. The profile is written to
+against 0.98% (0 of 15) with the profile (measured with a 60-session window). The profile is written to
 `diurnal_profile.csv` (last calibration). `--diurnal off` restores raw returns.
 
 **EWMA lambda.** Estimated at each calibration by Gaussian predictive

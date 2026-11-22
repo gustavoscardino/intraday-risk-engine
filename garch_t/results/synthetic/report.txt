@@ -1,64 +1,66 @@
 dataset: data/synthetic
 results: garch_t/results/synthetic
-loaded 4198 bars x 15 assets from data/synthetic/prices_15m.csv in 0.38 s (rows 62970, duplicates 0, bad 0, unknown 0)
-session: first bar closes 10:15, 15-minute bars, 28 bars/day; 150 sessions, window 60 days (automatic: half of the sessions, at most 60)
+loaded 4198 bars x 15 assets from data/synthetic/prices_15m.csv in 0.41 s (rows 62970, duplicates 0, bad 0, unknown 0)
+session: first bar closes 10:15, 15-minute bars, 28 bars/day; 150 sessions, window 40 days (default)
+data protection: none (the feed is taken as it is)
 
-Backtest of the one-bar-ahead forecasts (2517 bars, overnight gap excluded)
+Backtest of the one-bar-ahead forecasts (3077 bars, overnight gap excluded)
   model            conf   exc    rate            95% CI expected  Kupiec p     CC p  ES Z2 p    zone ES ratio
-  GARCH-t/EVT     0.950   130   5.16% [ 4.37%,  6.10%]    5.00%    0.7057   0.9227   0.3758   green    1.013
-  GARCH-t/EVT     0.975    61   2.42% [ 1.89%,  3.10%]    2.50%    0.8049   0.8889   0.4968   green    1.053
-  GARCH-t/EVT     0.990    26   1.03% [ 0.71%,  1.51%]    1.00%    0.8686   0.5392   0.2924   green    1.077
-  EWMA-N (ref)    0.950   118   4.69% [ 3.93%,  5.59%]    5.00%    0.4683   0.6215   0.1884   green    1.124
-  EWMA-N (ref)    0.975    62   2.46% [ 1.93%,  3.15%]    2.50%    0.9058   0.8986   0.0550   green    1.209
-  EWMA-N (ref)    0.990    34   1.35% [ 0.97%,  1.88%]    1.00%    0.0931   0.1533   0.0005  yellow    1.312
-  Berkowitz density test (whole distribution): GARCH-t/EVT p = 0.7599 (rho -0.001, sd 1.015); EWMA-N p = 0.0018 (rho -0.015, sd 1.053)
+  GARCH-t/EVT     0.950   159   5.17% [ 4.44%,  6.01%]    5.00%    0.6717   0.6449   0.4113   green    0.998
+  GARCH-t/EVT     0.975    73   2.37% [ 1.89%,  2.97%]    2.50%    0.6476   0.6022   0.6547   green    1.014
+  GARCH-t/EVT     0.990    26   0.84% [ 0.58%,  1.24%]    1.00%    0.3746   0.5402   0.7426   green    1.055
+  EWMA-N (ref)    0.950   142   4.61% [ 3.93%,  5.41%]    5.00%    0.3209   0.3809   0.1729   green    1.143
+  EWMA-N (ref)    0.975    82   2.66% [ 2.15%,  3.30%]    2.50%    0.5620   0.7240   0.0055   green    1.202
+  EWMA-N (ref)    0.990    50   1.62% [ 1.23%,  2.14%]    1.00%    0.0014   0.0059   0.0005  yellow    1.247
+  Berkowitz density test (whole distribution): GARCH-t/EVT p = 0.6081 (rho 0.005, sd 1.016); EWMA-N p = 0.0003 (rho -0.002, sd 1.055)
 
 Coverage by time of day (exception rate, Kupiec p in brackets)
   model            conf        open (3 bars)               midday       close (3 bars)
-  GARCH-t/EVT     0.950       4.85% [0.9103]       5.51% [0.3074]       2.96% [0.0976]
-  GARCH-t/EVT     0.975       3.73% [0.2283]       2.48% [0.9454]       0.74% [0.0298]
-  GARCH-t/EVT     0.990       2.24% [0.0796]       1.01% [0.9622]       0.00% [0.0198]
-  EWMA-N (ref)    0.950      10.45% [0.0003]       3.74% [0.0072]       5.93% [0.4971]
-  EWMA-N (ref)    0.975       7.46% [0.0000]       1.92% [0.0852]       1.48% [0.2466]
-  EWMA-N (ref)    0.990       4.10% [0.0001]       1.11% [0.6238]       0.37% [0.2327]
+  GARCH-t/EVT     0.950       5.49% [0.6896]       5.21% [0.6397]       4.55% [0.7006]
+  GARCH-t/EVT     0.975       3.96% [0.1173]       2.27% [0.4691]       1.52% [0.2169]
+  GARCH-t/EVT     0.990       0.91% [0.8747]       0.79% [0.2705]       1.21% [0.7078]
+  EWMA-N (ref)    0.950      11.28% [0.0000]       3.47% [0.0003]       6.36% [0.2746]
+  EWMA-N (ref)    0.975       8.54% [0.0000]       1.90% [0.0492]       2.42% [0.9294]
+  EWMA-N (ref)    0.990       5.18% [0.0000]       1.20% [0.3406]       1.21% [0.7078]
 
 Other horizons / books
   model                  conf     n   exc    rate            95% CI  Kupiec p     CC p    zone ES ratio
-  overnight             0.950    90     4   4.44% [ 1.74%, 10.88%]    0.8055   0.8036   green    1.300
-  overnight             0.975    90     3   3.33% [ 1.14%,  9.35%]    0.6297   0.8018   green    1.209
-  overnight             0.990    90     1   1.11% [ 0.20%,  6.03%]    0.9171   0.9834   green    1.600
-  book MC full reval    0.950  2517   122   4.85% [ 4.07%,  5.76%]    0.7235   0.9378   green    1.013
-  book MC full reval    0.975  2517    57   2.26% [ 1.75%,  2.92%]    0.4422   0.7171   green    1.042
-  book MC full reval    0.990  2517    25   0.99% [ 0.67%,  1.46%]    0.9728   0.5144   green    1.042
-  book delta-linear     0.950  2517   121   4.81% [ 4.04%,  5.71%]    0.6554   0.9007   green    1.003
-  book delta-linear     0.975  2517    54   2.15% [ 1.65%,  2.79%]    0.2431   0.4999   green    1.049
-  book delta-linear     0.990  2517    24   0.95% [ 0.64%,  1.41%]    0.8133   0.4693   green    1.040
-  overnight Berkowitz p = 0.3200 (90 sessions)
+  overnight             0.950   110     4   3.64% [ 1.42%,  8.98%]    0.4912   0.6775   green    1.294
+  overnight             0.975   110     3   2.73% [ 0.93%,  7.71%]    0.8804   0.9082   green    1.211
+  overnight             0.990   110     1   0.91% [ 0.16%,  4.97%]    0.9225   0.9861   green    1.616
+  book MC full reval    0.950  3077   147   4.78% [ 4.08%,  5.59%]    0.5682   0.7850   green    1.021
+  book MC full reval    0.975  3077    75   2.44% [ 1.95%,  3.04%]    0.8234   0.9674   green    1.025
+  book MC full reval    0.990  3077    31   1.01% [ 0.71%,  1.43%]    0.9668   0.1199   green    1.028
+  book delta-linear     0.950  3077   144   4.68% [ 3.99%,  5.48%]    0.4104   0.6840   green    1.019
+  book delta-linear     0.975  3077    73   2.37% [ 1.89%,  2.97%]    0.6476   0.8824   green    1.027
+  book delta-linear     0.990  3077    30   0.97% [ 0.68%,  1.39%]    0.8886   0.1057   green    1.028
+  overnight Berkowitz p = 0.2068 (110 sessions)
 
-GARCH(1,1)-t models at the last refit (deseasonalized returns); EWMA correlation, lambda = 0.9585
+GARCH(1,1)-t models at the last refit (deseasonalized returns); EWMA correlation, lambda = 0.9538
   ticker  source       active    alpha     beta      a+b      nu half-life  daily vol
-  XPET3   fitted          yes   0.0620   0.9141   0.9761    7.19     28.6b      2.43%
-  XELE3   fitted          yes   0.0490   0.9302   0.9792   11.86     33.0b      1.46%
-  XBAN4   fitted          yes   0.0571   0.9248   0.9819    8.77     38.0b      2.21%
-  XSEG3   fitted          yes   0.0568   0.8898   0.9466   14.94     12.6b      1.81%
-  XMIN3   fitted          yes   0.0570   0.9161   0.9730    8.54     25.4b      2.38%
-  XSID3   fitted          yes   0.0511   0.9329   0.9840    5.92     42.9b      3.34%
-  XVAR3   fitted          yes   0.0707   0.8844   0.9551    6.60     15.1b      2.94%
-  XCON3   fitted          yes   0.0406   0.9481   0.9886    8.86     60.7b      1.75%
-  XTEC3   fitted          yes   0.0471   0.9389   0.9859    8.22     49.0b      3.35%
-  XTEL3   fitted          yes   0.0236   0.9549   0.9785    7.38     31.8b      1.66%
-  XAGR3   fitted          yes   0.0612   0.8954   0.9566    8.79     15.6b      1.92%
-  XPAP3   fitted          yes   0.0441   0.9308   0.9749   11.64     27.2b      1.87%
-  XSAU3   fitted          yes   0.0273   0.9620   0.9892    6.36     64.0b      2.13%
-  XIMB3   fitted          yes   0.0479   0.9471   0.9950    7.86    138.4b      3.38%
-  XLOG3   fitted          yes   0.0340   0.9579   0.9919    6.62     85.4b      2.44%
+  XPET3   fitted          yes   0.0556   0.9035   0.9591    6.55     16.6b      2.15%
+  XELE3   fitted          yes   0.0474   0.9350   0.9824    9.61     39.1b      1.42%
+  XBAN4   fitted          yes   0.0465   0.9362   0.9828    9.58     39.9b      2.02%
+  XSEG3   fitted          yes   0.0169   0.9752   0.9921   15.47     86.9b      1.67%
+  XMIN3   fitted          yes   0.0546   0.9026   0.9572    6.93     15.8b      2.16%
+  XSID3   fitted          yes   0.0655   0.9100   0.9756    6.35     28.0b      3.06%
+  XVAR3   fitted          yes   0.0830   0.8777   0.9607    4.40     17.3b      3.40%
+  XCON3   fitted          yes   0.0318   0.9582   0.9900    9.32     69.3b      1.68%
+  XTEC3   fitted          yes   0.0395   0.9438   0.9833    7.93     41.1b      3.00%
+  XTEL3   fitted          yes   0.0119   0.9662   0.9781    8.39     31.3b      1.56%
+  XAGR3   fitted          yes   0.0562   0.8926   0.9488    8.47     13.2b      1.84%
+  XPAP3   fitted          yes   0.0453   0.9273   0.9725   12.30     24.9b      1.74%
+  XSAU3   fitted          yes   0.0219   0.9647   0.9867    6.65     51.7b      1.92%
+  XIMB3   fitted          yes   0.0438   0.9544   0.9981    8.15    368.6b      4.37%
+  XLOG3   fitted          yes   0.0245   0.9522   0.9767    6.20     29.3b      2.04%
 
-Last forecast (2026-10-02 17:00:00 -> next bar): sigma 35212, VaR99 96065, ES99 123000, nu_p 6.29
+Last forecast (2026-10-02 17:00:00 -> next bar): sigma 26296, VaR99 65530, ES99 86475, nu_p 5.90
 
 Performance (15 assets, 8 threads for refits)
-  per-bar update (fills + filters + correlations + VaR/ES): p50 3.70 us, p95 6.80 us, p99 18.40 us, max 1779.30 us
-  end-of-day refit (GARCH fits + correlation dynamics + tails + overnight): p50 42.8 ms, p95 52.0 ms, max 137.8 ms
-  option book Monte Carlo (10000 scenarios, full revaluation): p50 6.91 ms per bar
-  replay: 4198 bars, 2517 forecasts scored (1 unscored: target bar never printed; 0 overnight unscored: late opening), 21 fills applied (0 unknown), 0 off-grid bars, engine 4.142 s, wall 22.639 s
+  per-bar update (fills + filters + correlations + VaR/ES): p50 2.80 us, p95 5.30 us, p99 16.90 us, max 21.50 us
+  end-of-day refit (GARCH fits + correlation dynamics + tails + overnight): p50 37.3 ms, p95 45.0 ms, max 102.7 ms
+  tail re-calibration after a trade (19 trade bars, not in the per-bar figures): p50 0.3 us, max 0.4 us
+  option book Monte Carlo (10000 scenarios, full revaluation): p50 7.22 ms per bar
+  replay: 4198 bars, 3077 forecasts scored (1 unscored: target bar never printed; 0 overnight unscored: late opening), 21 fills applied (0 unknown), 0 off-grid bars, engine 4.415 s, wall 26.781 s
 
 outputs written to garch_t/results/synthetic (report: report.txt)

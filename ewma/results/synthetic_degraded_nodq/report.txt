@@ -3,65 +3,65 @@ dataset: data/synthetic
 prices:  data/synthetic/prices_15m_degraded.csv
 results: ewma/results/synthetic_degraded_nodq
 read 62856 rows x 15 assets (unparseable 0, unknown tickers 0); 21 fills, 4 options
-session: first bar closes 10:15, 15-minute bars, 28 bars/day; 150 sessions, window 60 days (automatic: half of the sessions, at most 60)
+session: first bar closes 10:15, 15-minute bars, 28 bars/day; 150 sessions, window 40 days (default)
 models: lambda estimated daily, nu estimated daily, diurnal profile pooled, overnight on, data-quality layer OFF (--no-dq)
 
-Backtest of the one-bar-ahead forecasts (2517 bars, overnight gap excluded)
+Backtest of the one-bar-ahead forecasts (3077 bars, overnight gap excluded)
   model            conf   exc    rate            95% CI expected  Kupiec p     CC p  ES Z2 p    zone ES ratio
-  EWMA-N (ref)    0.950   117   4.65% [ 3.89%,  5.54%]    5.00%    0.4130   0.6898   0.1904   green    1.138
-  EWMA-N (ref)    0.975    65   2.58% [ 2.03%,  3.28%]    2.50%    0.7922   0.8252   0.0270   green    1.204
-  EWMA-N (ref)    0.990    37   1.47% [ 1.07%,  2.02%]    1.00%    0.0268   0.0495   0.0005  yellow    1.267
-  EWMA-N          0.950   112   4.45% [ 3.71%,  5.33%]    5.00%    0.1971   0.4353   0.4898   green    1.139
-  EWMA-N          0.975    63   2.50% [ 1.96%,  3.19%]    2.50%    0.9924   0.9464   0.1059   green    1.205
-  EWMA-N          0.990    40   1.59% [ 1.17%,  2.16%]    1.00%    0.0062   0.0216   0.0005  yellow    1.187
-  EWMA-t          0.950   123   4.89% [ 4.11%,  5.80%]    5.00%    0.7936   0.9663   0.5027   green    1.035
-  EWMA-t          0.975    57   2.26% [ 1.75%,  2.92%]    2.50%    0.4422   0.6246   0.6022   green    1.092
-  EWMA-t          0.990    27   1.07% [ 0.74%,  1.56%]    1.00%    0.7171   0.5416   0.2884   green    1.079
-  Berkowitz density test (whole distribution): EWMA-N (ref) p = 0.0014; EWMA-N p = 0.0477; EWMA-t p = 0.3417;
+  EWMA-N (ref)    0.950   142   4.61% [ 3.93%,  5.41%]    5.00%    0.3209   0.5125   0.1564   green    1.151
+  EWMA-N (ref)    0.975    85   2.76% [ 2.24%,  3.40%]    2.50%    0.3591   0.5963   0.0020   green    1.196
+  EWMA-N (ref)    0.990    52   1.69% [ 1.29%,  2.21%]    1.00%    0.0005   0.0022   0.0005  yellow    1.227
+  EWMA-N          0.950   137   4.45% [ 3.78%,  5.24%]    5.00%    0.1559   0.3409   0.4383   green    1.145
+  EWMA-N          0.975    86   2.79% [ 2.27%,  3.44%]    2.50%    0.3036   0.5478   0.0080   green    1.169
+  EWMA-N          0.990    52   1.69% [ 1.29%,  2.21%]    1.00%    0.0005   0.0013   0.0005  yellow    1.165
+  EWMA-t          0.950   146   4.74% [ 4.05%,  5.55%]    5.00%    0.5127   0.8062   0.5637   green    1.051
+  EWMA-t          0.975    79   2.57% [ 2.06%,  3.19%]    2.50%    0.8114   0.7841   0.2714   green    1.059
+  EWMA-t          0.990    39   1.27% [ 0.93%,  1.73%]    1.00%    0.1522   0.0931   0.0980   green    1.030
+  Berkowitz density test (whole distribution): EWMA-N (ref) p = 0.0003; EWMA-N p = 0.0115; EWMA-t p = 0.1456;
 
 Coverage by time of day (exception rate, Kupiec p in brackets)
   model            conf        open (3 bars)               midday       close (3 bars)
-  EWMA-N (ref)    0.950      10.45% [0.0003]       3.69% [0.0051]       5.93% [0.4971]
-  EWMA-N (ref)    0.975       7.46% [0.0000]       2.12% [0.2694]       1.11% [0.1011]
-  EWMA-N (ref)    0.990       4.48% [0.0000]       1.21% [0.3574]       0.37% [0.2327]
-  EWMA-N          0.950       4.85% [0.9103]       4.85% [0.7598]       1.11% [0.0004]
-  EWMA-N          0.975       2.99% [0.6215]       2.73% [0.5207]       0.37% [0.0052]
-  EWMA-N          0.990       2.24% [0.0796]       1.72% [0.0036]       0.00% [0.0198]
-  EWMA-t          0.950       5.60% [0.6597]       5.10% [0.8331]       2.59% [0.0464]
-  EWMA-t          0.975       2.99% [0.6215]       2.43% [0.8310]       0.37% [0.0052]
-  EWMA-t          0.990       1.49% [0.4501]       1.16% [0.4796]       0.00% [0.0198]
+  EWMA-N (ref)    0.950      11.28% [0.0000]       3.47% [0.0003]       6.36% [0.2746]
+  EWMA-N (ref)    0.975       8.54% [0.0000]       2.07% [0.1598]       2.12% [0.6510]
+  EWMA-N (ref)    0.990       5.18% [0.0000]       1.28% [0.1824]       1.21% [0.7078]
+  EWMA-N          0.950       5.18% [0.8799]       4.59% [0.3468]       2.73% [0.0388]
+  EWMA-N          0.975       3.66% [0.2082]       2.89% [0.2260]       1.21% [0.0964]
+  EWMA-N          0.990       2.44% [0.0269]       1.69% [0.0018]       0.91% [0.8661]
+  EWMA-t          0.950       5.49% [0.6896]       4.88% [0.7823]       3.03% [0.0774]
+  EWMA-t          0.975       3.66% [0.2082]       2.60% [0.7439]       1.21% [0.0964]
+  EWMA-t          0.990       1.83% [0.1761]       1.24% [0.2525]       0.91% [0.8661]
 
 Other horizons / books
   model                  conf     n   exc    rate            95% CI  Kupiec p     CC p    zone ES ratio
-  overnight EWMA-N      0.950    90     5   5.56% [ 2.40%, 12.35%]    0.8121   0.7218   green    1.348
-  overnight EWMA-N      0.975    90     3   3.33% [ 1.14%,  9.35%]    0.6297   0.8018   green    1.427
-  overnight EWMA-N      0.990    90     3   3.33% [ 1.14%,  9.35%]    0.0796   0.1937  yellow    1.252
-  overnight EWMA-t      0.950    90     5   5.56% [ 2.40%, 12.35%]    0.8121   0.7218   green    1.251
-  overnight EWMA-t      0.975    90     3   3.33% [ 1.14%,  9.35%]    0.6297   0.8018   green    1.244
-  overnight EWMA-t      0.990    90     2   2.22% [ 0.61%,  7.74%]    0.3155   0.5771   green    1.144
-  book delta-linear     0.950  2517   127   5.05% [ 4.26%,  5.97%]    0.9164   0.8109   green    1.016
-  book delta-linear     0.975  2517    56   2.22% [ 1.72%,  2.88%]    0.3678   0.6486   green    1.108
-  book delta-linear     0.990  2517    32   1.27% [ 0.90%,  1.79%]    0.1892   0.3075   green    1.035
-  overnight EWMA-N Berkowitz p = 0.4722 (90 sessions)
-  overnight EWMA-t Berkowitz p = 0.4556 (90 sessions)
+  overnight EWMA-N      0.950   110     6   5.45% [ 2.52%, 11.39%]    0.8292   0.6887   green    1.271
+  overnight EWMA-N      0.975   110     3   2.73% [ 0.93%,  7.71%]    0.8804   0.9082   green    1.439
+  overnight EWMA-N      0.990   110     3   2.73% [ 0.93%,  7.71%]    0.1333   0.2978  yellow    1.263
+  overnight EWMA-t      0.950   110     7   6.36% [ 3.12%, 12.56%]    0.5282   0.5068   green    1.126
+  overnight EWMA-t      0.975   110     3   2.73% [ 0.93%,  7.71%]    0.8804   0.9082   green    1.255
+  overnight EWMA-t      0.990   110     2   1.82% [ 0.50%,  6.39%]    0.4390   0.7141   green    1.164
+  book delta-linear     0.950  3077   151   4.91% [ 4.20%,  5.73%]    0.8131   0.9483   green    1.026
+  book delta-linear     0.975  3077    74   2.40% [ 1.92%,  3.01%]    0.7340   0.6541   green    1.076
+  book delta-linear     0.990  3077    38   1.23% [ 0.90%,  1.69%]    0.2064   0.1075   green    1.034
+  overnight EWMA-N Berkowitz p = 0.3217 (110 sessions)
+  overnight EWMA-t Berkowitz p = 0.3058 (110 sessions)
 
-EWMA parameters (91 daily re-estimations; diurnal profile pooled)
-  lambda (EWMA-N / EWMA-t): last 0.9756, range 0.9405 to 0.9779 (median 0.9630); half-life 28.1 bars
-  nu (EWMA-t):              last 7.23, range 5.24 to 7.23 (median 6.44), fitted on 1206 standardized outcomes
+EWMA parameters (111 daily re-estimations; diurnal profile pooled)
+  lambda (EWMA-N / EWMA-t): last 0.9669, range 0.9339 to 0.9825 (median 0.9621); half-life 20.6 bars
+  nu (EWMA-t):              last 9.38, range 4.79 to 10.07 (median 6.29), fitted on 810 standardized outcomes
   overnight:                lambda 0.9744, nu 5.35
   EWMA-N (ref):             lambda 0.94 fixed, raw returns, Normal
 
 Robustness: EWMA-t VaR 99 of this run vs the same market with a clean feed
-  2517 forecasts compared: mean deviation 2.735%, max 50.99% (at 2026-07-28 11:45:00), 980 bars off by more than 1%
-  clean-feed backtest EWMA-t 0.950: 129 exceptions (5.13%), zone green
-  clean-feed backtest EWMA-t 0.975: 56 exceptions (2.22%), zone green
-  clean-feed backtest EWMA-t 0.990: 30 exceptions (1.19%), zone green
+  3077 forecasts compared: mean deviation 2.560%, max 48.69% (at 2026-07-28 12:15:00), 1153 bars off by more than 1%
+  clean-feed backtest EWMA-t 0.950: 152 exceptions (4.94%), zone green
+  clean-feed backtest EWMA-t 0.975: 79 exceptions (2.57%), zone green
+  clean-feed backtest EWMA-t 0.990: 36 exceptions (1.17%), zone green
 
-Last forecast (2026-10-02 17:00:00 -> next bar): sigma ref 17928 / EWMA 30155; VaR99 ref 41707, N 70150, t 76210; ES99 ref 47782, N 80368, t 95478 (nu 7.23)
+Last forecast (2026-10-02 17:00:00 -> next bar): sigma ref 17928 / EWMA 30090; VaR99 ref 41707, N 69999, t 74675; ES99 ref 47782, N 80195, t 91311 (nu 9.38)
 
 Performance (15 assets)
-  per-bar update (fills + DQ + filters + VaR/ES of 3 models): p50 0.60 us, p95 1.40 us, p99 2.40 us, max 13.70 us
-  end-of-day refit (profile + lambda + nu + filters + overnight): p50 3.16 ms, p95 3.77 ms, max 4.18 ms
-  replay: 4198 bars, 2517 forecasts scored (1 unscored: target bar never printed; 0 overnight unscored), 21 fills applied (0 unknown), engine 0.298 s, wall 0.399 s
+  per-bar update (fills + DQ + filters + VaR/ES of 3 models): p50 1.30 us, p95 2.90 us, p99 14.30 us, max 135.40 us
+  end-of-day refit (profile + lambda + nu + filters + overnight): p50 4.64 ms, p95 6.30 ms, max 8.35 ms
+  replay: 4198 bars, 3077 forecasts scored (1 unscored: target bar never printed; 0 overnight unscored), 21 fills applied (0 unknown), engine 0.538 s, wall 0.775 s
 
 outputs written to ewma/results/synthetic_degraded_nodq (report: report.txt)
