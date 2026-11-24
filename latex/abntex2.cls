@@ -135,7 +135,11 @@
 % ---
 % Hifenizacao e caracteres especiais portugues-brasil por padrao
 % ---
-\RequirePackage[brazil]{babel}
+\IfFileExists{brazilian.ldf}{%
+  \RequirePackage[brazilian]{babel}%
+}{%
+  \RequirePackage[english]{babel}%
+}
 %
 % Nomes constantes do abnTeX2 em portugues (definicoes padroes)
 \newcommand{\folhaderostoname}{Folha de rosto}
@@ -156,7 +160,7 @@
 \newcommand{\fontename}{Fonte}
 \newcommand{\notaname}{Nota}
 %
-\addto\captionsbrazil{% portugues-brasil
+\addto\captionsbrazilian{% portugues-brasil
   %% ajusta nomes padroes do babel
   \renewcommand{\bibname}{Refer\^encias}
   \renewcommand{\indexname}{\'Indice}
