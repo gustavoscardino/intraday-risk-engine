@@ -1,3 +1,4 @@
+% !LW recipe = latexmk (xelatex)
 % abnTeX2 model adapted for PCS-EPUSP on 15 Mar 2023 by Cintia Borges Margi.
 \documentclass[
 	% Main options; keep variants commented if you want to test them later.
@@ -5,7 +6,7 @@
 	openright,			% chapters begin on odd-numbered pages
 	twoside,			% duplex layout
 	a4paper,
-	%chapter=TITLE,
+	chapter=TITLE,
 	%section=TITLE,
 	%subsection=TITLE,
 	%subsubsection=TITLE,
@@ -15,9 +16,21 @@
 % --------------------------------------------------------------------------
 % Packages
 % --------------------------------------------------------------------------
-\usepackage{lmodern}			% Latin Modern font
-\usepackage[T1]{fontenc}		% font encoding
-\usepackage[utf8]{inputenc}		% source file encoding
+\usepackage{iftex}
+\newcommand{\PCSTextFontWarning}{%
+  \PackageWarningNoLine{thesis}{Using Latin Modern for the thesis text.
+    Build with XeLaTeX and Arial installed to use Arial}}
+\ifPDFTeX
+  \usepackage{lmodern}
+  \usepackage[T1]{fontenc}
+  \PCSTextFontWarning
+\else
+  \usepackage[no-math]{fontspec}
+  \IfFontExistsTF{Arial}{%
+    \setmainfont{Arial}[Ligatures=TeX]
+    \setsansfont{Arial}[Ligatures=TeX]
+  }{\PCSTextFontWarning}
+\fi
 \usepackage{indentfirst}		% indent the first paragraph of each section
 \usepackage{color}
 \usepackage{amsmath}
@@ -50,7 +63,7 @@
 \data{2026}
 \orientador{Prof. Dr. Reginaldo Arakaki}
 \instituicao{%
-  University of São Paulo -- USP
+  University of São Paulo \textendash{} USP
   \par
   Polytechnic School
   \par
@@ -59,10 +72,49 @@
 % The preamble should state the type of work, purpose, institution, and area.
 \preambulo{Final Year Project report prepared in the Department of Computer Engineering and Digital Systems of the Polytechnic School at the University of São Paulo.}
 
-% PDF metadata.
-\definecolor{blue}{RGB}{41,5,195}
+% Poli formatting for the cover and title page.
+\newcommand{\PCScovertext}{\sffamily\fontsize{12pt}{14.4pt}\selectfont}
+\newcommand{\PCScovertitle}{\sffamily\bfseries\fontsize{14pt}{16.8pt}\selectfont}
+\newcommand{\PCSprinttitle}{%
+  \begin{minipage}{.72\textwidth}
+    \centering\PCScovertitle\imprimirtitulo\par
+  \end{minipage}\par}
+\renewcommand{\imprimircapa}{%
+  \begin{capa}
+    \centering\SingleSpacing*
+    {\PCScovertext\imprimirautor\par}
+    \vfill
+    \PCSprinttitle
+    \vfill
+    {\PCScovertext\imprimirlocal\par\imprimirdata\par}
+    \vspace*{1cm}
+  \end{capa}}
 
 \makeatletter
+\renewcommand{\folhaderostocontent}{%
+  \begin{center}
+    \SingleSpacing*\PCScovertext
+    \imprimirautor\par
+    \vspace*{\fill}\vspace*{\fill}
+    \PCSprinttitle
+    \vfill
+    \noindent\hfill
+    \begin{minipage}{.5\textwidth}
+      \raggedright
+      \abntex@ifnotempty{\imprimirpreambulo}{\imprimirpreambulo\par\medskip}
+      \abntex@ifnotempty{\imprimirinstituicao}{\imprimirinstituicao\par\medskip}
+      \imprimirorientadorRotulo~\imprimirorientador\par
+      \abntex@ifnotempty{\imprimircoorientador}{%
+        \imprimircoorientadorRotulo~\imprimircoorientador\par
+      }%
+    \end{minipage}\par
+    \vfill
+    \imprimirlocal\par
+    \imprimirdata\par
+    \vspace*{1cm}
+  \end{center}}
+
+% PDF metadata and print-friendly hyperlinks.
 \hypersetup{
      	%pagebackref=true,
 		pdftitle={\@title},
@@ -70,14 +122,23 @@
     	pdfsubject={\imprimirpreambulo},
 	    pdfcreator={LaTeX with abnTeX2},
 		pdfkeywords={intraday VaR}{Realized-CAViaR}{GARCH}{EWMA}{low latency}{C++},
-		colorlinks=true,
-    	linkcolor=blue,
-    	citecolor=blue,
-    	filecolor=magenta,
-		urlcolor=blue,
+		hidelinks,
 		bookmarksdepth=4
 }
 \makeatother
+
+% Keep headings at the body text size and distinguish levels by weight and shape.
+\renewcommand{\ABNTEXchapterfont}{\sffamily\bfseries}
+\renewcommand{\ABNTEXchapterfontsize}{\normalsize}
+\renewcommand{\ABNTEXsectionfont}{\sffamily\bfseries}
+\renewcommand{\ABNTEXsectionfontsize}{\normalsize}
+\renewcommand{\ABNTEXsubsectionfont}{\sffamily\itshape}
+\renewcommand{\ABNTEXsubsectionfontsize}{\normalsize}
+\renewcommand{\ABNTEXsubsubsectionfont}{\sffamily}
+
+\captionnamefont{\footnotesize}
+\captiontitlefont{\footnotesize}
+\captionstyle{\SingleSpacing*}
 
 % Adjust float positioning on nearly empty pages.
 \makeatletter
@@ -102,9 +163,7 @@
 % Paragraph spacing.
 \setlength{\parindent}{1.3cm}
 \setlength{\parskip}{0.2cm}  % you may also try \onelineskip
-
-% Generate the index.
-\makeindex
+\setlength{\emergencystretch}{1em}
 
 % --------------------------------------------------------------------------
 % Document
@@ -112,12 +171,30 @@
 \begin{document}
 
 \selectlanguage{english}
+\renewcommand{\agradecimentosname}{ACKNOWLEDGEMENTS}
+\renewcommand{\resumoname}{ABSTRACT}
+\renewcommand{\listfigurename}{LIST OF FIGURES}
+\renewcommand{\listtablename}{LIST OF TABLES}
+\renewcommand{\listadesiglasname}{LIST OF ABBREVIATIONS AND ACRONYMS}
+\renewcommand{\listadesimbolosname}{LIST OF SYMBOLS}
+\renewcommand{\contentsname}{CONTENTS}
 \frenchspacing
+\raggedbottom
+\setlength{\afterchapskip}{\baselineskip}
+\setbeforesecskip{\baselineskip}
+\setaftersecskip{\baselineskip}
+\setbeforesubsecskip{\baselineskip}
+\setaftersubsecskip{\baselineskip}
+\setbeforesubsubsecskip{\baselineskip}
+\setaftersubsubsecskip{\baselineskip}
 
 % --------------------------------------------------------------------------
 % Pre-textual elements
 % --------------------------------------------------------------------------
+% The cover is outside the page count and would duplicate the title page links.
+\hypersetup{pageanchor=false}
 \imprimircapa
+\hypersetup{pageanchor=true}
 
 % The * indicates that a catalog sheet will be included.
 \imprimirfolhaderosto*
@@ -132,7 +209,6 @@
 \setlength{\parskip}{0.5em}
 \raggedright
 \vspace{0.4em}
-\small
 \imprimirautor
 
 \imprimirtitulo. \imprimirlocal, \imprimirdata.
@@ -166,10 +242,12 @@ III. Title.
 
 \begin{dedicatoria}
    \vspace*{\fill}
-   \centering
-   \noindent
-   \textit{Dedicated to those who still believe that rigorous engineering can
-   make complex systems safer, clearer, and more trustworthy.} \vspace*{\fill}
+   \noindent\hfill
+   \begin{minipage}{0.55\textwidth}
+     \raggedleft
+     \textit{Dedicated to those who still believe that rigorous engineering can
+     make complex systems safer, clearer, and more trustworthy.}\par
+   \end{minipage}\par
 \end{dedicatoria}
 
 \begin{agradecimentos}
@@ -188,8 +266,8 @@ its development.
 % \end{epigrafe}
 
 \setlength{\absparsep}{18pt} % paragraph spacing inside the abstract
-\begin{resumo}[Abstract]
-Value at Risk (VaR) is a loss threshold for a specified time horizon and confidence level. This work implements three C++ engines that replay recorded prices to evaluate 99\% intraday VaR. The single-stock comparison tests Realized-CAViaR, which forecasts a return threshold directly from recent price variation, against EWMA-Normal, EWMA with a Student-$t$ tail, and GARCH-$t$. The models forecast returns for the next 15 minutes using data for 15 simulated stocks and 15 equities from B3. Their parameters are estimated daily from the preceding 40 trading sessions. GARCH-$t$ had the lowest mean quantile loss, a measure of threshold accuracy, and the share of outcomes that breached its threshold was closest to 1\% in both datasets. Statistical tests adjusted for multiple comparisons did not establish an accuracy difference between Realized-CAViaR and the reference models. Realized-CAViaR had the lowest model-stage cost, averaging 18.5 nanoseconds per update with prepared inputs. Repeated replays produced the same forecast results, and changing later prices left earlier forecasts unchanged. Under combined feed faults, about 22.5\% of Realized-CAViaR forecasts differed by more than 5\% from the clean replay, exceeding the project's 10\% tolerance. The findings apply to the sampled 15-minute data after the opening hour.
+\begin{resumo}
+Value at Risk (VaR) is a loss threshold for a specified time horizon and confidence level. This work evaluates 99\% intraday VaR with a replay engine that compares four models on the same future returns for each stock. Realized-CAViaR forecasts a return threshold directly from recent price variation. EWMA-Normal, EWMA with a Student-$t$ tail, and GARCH-$t$ derive that threshold from a volatility forecast. The models forecast returns for the next 15 minutes using data for 15 simulated stocks and 15 equities from B3. Their parameters are estimated daily from the preceding 40 trading sessions. GARCH-$t$ had the lowest mean quantile loss and the exception rate closest to 1\% in both datasets. Tests adjusted for multiple comparisons did not establish an accuracy difference between Realized-CAViaR and the baselines. Realized-CAViaR averaged 18.5 nanoseconds per model update with prepared inputs, the lowest cost in the benchmark. Repeating the replay reproduced the forecasts, and changing later prices left earlier forecasts unchanged in the tested cases. Under combined feed faults, about 22.5\% of matched Realized-CAViaR forecasts differed by more than 5\% from the clean replay, exceeding the project's 10\% tolerance. The findings apply to the sampled 15-minute data after the opening hour.
 
 \vspace{\onelineskip}
 
@@ -206,7 +284,6 @@ Value at Risk (VaR) is a loss threshold for a specified time horizon and confide
 \cleardoublepage
 
 \begin{siglas}
-  \item[ATAM] Architecture Tradeoff Analysis Method
   \item[CAViaR] Conditional Autoregressive Value at Risk
   \item[EWMA] Exponentially Weighted Moving Average
   \item[GARCH] Generalized Autoregressive Conditional Heteroskedasticity
@@ -215,6 +292,8 @@ Value at Risk (VaR) is a loss threshold for a specified time horizon and confide
 \end{siglas}
 
 \begin{simbolos}
+  \setlength{\itemsep}{0pt}
+  \setlength{\parsep}{0pt}
   \item[$t$] index of the most recent observed bar
   \item[$P_t$] closing price of bar $t$
   \item[$r_t$] log return for bar $t$ from the recorded prices
@@ -231,6 +310,7 @@ Value at Risk (VaR) is a loss threshold for a specified time horizon and confide
   \item[$\widetilde q_{t+1}$] next-bar quantile in the units of the volatility model's input
   \item[$\lambda$] EWMA decay coefficient
   \item[$\omega,a,b$] GARCH variance coefficients
+  \item[$\bar h$] long-run average variance under the GARCH model
   \item[$\nu$] Student-$t$ degrees of freedom
   \item[$R_t$] aggregate log return over the trailing feature window
   \item[$RV_t$] realized variance over the trailing feature window
@@ -255,15 +335,28 @@ Value at Risk (VaR) is a loss threshold for a specified time horizon and confide
 % --------------------------------------------------------------------------
 \chapter{Introduction} \label{cap:introducao}
 
-A risk analyst who holds shares needs to know how much the position could lose before the next opportunity to act. The answer can change within a trading day. A position may be relatively stable at midday and become riskier after a company announcement. An intraday risk engine repeatedly updates the estimate as new prices arrive. To use the estimate, the analyst must know which period it covers, what probability it represents, and which prices were available when it was issued.
+\section{Motivation}
 
-This work studies Value at Risk (VaR), a loss threshold associated with a stated horizon and probability. It asks whether estimating that threshold directly with realized price variation improves 99\% intraday VaR forecasts relative to methods that estimate volatility and assume a return distribution. The engineering question is how quickly and reliably each approach can update as new observations arrive.
+A risk analyst who holds shares needs a loss threshold for the period before the next opportunity to act. That threshold can change within a trading day as prices and market conditions change. Value at Risk (VaR) expresses it for a stated forecast horizon and confidence level. An intraday risk engine updates the estimate as new prices arrive \cite{longerstaey-morE-1996,engle-manganelli-2004}.
 
-The implementation has two portfolio engines, which estimate the risk of several positions held together, and one engine that compares forecasts for a single stock at a time. Each engine replays recorded prices by processing them in sequence as if they were arriving during trading. The comparison evaluates four models on the same 15-minute returns for each stock. Two datasets provide complementary evidence: a simulated market with known events and a historical sample from B3, the Brazilian exchange. The implementation also supports a finer time grid, which is described separately from the reported experiments.
+RiskMetrics illustrates one approach to forecasting VaR. It estimates volatility with an exponentially weighted moving average (EWMA) and uses a return distribution to obtain the loss threshold. Generalized autoregressive conditional heteroskedasticity (GARCH) offers a different way to update the volatility estimate \cite{longerstaey-morE-1996,bollerslev-1986}. Conditional Autoregressive Value at Risk (CAViaR) instead estimates the return quantile directly from past information. Research on realized volatility shows how observed price changes can be summarized to measure variation within a time window \cite{engle-manganelli-2004,barndorff-nielsen-shephard-2002}. These ideas motivate the Realized-CAViaR specification evaluated here.
 
-Chapter~\ref{cap:conceitos} develops prices, returns, and loss thresholds from a worked example. Chapter~\ref{cap:modelos} explains how the four models produce forecasts. Chapter~\ref{cap:metodo} defines how forecasts are generated and scored. Chapter~\ref{cap:desenvolvimento} describes the software and architecture tests. Chapters~\ref{cap:resultados} and~\ref{cap:consideracoes} present the findings, their limitations, and the conclusions.
+\section{Objective}
 
-\chapter{From Market Prices to Value at Risk} \label{cap:conceitos}
+The objective is to implement and evaluate a replay engine for 99\% intraday VaR on individual stocks. The main experiment compares Realized-CAViaR, EWMA-Normal, EWMA with a Student-$t$ tail, and GARCH-$t$ on the same next-bar returns at a 15-minute horizon. It tests whether Realized-CAViaR improves forecast accuracy, measures the computational cost of updating each model, and examines how missing and faulty prices affect Realized-CAViaR forecasts.
+
+\needspace{12\baselineskip}
+\section{Justification}
+
+Model choice matters because an overly narrow threshold can understate exposure to losses, while an overly wide threshold can overstate it. Backtests therefore need to examine the frequency of exceptions and whether they cluster. Comparisons of forecast accuracy also need paired outcomes so that both models are judged on the same events \cite{kupiec-1995,christoffersen-1998,diebold-mariano-1995}.
+
+The replay engine holds the instrument, forecast time, and observed target fixed across models. This makes it possible to study differences in forecasting behavior while also measuring how much computation each model update requires. A simulated market supplies known events for checking the effects of feed faults. A historical sample from B3, the Brazilian exchange, tests the models on observed equity prices and their gaps \cite{project-data,project-comparison}.
+
+\section{Organization of the report}
+
+Chapter~\ref{cap:conceitos} develops the concepts of prices, returns, and loss thresholds and explains the four forecasting models in Section~\ref{sec:modelos}. Chapter~\ref{cap:metodo} describes the development phases. Chapter~\ref{cap:requisitos} specifies the replay's functional and quality requirements. Chapter~\ref{cap:desenvolvimento} presents the implementation, experimental protocol, validation, and results. Chapter~\ref{cap:consideracoes} summarizes the findings, the team's contributions, and directions for further work.
+
+\chapter{Conceptual Aspects} \label{cap:conceitos}
 
 \section{Prices, positions, and returns}
 
@@ -291,164 +384,194 @@ Let $E$ denote the monetary exposure, the BRL value of the long position at the 
   \operatorname{VaR}_{t}^{(0.99)} = -E\bigl(\exp(q_{t+1})-1\bigr).
   \label{eq:var}
 \end{equation}
-At 11:00, the 100 shares are worth BRL~4,950. Suppose the forecast for 11:00--11:15 sets the 1\% return threshold at another drop of the same size, $q_{t+1}\approx-0.01005$. The 99\% VaR is about BRL~49.50. The model assigns a 99\% probability to the loss staying at or below that threshold over the next bar. If the position actually loses BRL~60, the observed loss crosses the threshold and counts as a VaR \emph{exception}. Expected Shortfall, which some of the portfolio engines also report, describes the average loss in the tail beyond the threshold.
+At 11:00, the 100 shares are worth BRL~4,950. Suppose the forecast for 11:00--11:15 sets the 1\% return threshold at another drop of the same size, $q_{t+1}\approx-0.01005$. The 99\% VaR is about BRL~49.50. The model assigns a 99\% probability to the loss staying at or below that threshold over the next bar. If the position actually loses BRL~60, the observed loss crosses the threshold and counts as a VaR \emph{exception}.
 
 The \emph{forecast horizon} is how far forward the forecast looks. The \emph{update interval} is how often the engine issues forecasts. Here both are 15 minutes. The forecast issued at 11:00 is scored using the observed return from 11:00 to 11:15. The forecast at 11:15 covers the next interval. These intervals meet at 11:15 and share no period of price change.
 
-\chapter{Forecasting Models} \label{cap:modelos}
+\section{Forecasting models} \label{sec:modelos}
 
-\section{A common starting point}
+\subsection{The task shared by the four models}
 
-EWMA-Normal, EWMA with a Student-$t$ tail, and GARCH-$t$ all start with a forecast of how widely returns may vary. Let $r_t^{\mathrm{in}}$ be the log return for bar $t$ calculated from the prices supplied to the models after input checks. It equals the recorded return $r_t$ when those checks leave the prices unchanged. Let $x_t$ be the return used to update a volatility model. In the matched experiment, $x_t$ is $r_t^{\mathrm{in}}$ adjusted for time of day, as explained in Section~\ref{sec:seasonality}.
+At 11:00, a stock's price history is available through the bar that has just closed. The return from 11:00 to 11:15 is still unknown. Each model uses the available history to forecast $q_{t+1}$, the 1\% quantile of possible returns over that next bar. All four use this quantile in Equation~\ref{eq:var} to express the loss threshold in BRL. They differ in how they arrive at the quantile.
 
-Write $h_{t+1}$ for the variance forecast for bar $t+1$ on the scale of the model's input, based on the observations available through bar $t$. This dependence on the available observations makes it a \emph{conditional variance}. Its square root, $\sigma_{t+1}$ (sigma), is the conditional standard deviation, a forecast of volatility on the same scale as $x_t$. Variance is in squared-return units. Standard deviation uses return units and can be read as a percentage.
+EWMA-Normal, EWMA with a Student-$t$ tail, and GARCH-$t$ proceed in two steps. First they predict the scale of the next return. Then they use a probability distribution to determine how far into the lower tail the 1\% threshold lies. Realized-CAViaR updates the threshold directly, using its last estimate and measurements of recent price movement.
 
-Next the models choose a distribution shape for the return around its assumed mean of zero. A standardized distribution has mean zero and standard deviation one. Let $z_\tau$ (z subscript tau) be its lower-tail quantile at probability $\tau$. It tells us how many standard deviations the threshold lies from zero. Multiplying it by the forecast standard deviation gives $\widetilde q_{t+1}$, the quantile on the scale of the returns supplied to the model:
+\subsubsection{From a variance forecast to a return threshold}
+
+The log return $r_t$ uses the recorded prices for bar $t$. Write $r_t^{\mathrm{in}}$ for the corresponding return from the prices available to the models after they pass through the input checks. When those checks leave the prices unchanged, the two returns agree. Write $x_t$ for the return supplied to a volatility model. In the experiment it is $r_t^{\mathrm{in}}$ adjusted for time of day. Section~\ref{sec:seasonality} explains this adjustment and how to reverse it before comparing forecasts.
+
+Write $h_{t+1}$ for the variance of the next return predicted on the input scale, using information available through bar $t$. This is called \emph{conditional variance} because it depends on the history available at the time of the forecast. Standard deviation, written $\sigma_{t+1}$ (sigma), is the square root of $h_{t+1}$. Taking the square root converts squared-return units back to return units. For example, a variance of $0.000016$ corresponds to a standard deviation of $0.004$, or 0.4\%.
+
+The second step assumes the next return has a conditional mean of zero. It uses a standardized distribution, centered at zero with a standard deviation of one. Let $z_\tau$ be its lower-tail quantile at probability $\tau$, where $\tau=0.01$ in this study. It says how many standard deviations from zero to place the threshold. Multiplication by the forecast standard deviation gives $\widetilde q_{t+1}$, the return quantile on the model's input scale:
 \begin{equation}
-  \widetilde q_{t+1}=\sigma_{t+1}z_{\tau},\qquad
+  \widetilde q_{t+1}=\sigma_{t+1}z_\tau,\qquad
   \sigma_{t+1}=\sqrt{h_{t+1}}.
   \label{eq:scaled-quantile}
 \end{equation}
-For a standard Normal distribution, $z_{0.01}\approx-2.326$. With a standard deviation of 0.4\% on the original return scale, the threshold is $2.326$ standard deviations below zero, or about $-0.93\%$ in log-return units. The model in this example uses the original return scale, so $\widetilde q_{t+1}$ is already the asset-return quantile $q_{t+1}$. For the BRL~4,950 position at 11:00, Equation~\ref{eq:var} converts that quantile to about BRL~45.84 in VaR.
+The variance model determines $\sigma_{t+1}$. The distribution determines $z_\tau$. With the standard Normal distribution, $z_{0.01}\approx-2.326$. A forecast standard deviation of 0.4\% gives $0.004(-2.326)\approx-0.00930$, a log-return threshold of about $-0.93\%$. Using the rounded Normal quantile, the BRL~4,950 position in the earlier example gives about BRL~45.84 in VaR.
 
-\section{EWMA-Normal}
+In the worked examples that follow, the time-of-day scale factors for the observed and target bars are both set to one. Hence $x_t=r_t^{\mathrm{in}}$ and $\widetilde q_{t+1}=q_{t+1}$. This puts the illustrative forecasts on the same asset-return scale. In the experiment, the three volatility models use fitted scale factors and convert their forecasts as described in Section~\ref{sec:seasonality}.
 
-The exponentially weighted moving average (EWMA) combines the variance previously forecast for bar $t$, written $h_t$, with the latest squared input return, $x_t^2$. Let $\lambda$ (lambda) be the decay coefficient, the fraction of the previous variance carried forward. The remaining weight, $1-\lambda$, is assigned to the squared return:
+\subsection{EWMA-Normal}
+
+EWMA stands for \emph{exponentially weighted moving average}. It starts each bar with $h_t$, the variance previously forecast for that bar. When the bar closes, it observes $x_t$ and squares it to get a measure of how large the movement was. A return of $+1\%$ and a return of $-1\%$ both give a squared return of $0.0001$. Let $\lambda$ (lambda) denote the fraction of the previous variance carried forward. That leaves $1-\lambda$ for the latest squared return:
 \begin{equation}
-  h_{t+1}=\lambda h_t+(1-\lambda)x_t^2,\qquad 0<\lambda<1,
+  h_{t+1}=\lambda h_t+(1-\lambda)x_t^2,\qquad 0<\lambda<1.
   \label{eq:ewma}
 \end{equation}
-With $\lambda=0.94$, the previous estimate receives 94\% of the weight and the latest squared return receives 6\%. At each subsequent bar, the influence of that squared return is multiplied by 0.94 again. This repeated multiplication is the exponential weighting in the name. A larger $\lambda$ makes the model respond more gradually to a new observation.
 
-The RiskMetrics reference uses the Normal distribution and a fixed $\lambda=0.94$ on raw returns \cite{longerstaey-morE-1996}. The matched EWMA-Normal model uses the same recurrence, estimates $\lambda$ by evaluating one-step-ahead variance forecasts on the rolling training window, and adjusts for systematic differences in volatility across the session. Section~\ref{sec:seasonality} explains that adjustment.
+The two weights add to one. The forecast rises when the latest squared return exceeds the previous variance estimate and falls when it is smaller. Consider an illustrative bar with $h_t=0.000016$, $x_t=-0.0100$, and $\lambda=0.94$. The update has two contributions:
+\begin{equation*}
+  h_{t+1}=\underbrace{0.94(0.000016)}_{\text{previous variance}}
+           +\underbrace{0.06(0.0001)}_{\text{latest squared return}}
+           =0.00002104.
+\end{equation*}
+The standard deviation rises from 0.4\% to about 0.459\%. With a Normal tail, Equation~\ref{eq:scaled-quantile} gives a next-bar threshold of about $-1.067\%$ on the input scale.
 
-\section{EWMA with a Student-\texorpdfstring{$t$}{t} tail}
+After the next update, the squared return in this example still affects the forecast through the stored variance. Its original weight of 0.06 has then been multiplied by 0.94 once. Each further update multiplies that weight by 0.94 again. This repeated multiplication gives the model its name and explains why a larger $\lambda$ gives the estimate a longer memory.
 
-EWMA-$t$ keeps the EWMA variance forecast and uses the Student-$t$ distribution to obtain $z_\tau$ in Equation~\ref{eq:scaled-quantile}. The Student-$t$ distribution places more probability in sufficiently distant tails than the Normal. The parameter $\nu$ (nu), called degrees of freedom, controls tail thickness. Smaller values of $\nu$ allow more probability in the far tails, and as $\nu$ increases the distribution approaches the Normal. For $\nu>2$, the model multiplies a Student-$t$ variable by $\sqrt{(\nu-2)/\nu}$ so that its variance is one \cite{bollerslev-1987}. With this standardization, both versions of EWMA use the same forecast of $\sigma_{t+1}$. The engine estimates $\nu$ from past returns divided by the EWMA standard deviation predicted for each return. Comparing the two models tests the effect of changing the distribution while holding the variance forecast fixed.
+The RiskMetrics specification supplies a familiar reference for the recurrence, with a fixed $\lambda=0.94$ and a Normal distribution \cite{longerstaey-morE-1996}. The matched EWMA-Normal model estimates $\lambda$ from the training window and applies the time-of-day adjustment. The fixed value above makes the role of the two weights easy to see.
 
-\section{GARCH with a Student-\texorpdfstring{$t$}{t} tail}
+\subsection{EWMA with a Student-\texorpdfstring{$t$}{t} tail}
 
-Generalized Autoregressive Conditional Heteroskedasticity (GARCH) models a variance that changes over time \cite{bollerslev-1986}. In the zero-mean version used here, the latest return $x_t$ is also the latest shock, meaning the difference between the observed input and its assumed mean. GARCH estimates separate weights for the squared shock and the previous variance. Let $a$ be the weight on $x_t^2$, $b$ the weight on $h_t$, and $\omega$ (omega) a positive constant added at each update. The notation (1,1) indicates one previous squared shock and one previous variance:
+EWMA-$t$ takes the same $h_{t+1}$ and $\sigma_{t+1}$ as EWMA-Normal. The change is in $z_\tau$. A Student-$t$ distribution gives more probability to sufficiently extreme outcomes than a Normal distribution of the same variance. Its degrees of freedom $\nu$ (nu) control that tail thickness. Smaller values give heavier far tails. As $\nu$ grows, the distribution approaches the Normal.
+
+To use Equation~\ref{eq:scaled-quantile}, the distribution must have standard deviation one. An ordinary Student-$t$ variable with $\nu>2$ has variance $\nu/(\nu-2)$. Multiplying it by $\sqrt{(\nu-2)/\nu}$ divides out its standard deviation. The same factor rescales its quantiles \cite{bollerslev-1987}. For example, with $\nu=5$ the ordinary 1\% quantile is about $-3.365$. Multiplying by $\sqrt{3/5}$ gives $z_{0.01}\approx-2.606$ on the standardized scale.
+
+Using this tail with the previous EWMA example keeps the standard deviation at about 0.459\%. The 1\% threshold is now about $-1.196\%$. The more negative return threshold comes entirely from the assumed distribution. In the experiment, the engine estimates $\nu$ from past returns after dividing each by the EWMA standard deviation predicted for its bar. These standardized returns show how large past movements were in units of the volatility forecast.
+
+\subsection{GARCH with a Student-\texorpdfstring{$t$}{t} tail}
+
+Generalized Autoregressive Conditional Heteroskedasticity (GARCH) is another way to update variance as returns arrive \cite{bollerslev-1986}. Here the assumed mean return is zero, so $x_t$ is also the latest \emph{shock}, the difference between the observed input and its assumed mean. GARCH(1,1) uses one squared shock $x_t^2$ and one previous variance $h_t$. Write $a$ for the coefficient on the squared shock, $b$ for the coefficient on the previous variance, and $\omega$ (omega) for a positive constant added at each update:
 \begin{equation}
   h_{t+1}=\omega+a x_t^2+b h_t,\qquad
   \omega>0,\quad a,b\geq 0,\quad a+b<1.
   \label{eq:garch}
 \end{equation}
-The weights $a$ and $b$ are nonnegative and sum to less than one. Under the model assumptions, this permits a finite long-run variance of $\omega/(1-a-b)$. GARCH-$t$ estimates the variance parameters and the Student-$t$ degrees of freedom from past returns by likelihood, which measures how well the fitted distribution accounts for the training observations. With $h_{t+1}$ available, the model uses the Student-$t$ quantile and Equation~\ref{eq:scaled-quantile}, just as EWMA-$t$ does. The change relative to EWMA-$t$ is how the variance is updated and how the tail parameter is fitted.
 
-\section{Realized-CAViaR}
+The term $a x_t^2$ controls the immediate response to the observed move. The term $b h_t$ carries information about earlier volatility. The constant $\omega$ adds variance even in a bar with zero return. Under the model, the expected squared shock at each step equals the predicted variance for that step. Write $\bar h$ for the long-run average variance. Both $x_t^2$ and $h_t$ have that same average, so in the long run the update balances as $\bar h=\omega+(a+b)\bar h$. Solving for $\bar h$ gives $\omega/(1-a-b)$. The restriction $a+b<1$ makes that level finite and causes the expected effect of a shock to fade.
 
-Conditional Autoregressive Value at Risk (CAViaR) forecasts the return quantile directly from its previous estimate and recent observations \cite{engle-manganelli-2004}. The word \emph{autoregressive} refers to reusing the previous estimate to form the next one. Realized-CAViaR adds a measure of realized price variation, calculated from returns that have already been observed \cite{barndorff-nielsen-shephard-2002,wang-gerlach-chen-2018}.
+EWMA ties the weight of the latest move to the weight on the previous variance through $\lambda$. GARCH fits the two weights separately and adds a constant. Use the same inputs as before, with illustrative coefficients $\omega=0.0000008$, $a=0.10$, and $b=0.85$. The update is
+\begin{equation*}
+  h_{t+1}=0.0000008+0.10(0.0001)+0.85(0.000016)
+         =0.0000244.
+\end{equation*}
+This gives a standard deviation of about 0.494\%. Using the same illustrative $\nu=5$ as in the EWMA-$t$ example gives a threshold of about $-1.287\%$. Holding the tail fixed here lets us see the effect of the variance update alone. In the experiment, GARCH-$t$ estimates its own $\nu$ jointly with its variance coefficients. Its forecasts can therefore differ from EWMA-$t$ through both the variance and the tail.
 
-In the 15-minute experiment, the model uses the preceding hour within the same session. Let $j$ count how many bars back a return lies, so $r_{t-j}^{\mathrm{in}}$ is the input return from $j$ bars before bar $t$. On a complete grid the hour contains four returns, from $j=0$ to $j=3$. The aggregate log return $R_t$ is their sum and measures the net change over the hour. The realized variance $RV_t$ is the sum of their squares and measures movement along the path:
+\subsection{Realized-CAViaR}
+
+Conditional Autoregressive Value at Risk (CAViaR) forecasts a return quantile directly \cite{engle-manganelli-2004}. The word \emph{autoregressive} refers to reusing the model's own previous estimate. \emph{Realized} refers to a measure calculated from price movements already observed. This implementation uses both the net return and the variation within the hour preceding each forecast \cite{barndorff-nielsen-shephard-2002,wang-gerlach-chen-2018}.
+
+\subsubsection{Two measures of price movement}
+
+On a complete 15-minute grid, the observed hour ending at bar $t$ contains four returns. Let $j$ count how many bars back a return lies. The term $r_{t-j}^{\mathrm{in}}$ is the checked input return from that bar, with $j=0$ for the most recent return and $j=3$ for the oldest in the hour. The aggregate log return $R_t$ adds these returns. The realized variance $RV_t$ adds their squares:
 \begin{equation}
   R_t=\sum_{j=0}^{3}r_{t-j}^{\mathrm{in}},\qquad
   RV_t=\sum_{j=0}^{3}\bigl(r_{t-j}^{\mathrm{in}}\bigr)^2.
   \label{eq:rv}
 \end{equation}
-For example, log returns of $+1\%$, $-1\%$, $0\%$, and $0\%$ give $R_t=0$ and $RV_t=0.0002$. The price returns to its initial level after moving in both directions. The square root of $RV_t$ is called \emph{realized volatility} and is in the same units as the absolute net change $|R_t|$. Realized variance summarizes movement over the observed hour. Conditional variance $h_{t+1}$ describes the uncertainty of the next return.
 
-Let $q_{\mathrm{prev}}$ denote the most recent quantile the model has stored. During uninterrupted updates it is the forecast for bar $t$ from the preceding update. After a gap, the stored value can be older. The intercept $\beta_0$ is a constant contribution, and $\beta_1$ carries forward a fraction of the previous quantile. The weights $\beta_2$ and $\beta_3$ control the response to the absolute net change and to realized volatility, respectively. The four $\beta$ (beta) coefficients give the update:
+Use the same final $-1.0\%$ return as in the EWMA and GARCH examples. Suppose the hour's four log returns, in order, are $+0.5\%$, $-0.5\%$, $+0.5\%$, and $-1.0\%$. Their sum is $R_t=-0.005$, a net log return of $-0.5\%$. Their squared returns sum to $RV_t=0.000175$. Gains and losses both contribute to realized variance, even when they cancel in the net return. Taking its square root yields realized volatility, about 1.32\%. It has return units, just like $|R_t|=0.5\%$, the magnitude of the net change. Both features describe the past hour. The conditional variance in Equation~\ref{eq:scaled-quantile} describes the uncertainty of a future return.
+
+\needspace{16\baselineskip}
+\subsubsection{Updating the quantile}
+
+Let $q_{\mathrm{prev}}$ denote the quantile currently stored by the model. With consecutive updates between refits, it is the forecast for bar $t$ issued at the preceding bar. Let $\beta_0,\ldots,\beta_3$ (beta) be the four coefficients fitted from past data. The new forecast is
 \begin{equation}
   q_{t+1}=\beta_0+\beta_1 q_{\mathrm{prev}}+\beta_2 |R_t|+\beta_3\sqrt{RV_t}.
   \label{eq:caviar}
 \end{equation}
-The model stores $q_{t+1}$ for the next update and uses it in Equation~\ref{eq:var} to calculate monetary VaR. The fit bounds $\beta_1$ between 0 and 0.995, so the influence of the initial quantile decays over successive updates. The other coefficients and the initial quantile are nonpositive, which keeps subsequent quantiles nonpositive.
+\begin{samepage}
+Each term has a role in setting the threshold:
+\begin{itemize}
+  \item $\beta_0$ is the intercept, a constant contribution to the return threshold.
+  \item $\beta_1 q_{\mathrm{prev}}$ carries part of the previous threshold forward. A larger $\beta_1$ makes the model retain more of its previous estimate.
+  \item $\beta_2 |R_t|$ responds to the size of the net move, in either direction.
+  \item $\beta_3\sqrt{RV_t}$ responds to movement within the hour, including reversals that cancel in $R_t$.
+\end{itemize}
+\par
+\end{samepage}
 
-\chapter{Experimental Method} \label{cap:metodo}
+For the hour in the example, take a stored quantile of $-0.009$ and illustrative coefficients $\beta_0=-0.001$, $\beta_1=0.70$, $\beta_2=-0.15$, and $\beta_3=-0.25$. The contributions are approximately $-0.001$, $-0.00630$, $-0.00075$, and $-0.00331$. They sum to a forecast of $-0.01136$, or about $-1.136\%$ in log-return units. The model stores that result for the next update and uses it directly in Equation~\ref{eq:var}.
 
-\section{Data and experimental scope}
+The implemented fit bounds $\beta_1$ between 0 and 0.995. Its value is below one, so the contribution of the initial quantile decays over repeated updates. The initial quantile and the other coefficients are nonpositive. Together these restrictions keep the forecast quantile nonpositive. A negative coefficient on either movement feature makes larger values of that feature push the threshold lower, holding the other terms fixed. Calibration estimates the coefficients by minimizing the quantile loss explained in Section~\ref{sec:scoring}.
 
-Table~\ref{tab:data} describes the two datasets. The simulated market spans March to October 2026 and includes common market and sector movements, changes in volatility during the day, and scripted shocks. It provides known events for testing data protection. The B3 history spans July to November 2026 and comes from the repository's archived Yahoo Finance sample. It contains missing bars and sessions with incomplete coverage. Each stock is evaluated separately in the statistical experiment, and each comparison uses the same confidence level and a fixed BRL~100,000 long exposure across models \cite{project-data,project-comparison}.
+\needspace{19\baselineskip}
+\subsection{What changes from one model to the next}
 
-\begin{table}[htbp]
-\centering
-\caption{Datasets used in the matched model comparison.}
-\label{tab:data}
-\begin{tabular}{lrrr}
-\toprule
-Dataset & Stocks & Sessions & Scored targets per model \\
-\midrule
-Simulated market & 15 & 150 & 39,566 \\
-Historical B3 & 15 & 87 & 16,776 \\
-\bottomrule
-\end{tabular}
-\legend{Source: project data and matched replay. Targets are summed across stocks.}
-\end{table}
-
-Realized-CAViaR needs one hour of same-session observations before the first forecast. On the 10:00--17:00 exchange-local grid, the eligible target intervals start from 11:00 through 16:45. The last target ends at 17:00. Every model is scored on this common set, even though the volatility models can update before 11:00. Figure~\ref{fig:timeline} shows how the first eligible forecast separates observed inputs from the future target.
-
-\begin{figure}[htbp]
-\centering
-\caption{Timing of the first eligible forecast on a complete session.}
-\label{fig:timeline}
-\begin{tabular}{@{}c|c@{}}
-\textbf{Available when bar $t$ closes} & \textbf{Available when bar $t+1$ closes} \\[4pt]
-10:00--11:00 & 11:00--11:15 \\
-Four returns for $R_t$ and $RV_t$ & Recorded target return $r_{t+1}$ \\[4pt]
-Issue $q_{t+1}$ at 11:00 & Score $q_{t+1}$ at 11:15
-\end{tabular}
-\legend{Source: prepared by the project team. Times are exchange-local.}
-\end{figure}
-
-The original design used prices sampled every five seconds, a five-minute forecast horizon, and updates every minute. The single-instrument engine implements that mode with a preceding five-minute feature window. Its baseline filters run on five staggered grids. For example, one filter covers 10:00--10:05 and 10:05--10:10, while the next covers 10:01--10:06 and 10:06--10:11. Selecting the corresponding filter at each minute aligns its forecast with the CAViaR target. For statistical scoring, the high-frequency implementation selects non-overlapping target intervals. The portfolio engines also support aggregation of finer samples into configurable bars. The reported comparison uses the available 15-minute data throughout.
-
-\section{Rolling calibration and intraday seasonality} \label{sec:seasonality}
-
-Calibration estimates model coefficients from past data. The first 40 sessions form the initial training window. Each subsequent session uses a fit based on the preceding 40 sessions. After a day finishes, it can enter the window for the next day, and the oldest session drops out. The window length is fixed before evaluation so that appending future sessions to a file leaves earlier training windows unchanged. An observed bar updates the model state within a session, while fitted coefficients are held fixed until the next recalibration.
-
-Realized-CAViaR fits its four coefficients by minimizing the average quantile loss, the forecast score defined in Section~\ref{sec:scoring}. The numerical search starts from several candidate parameter sets, considers the previous fit during daily recalibration, and retains the best candidate found.
-
-A time-of-day profile accounts for the fact that the same return can be typical during an active part of the session and unusual during a quiet part. Let $k$ denote the slot of bar $t$, its position within the session, and let $k+1$ be the next bar's slot. The volatility models estimate a positive scale factor $s_k$ for each slot from the training window, with unusually large contributions capped during estimation. To form the model input, divide the checked return by the factor for its slot, $x_t=r_t^{\mathrm{in}}/s_k$. After Equation~\ref{eq:scaled-quantile} gives $\widetilde q_{t+1}$ on this adjusted scale, use the target slot's factor $s_{k+1}$ to recover the asset-return quantile, $q_{t+1}=s_{k+1}\widetilde q_{t+1}$. For example, an adjusted threshold of $-1\%$ and a target-slot factor of 1.2 give an asset-return threshold of $-1.2\%$. Realized-CAViaR uses its checked returns directly when constructing the features for Equation~\ref{eq:caviar}.
-
-A forecast and its observed target are stored separately. If the feature inputs are available and the next return is missing, the engine can issue a forecast with a pending or unscored outcome. Availability of a future price never determines whether the current forecast is eligible to be issued. The comparison uses identical observed targets across the four models and excludes transitions across gaps and session boundaries from the test of exception clustering.
-
-\section{Forecast scoring} \label{sec:scoring}
-
-A backtest compares historical forecasts with the outcomes that followed them. At the close of bar $t+1$, the backtest calculates $r_{t+1}$ from the recorded prices and compares it with the asset-return quantile $q_{t+1}$ issued one bar earlier. Thus the forecast uses the checked input stream, while the score uses the recorded outcome. An exception occurs if $r_{t+1}<q_{t+1}$. The exception rate is the number of exceptions divided by the number of targets with observed returns. A well-calibrated 99\% VaR should have an exception rate near 1\% over a sufficiently large sample. The Kupiec test assesses whether the observed frequency is consistent with this rate \cite{kupiec-1995}. Christoffersen's independence test assesses whether the probability of an exception depends on whether the previous bar also had one. The conditional coverage test combines the frequency and independence checks \cite{christoffersen-1998}.
-
-Exception counts treat a small breach and a large breach alike. Quantile loss also uses the distance from the forecast. Let $u$ be the observed return minus its forecast threshold, $u=r_{t+1}-q_{t+1}$. A negative $u$ indicates that the realized loss crossed the threshold. Write $\rho_\tau(u)$ (rho subscript tau) for the loss assigned to this difference at tail probability $\tau$. The loss weights the two sides of the threshold differently:
-\begin{equation}
-  \rho_\tau(u)=
-    \begin{cases}
-      \tau u, & u\geq 0,\\
-      (1-\tau)(-u), & u<0.
-    \end{cases}
-  \label{eq:pinball}
-\end{equation}
-At $\tau=0.01$, the same-sized error receives 99 times as much weight when the outcome is below the forecast as when it is above. For example, with a forecast of $-1\%$, an outcome of $-2\%$ scores 0.0099 and an outcome of 0\% scores 0.0001. Setting the forecast far below observed returns avoids exceptions but still accumulates loss. Minimizing expected quantile loss targets the chosen quantile.
-
-The Diebold--Mariano test starts with the hypothesis that two models have equal expected forecast loss \cite{diebold-mariano-1995}. For each target, it subtracts the second model's loss from the first model's loss on the same outcome. In the pooled test, differences are averaged across the available stocks at each timestamp before testing the resulting time series. This avoids treating a common market movement as independent evidence from each stock. Newey--West variance estimation accounts for dependence between differences at nearby times \cite{newey-west-1987}.
-
-A $p$-value is the probability, under the hypothesis being tested, of a result at least as extreme as the observed one. To limit false rejections across multiple tests, Holm's procedure adjusts the $p$-values for the six pooled comparisons per dataset and, separately, for the stock-level comparisons of each model pair \cite{holm-1979}. Adjusted values below 0.05 provide evidence against equal expected loss. Other values leave the comparison inconclusive.
-
-\chapter{Software Architecture and Validation} \label{cap:desenvolvimento}
-
-\section{Three engines and a shared data policy}
-
-The repository contains three native engines built with CMake. The portfolio engines use C++17 and the matched replay uses C++20. Python scripts aggregate experiment outputs and generate reports. The native programs run in a single process per replay and exchange data with the evaluation scripts through files. Table~\ref{tab:engines} shows the unit of analysis in each implementation.
+In the worked example, changing only the tail takes the EWMA threshold from $-1.067\%$ to $-1.196\%$. Changing the variance update while holding that illustrative tail fixed gives the GARCH threshold of about $-1.287\%$. Realized-CAViaR arrives at $-1.136\%$ from its stored quantile and the two measures of recent movement. These figures show how the steps in Table~\ref{tab:model-summary} affect a single forecast under illustrative coefficients. The experiment in Section~\ref{sec:testing-evaluation} compares fitted models over many observed outcomes.
 
 \begin{table}[htbp]
 \centering
-\caption{Scope of the three replay engines.}
-\label{tab:engines}
-\begin{tabular}{@{}lp{0.22\textwidth}p{0.48\textwidth}@{}}
+\caption{How the four models obtain the next-bar return quantile.}
+\label{tab:model-summary}
+\begin{tabular}{@{}l>{\raggedright\arraybackslash}p{0.32\textwidth}
+                   >{\raggedright\arraybackslash}p{0.38\textwidth}@{}}
 \toprule
-Engine & Unit of analysis & Main responsibilities \\
+Model & What it updates & How it obtains the quantile \\
 \midrule
-EWMA & Portfolio & Update joint equity risk and apply feed-quality controls. \\
-GARCH-$t$ & Portfolio & Estimate volatility by asset and changing correlations, model extreme losses, and revalue options. \\
-Realized-CAViaR & One stock per run & Build recent-price features and score four models on matched future returns. \\
+EWMA-Normal & Variance with one decay coefficient & Forecast standard deviation times the Normal quantile \\
+EWMA-$t$ & Same variance as EWMA-Normal & Forecast standard deviation times a standardized Student-$t$ quantile \\
+GARCH-$t$ & Variance with a constant and separate coefficients for the latest shock and previous variance & Forecast standard deviation times a standardized Student-$t$ quantile fitted for GARCH \\
+Realized-CAViaR & Return quantile using the previous quantile, net return magnitude, and realized volatility & The updated quantile itself \\
 \bottomrule
 \end{tabular}
-\legend{Source: prepared by the project team from the implementations.}
+\legend{Source: model equations in this chapter. For the volatility models, the multiplication gives $\widetilde q_{t+1}$. Equation~\ref{eq:slot-adjustment} converts it to $q_{t+1}$.}
 \end{table}
 
-A portfolio combines positions whose gains and losses can offset or reinforce one another. Its risk therefore depends on the relationship between asset returns as well as on individual volatilities. The GARCH-$t$ portfolio engine estimates changing correlations and can simulate possible market moves to revalue an option book. The option revaluation runs off the thread that publishes per-bar VaR. The matched replay removes portfolio aggregation from the research comparison by holding the instrument, exposure, and scoring intervals fixed.
+\chapter{Work Method} \label{cap:metodo}
 
-The two portfolio engines use a common model interface for updating state, refitting, and issuing forecasts. Their RiskMetrics reference is one shared implementation. The matched replay reuses estimation and loading code from the portfolio modules and coordinates its univariate filters in a separate replay loop. All three engines use the same causal jump filter in their shared-data configurations \cite{project-atam}.
+\section{Development process}
 
-\section{Following a bar through the system}
+The project proceeded through specification, design, implementation, and evaluation. Each phase produced an input to the next:
+
+\begin{enumerate}
+  \item \textbf{Specification.} Define the loss threshold to forecast, the data available at the forecast time, and the conditions for a fair comparison. The requirements for the single-stock replay and its evaluation are set out in Chapter~\ref{cap:requisitos}.
+  \item \textbf{Design.} Define a common replay schedule and separate the price inputs used for forecasting from the recorded outcomes used for scoring. Use one calibration schedule across models and keep parameter fitting separate from updates within a session.
+  \item \textbf{Implementation.} Integrate the four forecasting models into the replay, record forecasts and fitted parameters, and build the scripts that generate the comparison from the individual stock runs. Chapter~\ref{cap:desenvolvimento} describes the system and its validation procedures.
+  \item \textbf{Evaluation.} Check forecast alignment and reproducibility, run the matched backtests, benchmark model updates, and replay the faulty data. Sections~\ref{sec:testing-evaluation} and~\ref{sec:resultados} describe the experimental protocol, the measurements, and their interpretation \cite{project-comparison,project-atam}.
+\end{enumerate}
+
+\chapter{Requirements Specification} \label{cap:requisitos}
+
+The system supports a repeatable comparison of 99\% intraday VaR models for one stock at a time. The functional requirements describe what the replay must produce. The quality requirements specify how to verify the outputs and evaluate the model updates. The numerical criteria apply to the project experiments.
+
+\section{Functional requirements}
+
+\begin{description}
+  \item[F1. Replay market observations.] Read the timestamped price records for the selected stock and process the 15-minute observations in time order. Align the observations with the session grid, check model inputs for feed faults, and preserve the recorded prices used to calculate the evaluation targets.
+  \item[F2. Forecast a common event.] For each eligible time, produce a 1\% return quantile for the same stock and next 15-minute interval with all four models. Apply the same exposure to convert their quantiles to monetary VaR. The matched comparison begins after the same-session feature window is available.
+  \item[F3. Refit on a common schedule.] Base the daily calibration on the preceding 40 completed trading sessions. Keep the fitted coefficients fixed during the session while the model states update with new bars. Record the training bounds, fitted parameters, and calibration status.
+  \item[F4. Record forecasts and outcomes.] Store the model, issue time, target time, return quantile, and monetary VaR for each forecast. Associate observed target returns with forecasts by target time and mark forecasts with missing outcomes as unscored.
+  \item[F5. Compare the forecasts.] Use the same eligible observed targets for all four models. Report exception rates, coverage tests, quantile loss, and paired comparisons of loss for each dataset \cite{project-comparison}.
+\end{description}
+
+\needspace{14\baselineskip}
+\section{Quality requirements and verification}
+
+\begin{description}
+  \item[Q1. Causality.] Each forecast must depend only on information available at issuance. Verify this by replacing and truncating prices after selected cutoffs and comparing the earlier forecasts and calibrations.
+  \item[Q2. Reproducibility.] With the same executable, inputs, and settings, repeat runs must agree on forecasts, calibration, and scoring outputs. Compare those outputs across runs, with timing fields excluded from the comparison.
+  \item[Q3. Comparable timing.] Measure the model update, quantile calculation, and monetary VaR conversion for all four models under the same benchmark conditions. Report batch timing statistics and the size of each model's persistent numeric state.
+  \item[Q4. Stability under feed faults.] Compare Realized-CAViaR forecasts from degraded data with the corresponding reference replay. A change of more than 5\% in VaR flags an affected forecast pair. Apply the scenario-specific treatment of missing forecasts and assess the affected share against the 1\% and 10\% tolerances specified for the faulty synthetic-feed and combined-fault scenarios, respectively \cite{project-atam}.
+\end{description}
+
+Chapter~\ref{cap:desenvolvimento} describes how the replay implements the functional requirements and how the checks are run. Section~\ref{sec:resultados} reports the accuracy comparison for F5 and the evidence for Q1--Q4.
+
+\chapter{Project Development} \label{cap:desenvolvimento}
+
+\section{Technologies used}
+
+The replay and numerical models are implemented in C++20. CMake configures the build and CTest runs the automated checks. The engine reads market observations and writes forecast, calibration, and scoring records as comma-separated values (CSV). Python scripts run the comparison across stocks and aggregate the results. An optional SciPy reference check provides an independent numerical comparison for the Realized-CAViaR fit.
+
+\section{Design and implementation}
+\label{sec:design-implementation}
+
+\subsection{Running the matched comparison}
+
+The engine runs all four models in one process for each stock. A replay defines one forecast schedule, one exposure, and one set of observed targets for that stock. Each model updates its own state and issues a quantile at the eligible times. The backtest then pairs those forecasts with the recorded target return. The engine writes forecasts, calibration parameters, and scores as CSV files. A Python script combines the outputs from the individual stock runs to produce the reported comparisons \cite{project-comparison}.
+
+\subsection{Following a bar through the system}
 
 Figure~\ref{fig:arquitetura-modulos} traces a bar through the matched replay. The model sees the accepted observations and their derived inputs. The backtest uses the recorded market price for the target, so filtering the input does not rewrite the outcome used to judge a forecast.
 
@@ -474,21 +597,146 @@ Match the observed return with each forecast by target time. \\
 \legend{Source: prepared by the project team.}
 \end{figure}
 
-Feed defects include duplicate rows, invalid prices, delayed observations, and absent bars. A large return can also be a genuine market event. The shared filter compares new changes with a scale estimated from previously completed sessions. A joint jump across several stocks is kept. An isolated jump can be held for one bar. If the next observation reverses it, the filter treats the held observation as a bad tick. If the move persists, the filter accepts it at full size on confirmation. The trade-off is a possible one-bar delay for a genuine stock-specific move. The EWMA portfolio engine adds its own checks for feed quality and uses \texttt{NORMAL}, \texttt{DEGRADED}, and \texttt{FREEZE} states to track whether it can continue publishing current estimates.
+Feed defects include duplicate rows, invalid prices, delayed observations, and absent bars. A large return can also be a genuine market event. The jump filter compares new changes with a scale estimated from completed sessions. It can inspect the market data for several stocks to recognize a move that occurs across the market. Each forecast still uses the return series of its selected stock. An isolated jump can be held for one bar. If the next observation reverses it, the filter treats the held observation as a bad tick. If the move persists, the filter accepts it at full size on confirmation. Confirmation can therefore delay a genuine stock-specific move by one bar.
 
 For Realized-CAViaR, a missing price inside the feature hour combines the returns on either side into one return between the remaining observations. When the endpoints are available, the total log return remains the same because log returns add. The sum of squares can change because squaring the combined return differs from squaring each part separately. The replay permits up to two missing interior prices and skips a feature window with missing endpoints or a larger gap. If a held print is later confirmed, the replay can catch up the quantile state at confirmation without publishing a forecast at the earlier, held bar.
 
-\section{Measuring architectural quality}
+\section{Tests and evaluation}
+\label{sec:testing-evaluation}
 
-The Architecture Tradeoff Analysis Method (ATAM) evaluates design choices against measurable operating scenarios \cite{kazman-klein-clements-2000}. A scenario states what happens, under which conditions, and how the system should respond. For example, a temporal-correctness scenario changes prices after a chosen cutoff and requires the earlier forecasts to stay identical. A \emph{utility tree} groups such scenarios by quality attribute and records their priorities and thresholds. The project applied this approach to comparability, temporal correctness, reproducibility, robustness, performance, and modifiability. The thresholds are project evaluation criteria. Stakeholder validation of their priorities and thresholds remains open \cite{project-atam}.
+\subsection{Data and experimental scope}
 
-Numerical and integration tests cover return calculations, feature windows, loss calculations, forecast behavior with missing data, and the replay output. An optional SciPy check compares Realized-CAViaR fitting against an independent reference on controlled cases. The architecture evaluation adds repeated full replays, future-price changes, feed fault injection, and timed runs. Repeated replays are compared with timing fields excluded because elapsed times vary even when calculations are identical.
+The experiment compares four forecasts for the same event: the next 15-minute return of a given stock. For each stock, the models use the same underlying price records, target intervals, confidence level, and calibration schedule. All four forecasts concern the 1\% lower tail, which corresponds to 99\% VaR. The engine uses a fixed BRL~100,000 long exposure to express the thresholds in monetary units. Forecast accuracy is scored in return units, so the chosen exposure sets the monetary scale of the output \cite{project-comparison}.
 
-The model-stage benchmark times a prepared update, return quantile calculation, and monetary VaR conversion. It measures batches of 1,000 updates to reduce the effect of reading the clock. A revaluation of the portfolio and a model update for one stock represent different amounts of work, so the portfolio experiment measures its own per-bar cycle. Data preparation, feature construction, input and output, and scheduled fitting are outside the single-instrument model benchmark. Daily fitting is measured separately. These definitions determine which timings can be compared.
+Table~\ref{tab:data} describes the two datasets. The simulated market spans March to October 2026 and includes common market and sector movements, intraday changes in volatility, and scripted shocks. Its known events help evaluate how the replay handles market moves and feed faults. The historical B3 sample, archived from Yahoo Finance, spans July to November 2026. It adds observed market behavior, including missing bars and sessions with incomplete coverage. The results are reported separately for the two datasets because they represent different evidence \cite{project-data,project-comparison}.
 
-\chapter{Results and Discussion} \label{cap:resultados}
+\begin{table}[htbp]
+\centering
+\caption{Datasets used in the matched model comparison.}
+\label{tab:data}
+\begin{tabular}{lrrr}
+\toprule
+Dataset & Stocks & Sessions & Scored targets per model \\
+\midrule
+Simulated market & 15 & 150 & 39,566 \\
+Historical B3 & 15 & 87 & 16,776 \\
+\bottomrule
+\end{tabular}
+\legend{Source: project data and matched replay. Targets are summed across stocks.}
+\end{table}
 
-\section{Forecast accuracy}
+\subsubsection{Matching forecast times and outcomes}
+
+Both datasets supply 15-minute bars. Setting the forecast horizon and update interval to one bar gives the models the same observed next-bar target, with consecutive target intervals covering disjoint periods. At 11:00, for example, the engine can issue a forecast for 11:00--11:15. The return used to score it becomes available at 11:15, which is also when the next forecast can be issued.
+
+Realized-CAViaR first needs an observed hour from the same session for the features in Equation~\ref{eq:rv}. On a complete 10:00--17:00 session, the eligible target intervals therefore start at 11:00 through 16:45. The other models can update earlier in the session. Their scores are computed only for the targets shared with Realized-CAViaR so that every accuracy comparison uses the same observations. The reported accuracy therefore applies to the hours after the opening warm-up. Figure~\ref{fig:timeline} shows the first eligible forecast.
+
+\begin{figure}[htbp]
+\centering
+\caption{Timing of the first eligible forecast on a complete session.}
+\label{fig:timeline}
+\begin{tabular}{@{}c|c@{}}
+\textbf{Available when bar $t$ closes} & \textbf{Available when bar $t+1$ closes} \\[4pt]
+10:00--11:00 & 11:00--11:15 \\
+Four returns for $R_t$ and $RV_t$ & Recorded target return $r_{t+1}$ \\[4pt]
+Issue $q_{t+1}$ at 11:00 & Score $q_{t+1}$ at 11:15
+\end{tabular}
+\legend{Source: prepared by the project team. Times are exchange-local.}
+\end{figure}
+
+A forecast and its observed target are stored separately. A missing next-bar return leaves a forecast unscored. The engine can still issue the forecast if it has the inputs needed at the time of issuance. The scored target comes from the recorded prices, and the models receive inputs that have gone through the checks described in Section~\ref{sec:design-implementation}. This preserves the outcome against which the forecast is judged when those checks alter a model input.
+
+\subsection{Rolling calibration}
+
+Calibration chooses coefficients from past observations. Those coefficients determine how the model updates, such as how much weight EWMA gives to its previous variance. A state update applies the fitted rule as a new bar arrives. For instance, Equation~\ref{eq:ewma} updates $h_{t+1}$ during the session while $\lambda$ is fixed until the next refit.
+
+\subsubsection{Choice of a fixed 40-session window}
+
+The project uses 40 \emph{trading sessions} as a fixed design setting for all models and both datasets \cite{project-comparison}. A common length holds the amount of recent market history fixed in the comparisons. A shorter window replaces older market conditions more quickly but provides fewer observations for learning about unusual losses or typical volatility at each time of day. A longer window includes more observations and leaves fewer sessions for evaluation, especially in the 87-session B3 sample.
+
+A complete session provides 24 eligible targets over the six hours from 11:00 to 17:00 and at most one observation per time slot. Across 40 complete sessions, that gives up to 960 target returns for fitting Realized-CAViaR and up to 40 observations per slot. At a well-calibrated 1\% tail threshold, even 960 scored targets would yield only about ten exceptions on average. Quantile-loss fitting uses every observed target, including returns above the threshold. The initial fit leaves 47 B3 sessions available for evaluation, and missing prices can reduce usable target counts in both training and evaluation. Forty sessions is the setting evaluated here. Establishing an optimal window length would require a separate comparison.
+
+The first fit uses sessions 1--40 to issue forecasts in session 41. The next fit uses sessions 2--41 for session 42. Session 41 can enter that second training window because its outcomes are already known by then. In this way every test-session forecast uses parameters estimated from completed sessions only. Fixing the window length also prevents the number of sessions at the end of a file from changing which observations an earlier fit uses.
+
+\subsubsection{Adjusting for time of day} \label{sec:seasonality}
+
+The same-sized price change can be typical at one time of day and unusual at another. The volatility models account for this by estimating a time-of-day profile from the training window. Let $k$ denote the slot of bar $t$, its position within the session. The next bar within that session is in slot $k+1$. Each slot has a positive scale factor, written $s_k$ for the current slot. The procedure averages past absolute returns by slot, with extreme contributions capped, then rescales the profile so the mean of its squared factors is one. The resulting factors have no units. A factor of 1.2 marks a slot whose fitted scale is 20\% above the reference scale of one.
+
+The adjustment has two steps. First divide the checked return $r_t^{\mathrm{in}}$ by its own slot's factor $s_k$ to form $x_t$. For example, an observed return of $-1.2\%$ in a slot with factor 1.2 enters the variance model as $-1.0\%$. Once the model produces its quantile $\widetilde q_{t+1}$ on the adjusted scale, multiply it by the \emph{target} slot's factor $s_{k+1}$:
+\begin{equation}
+  x_t=\frac{r_t^{\mathrm{in}}}{s_k},\qquad
+  q_{t+1}=s_{k+1}\widetilde q_{t+1}.
+  \label{eq:slot-adjustment}
+\end{equation}
+For example, an adjusted forecast of $-1.0\%$ for a target slot with factor 0.8 becomes a forecast of $-0.8\%$ on the asset-return scale. The first step interprets an observed move in light of the slot it came from. The second step uses the volatility typical of the slot being forecast. Realized-CAViaR constructs its features directly from the checked returns in the trailing hour. All four final thresholds are on the asset-return scale before scoring.
+
+\subsubsection{What each model fits}
+
+Each model fits the quantities it uses to forecast. The volatility models learn from past adjusted returns. Their fitting criteria use \emph{likelihood}, which measures how well a candidate model accounts for the observed data. For each bar, the model's probability density is the height of the forecast distribution's curve at the observed return. The fitting procedure adds the logarithms of these densities over the training observations used to score the candidate. A higher total indicates a better fit on those observations.
+
+\begin{itemize}
+  \item \textbf{EWMA-Normal.} Roughly the first quarter of the window initializes the variance. On the rest, the engine compares candidate values of $\lambda$ using Normal likelihood from one-step-ahead forecasts. The outcome is one decay coefficient for the next session.
+  \item \textbf{EWMA-$t$.} Calibration uses the same EWMA variance forecasts. It divides each adjusted return after initialization by its forecast standard deviation, then fits $\nu$ to those standardized returns using a unit-variance Student-$t$ distribution. This keeps the variance forecast fixed while estimating tail thickness.
+  \item \textbf{GARCH-$t$.} Calibration fits $\omega$, $a$, $b$, and $\nu$ jointly by likelihood. The variance recurrence determines the scale at each step. The zero-mean Student-$t$ distribution supplies the density of the observed return at that scale.
+  \item \textbf{Realized-CAViaR.} Calibration minimizes average quantile loss at the 1\% threshold using the checked prices for training. The search tries several starting points and considers the previous fit on subsequent sessions. It also considers a constant threshold given by the empirical 1\% quantile of the observed training returns. When a feature window is available but its target is missing, the quantile state can advance and that target contributes no term to the loss.
+\end{itemize}
+
+\subsection{Forecast scoring} \label{sec:scoring}
+
+A \emph{backtest} compares forecasts with the outcomes that followed them. At the close of bar $t+1$, the engine calculates $r_{t+1}$ from the recorded prices and compares it with $q_{t+1}$, which was issued one bar earlier. An exception occurs when $r_{t+1}<q_{t+1}$. The Kupiec test checks how often exceptions occur. The Christoffersen tests also consider whether exceptions cluster. Quantile loss and the Diebold--Mariano test compare the estimated thresholds of different models on the same outcomes.
+
+\subsubsection{Exception frequency and the Kupiec test}
+
+The exception rate is the count of exceptions divided by the count of scored targets. A well-calibrated 99\% VaR forecast should have about ten exceptions in 1,000 observations on average. Even with correct forecasts, the count varies by chance. The Kupiec test asks whether the observed count is consistent with an exception probability of 1\% \cite{kupiec-1995}. It compares how well two probabilities explain the same count: the target probability of 1\% and the observed exception rate. A large difference in fit is evidence against the target rate. Either too many or too few exceptions can lead to rejection. The test uses the count, so the order and severity of the exceptions play no role.
+
+\subsubsection{Exception clustering and the Christoffersen tests}
+
+Two models could each have ten exceptions in 1,000 observations. One could have ten isolated exceptions and the other could have ten consecutive exceptions. Both have the same frequency, but the consecutive exceptions suggest that the forecast may be slow to respond as conditions change.
+
+Christoffersen's independence test counts transitions between adjacent scored bars. It compares two explanations for those transitions: a shared exception probability, or separate probabilities depending on whether the previous bar had an exception \cite{christoffersen-1998}. The question is whether knowing the previous result helps explain the current one. The replay counts only consecutive observed target intervals within a session, with transitions across missing targets or session boundaries excluded.
+
+The conditional coverage test adds the test statistics from the Kupiec frequency and Christoffersen independence tests. Each statistic measures how much better the observed sequence fits when the corresponding restriction is relaxed. A rejection can reflect a wrong exception rate, dependence between consecutive results, or both. With rare exceptions, there are few transitions following an exception, so a short sample can have limited power to detect clustering.
+
+\subsubsection{Quantile loss measures the size of a miss}
+
+Exception counts give the same result for a small breach and a large breach. Quantile loss also uses the distance from the forecast. Let $u=r_{t+1}-q_{t+1}$ be the recorded return minus the forecast threshold. A negative $u$ means the return fell below the threshold. Write $\rho_\tau(u)$ for the loss assigned to that difference at lower-tail probability $\tau$:
+\begin{equation}
+  \rho_\tau(u)=
+    \begin{cases}
+      \tau u, & u\geq 0,\\
+      (1-\tau)(-u), & u<0.
+    \end{cases}
+  \label{eq:pinball}
+\end{equation}
+
+When the realized return is at or above the threshold, $u$ is the distance above it. That distance receives weight $\tau$. When the realized return is below the threshold, $-u$ is the size of the breach and receives weight $1-\tau$. For a $-1\%$ forecast, a realized return of $-2\%$ gives a loss of $0.99(0.01)=0.0099$. A realized return of 0\% is equally far away in the other direction and gives a loss of $0.01(0.01)=0.0001$.
+
+This asymmetry matters in two ways. A forecast that repeatedly puts its threshold too close to zero receives a large penalty when it misses a loss. A forecast that places its threshold far below observed returns accumulates smaller penalties on many bars. The balance of these penalties makes the 1\% quantile the forecast that minimizes expected quantile loss at $\tau=0.01$. Realized-CAViaR uses this objective in training, and all four models are scored with it on the observed test outcomes.
+
+\subsubsection{Comparing paired forecasts with the Diebold--Mariano test}
+
+A difference in average loss describes the sample. The Diebold--Mariano test asks whether the observed difference is large relative to its uncertainty under the hypothesis that the models have equal expected forecast loss \cite{diebold-mariano-1995}. For each target, subtract the second model's quantile loss from the first model's loss on that same outcome. A positive difference favors the second model on that target. Pairing makes the comparison use the same market event on both sides.
+
+The test is run for each stock and again on differences pooled by timestamp. For the pooled test, first average the paired differences across the stocks available at a timestamp. For example, if the first model loses 0.0002 more on one stock and 0.0001 less on another at 11:15, the two differences give a single average of 0.00005 for 11:15. Each timestamp contributes one observation to the pooled test, even when several stocks respond to the same market event.
+
+Loss differences can still be related across successive entries in the time-ordered series, even though the forecast intervals do not overlap. The Newey--West calculation adjusts the estimated uncertainty for this dependence and gives less weight to pairs farther apart in that sequence \cite{newey-west-1987}. The result is a two-sided test using a Normal approximation. It can detect evidence of lower expected loss for either model.
+
+\subsubsection{Interpreting statistical evidence}
+
+A $p$-value is the probability, under the hypothesis being tested, of a test statistic at least as extreme as the observed one. At the 5\% significance level, a sufficiently small value leads to rejection of the hypothesis. A larger value provides insufficient evidence for rejection. For a test of equal expected loss, that can reflect either a small difference or a sample with too much uncertainty to distinguish the models.
+
+Four models give six pairwise comparisons per dataset. Testing all six at the same unadjusted cutoff raises the chance of at least one false rejection. The Holm procedure orders the $p$-values and tests the smallest first against the strictest cutoff \cite{holm-1979}. For six pooled tests at an overall 5\% level, the smallest must pass a cutoff of $0.05/6$. If it passes, the next is compared with $0.05/5$. The procedure stops at the first comparison that fails its cutoff. The results report the equivalent adjusted $p$-values and use a common 0.05 cutoff. The six pooled comparisons form one family per dataset. The stock-level tests are adjusted separately for each model pair within a dataset. The coverage results in Section~\ref{sec:forecast-accuracy} count stock-level rejections at the nominal 5\% level for each coverage test.
+
+\subsection{Validation and measurement}
+
+Numerical and integration tests cover return calculations, feature windows, loss calculations, missing data, and replay output. An optional SciPy check compares Realized-CAViaR fitting against an independent reference on controlled cases. The replay tests assess whether modifying or removing later prices changes an earlier forecast. Repeated runs are compared with timing fields excluded because elapsed times can vary even when forecasts are identical \cite{project-atam}.
+
+The data-fault experiments replay the same stocks on a reference feed and on copies with faults such as missing or invalid observations. They assess how much the Realized-CAViaR forecasts change. The model-stage benchmark separately times each of the four models as it updates from prepared inputs, calculates a return quantile, and converts it to monetary VaR. It measures batches of 1,000 updates to reduce the effect of reading the clock. Feature construction, file operations, and scheduled fitting are outside this benchmark \cite{project-atam}.
+
+\section{Results and discussion}
+\label{sec:resultados}
+
+\subsection{Forecast accuracy} \label{sec:forecast-accuracy}
 
 Table~\ref{tab:accuracy} reports the exception rate and quantile loss for the matched 99\% VaR forecasts. Loss is reported in basis points (bp), where one basis point is 0.0001 in decimal return units. The mean loss gives equal weight to the mean loss of each stock. The exception rate pools the counts across stocks. For example, 1.45\% of GARCH-$t$ forecasts on B3 had exceptions. At the 5\% significance level, three stocks failed the Kupiec frequency test and one failed the combined conditional coverage test.
 
@@ -517,13 +765,13 @@ B3 & EWMA-Normal & 2.10\% & 1.2141 & 13 & 13 \\
 \legend{Source: matched comparison report. Test columns count rejections out of 15 stocks.}
 \end{table}
 
-GARCH-$t$ had the lowest mean quantile loss in both datasets and the exception rate closest to 1\%. Every model exceeded the 1\% target in the B3 sample. EWMA-$t$ reduced the exception rate and mean loss relative to EWMA-Normal in both datasets. Since those variants share the variance forecast, their results show the effect of changing how that forecast is translated into a tail threshold in this experiment.
+GARCH-$t$ had the exception rate closest to 1\% and the lowest mean loss on both datasets. It had the lowest loss on 8 of 15 simulated stocks and 10 of 15 B3 stocks. All four models exceeded the 1\% exception target on B3. EWMA-$t$ reduced exception rates and mean loss relative to EWMA-Normal on both datasets. The two variants share a variance forecast, so this comparison isolates the effect of the assumed return distribution \cite{project-comparison}.
 
 Realized-CAViaR had lower mean loss than EWMA-Normal on both datasets and lower mean loss than EWMA-$t$ on B3. The pooled Diebold--Mariano test uses loss differences averaged across available stocks at each timestamp. On B3, the pooled difference of $+0.0393$~bp indicates higher loss for Realized-CAViaR than GARCH-$t$. Its adjusted $p$-value of 0.3678 leaves the comparison inconclusive, as do the pooled tests against the other baselines. On B3, GARCH-$t$ had lower pooled loss than EWMA-Normal and EWMA-$t$, with adjusted $p$-values of 0.0009 and 0.0044, respectively \cite{project-comparison}.
 
-\section{Computational cost}
+\subsection{Computational cost}
 
-Table~\ref{tab:cost} compares the four models under the same measurement boundary in the ATAM replay. Here p50 is the median. The p95 and p99 columns indicate the values at or below which 95\% and 99\% of the batch means fall. These percentiles describe batch averages, which smooth out slow individual updates. The state figures count persistent numeric model state as reported by the benchmark, including the applicable seasonality profile and cached tail factors. Input history, prepared features, and allocator overhead are outside that count.
+Table~\ref{tab:cost} compares the four models on the same synthetic stock, XPET3. The benchmark reports the median of three runs on an Intel Core i7-6700 running Windows 10. Within a run, p50 is the median batch mean. The p95 and p99 columns give the values at or below which 95\% and 99\% of the batch means fall. Batching smooths out slow individual updates. The state figures count persistent numeric model state, including the applicable seasonality profile and precomputed distribution quantiles. Input history, prepared features, and allocator overhead are outside that count \cite{project-atam}.
 
 \begin{table}[htbp]
 \centering
@@ -539,61 +787,76 @@ GARCH-$t$     & 26.1 & 23.3 & 49.5 & 61.6 & 280 \\
 Realized-CAViaR & 18.5 & 16.3 & 32.0 & 48.5 & 40 \\
 \bottomrule
 \end{tabular}
-\legend{Source: ATAM model-stage benchmark. Percentiles refer to 1,000-update batch means.}
+\legend{Source: XPET3 model-stage benchmark. Percentiles refer to 1,000-update batch means.}
 \end{table}
 
-Realized-CAViaR had the lowest mean model-stage cost and the smallest state in the benchmark. Its 40 bytes store four coefficients and one quantile as five double-precision values. The result describes the recurrence with prepared features. The full workflow also has to construct those features, fit the parameters, and handle incoming prices. Batch timing also makes the approximately 54.1 million updates per second implied by the mean a model-stage rate, with no claim about the throughput of a complete feed.
+Realized-CAViaR had the lowest mean model-stage cost and the smallest state in the benchmark. Its 40 bytes store four coefficients and one quantile as five double-precision values. The comparison applies to an update with prepared inputs. In operation, the replay also validates prices, constructs features, and refits the models at scheduled intervals.
 
-The ATAM portfolio runs provide a separate check on the latency of the equity risk calculation. The 15-stock per-bar p99 values were $2.9\,\mu\text{s}$ for EWMA and $5.0\,\mu\text{s}$ for GARCH-$t$ when the minimum time for each bar was selected across three replays. The raw per-run p99 ranges were $14.27$--$14.90\,\mu\text{s}$ and $6.43$--$8.41\,\mu\text{s}$, respectively. Thus the EWMA result depends on the aggregation rule for the project threshold of $10\,\mu\text{s}$. The option revaluation reported separately by the GARCH-$t$ engine took a median of 6.85~ms per bar. These measurements come from historical replays on an Intel Core i7-6700 running Windows 10 \cite{project-atam}.
+\subsection{Correctness and reproducibility}
 
-\section{Correctness, reproducibility, and modifiability}
+In the XPET3 replay, the tests changed synthetic market prices after three cutoffs. The forecasts and calibrations at or before each cutoff were identical to the original run. Truncating the input at those cutoffs with a fixed training window also preserved the earlier results. Three runs of the same replay produced identical output values once timing fields were excluded \cite{project-atam}.
 
-All three engines met the evaluation's temporal-correctness and repeatability criteria. Replacing prices after a cutoff left forecasts and calibrations before it unchanged in the tested runs. Truncating the input with the training window fixed gave the same earlier results. Repeating each replay three times produced the same reported values after timing fields were removed. The common RiskMetrics baseline also agreed forecast by forecast across the two portfolio engines on both datasets \cite{project-atam}.
+\subsection{Robustness to degraded inputs}
 
-The modifiability review found that each engine can use the finer time grid by configuration. It also identified a maintenance dependency. The matched replay compiles forecasting and data-loading code from the other engines. This reuse keeps the estimators aligned, and changes to their source can propagate to the statistical comparison. Rebuilding and rerunning the comparison after a shared-code change preserves the link between the implementation and the published evidence \cite{project-atam}.
-
-\section{Robustness to degraded inputs}
-
-Table~\ref{tab:faults} shows the share of forecasts affected in two scenarios. A matched forecast is affected if its VaR differs by more than 5\% from the clean-feed estimate. The allowed share applies across all forecasts included in a scenario. The synthetic faulty-feed scenario also counts a forecast issued on only one feed as affected. The combined-fault scenario uses forecast pairs available on both feeds, reports the higher share across the two datasets, and tracks missing forecasts separately. The portfolio engines contribute portfolio forecasts. Realized-CAViaR contributes individual-stock forecasts, so the percentages describe the response of each system to its own clean replay.
+Table~\ref{tab:faults} reports how the Realized-CAViaR forecasts changed when the same stocks were replayed with faults in the input feed. A matched forecast is affected if its VaR differs by more than 5\% from the clean-feed estimate. The allowed share is the project tolerance for the percentage of forecasts affected. The faulty synthetic-feed scenario counts a forecast issued on only one feed as affected. The combined-fault scenario measures only forecast pairs available on both feeds and tracks missing forecasts separately \cite{project-atam}.
 
 \begin{table}[htbp]
 \centering
-\caption{Sensitivity of VaR forecasts to degraded input data.}
+\caption{Sensitivity of single-stock Realized-CAViaR forecasts to feed faults.}
 \label{tab:faults}
 \small
-\begin{tabular}{@{}lrrrr@{}}
+\begin{tabular}{@{}lrr@{}}
 \toprule
-Scenario & Allowed share & EWMA & GARCH-$t$ & Realized-CAViaR \\
+Scenario & Allowed share & Affected forecasts \\
 \midrule
-Faulty synthetic feed & 1\% & 0.00\% & 1.46\% & 11.91\% \\
-Combined faults       & 10\% & 6.28\% & 9.46\% & 22.55\% \\
+Faulty synthetic feed & 1\% & 11.91\% \\
+Combined faults, simulated stocks & 10\% & 22.49\% \\
+Combined faults, B3 stocks & 10\% & 22.55\% \\
 \bottomrule
 \end{tabular}
-\legend{Source: ATAM scorecard, scenarios R1 and R3.}
+\legend{Source: architecture evaluation, faulty-feed scenario R1 and fault catalogue scenario R3.}
 \end{table}
 
-Realized-CAViaR exceeded the allowed share in both scenarios. In the combined-fault scenario, about 23 out of every 100 matched forecasts shifted by more than 5\%. In the faulty synthetic-feed scenario, the clean and faulty fits differed by more than 0.05 in at least one coefficient on about 12\% of the stock-days, where one stock-day is one stock on one trading day. About 54\% of the matched forecasts that shifted by more than 5\% occurred on those days. This concentration is consistent with sensitivity to daily fitting. The absolute aggregate return and realized volatility both capture recent movement and can change together. Different combinations of their coefficients may then give nearly the same training loss. A small change in the data can favor a different combination, which the model uses throughout the next session \cite{project-atam}.
+Realized-CAViaR exceeded the tolerance in both scenarios. Under combined faults, about 23 out of every 100 matched forecasts shifted by more than 5\%. In addition, the faulty feed yielded no corresponding forecast for 2.42\% of the clean forecasts on simulated stocks and 3.56\% on B3 stocks \cite{project-atam}.
 
-The GARCH-$t$ portfolio engine exceeded the 1\% tolerance on the faulty synthetic feed and met the 10\% combined-fault threshold. In several of the differing synthetic forecasts a stock had missed a bar. The engine widened its risk estimate to account for the longer interval covered by that stock's next marked price change. This shows why a fault scenario needs to state whether the clean and faulty forecasts must cover the same effective profit-and-loss interval. All three engines met the test criterion for retaining the two scripted genuine shocks \cite{project-atam}.
+In the faulty synthetic-feed scenario, the clean and faulty fits differed by more than 0.05 in at least one coefficient on about 12\% of the stock-days, where one stock-day is one stock on one trading day. About 54\% of the matched forecasts that shifted by more than 5\% occurred on those days. This concentration is consistent with sensitivity to daily fitting. The absolute aggregate return and realized volatility both capture recent movement and can change together. Different combinations of their coefficients may then give nearly the same training loss. A small change in the data can favor a different combination, which the model uses for the next session's forecasts \cite{project-atam}.
 
-\section{Scope and limitations}
+\needspace{14\baselineskip}
+\subsection{Scope and limitations}
 
-The comparison covers two datasets, a fixed 40-session estimation window, and one 15-minute forecast horizon. The warm-up excludes the opening hour, which can have different volatility and liquidity. The B3 history has 87 sessions, and its rare negative-tail observations limit the strength of comparative inference. The historical experiment also uses 15-minute prices to estimate realized variation. A finer sampling grid can reveal price movement within each of those bars. The five-second implementation therefore provides a way to run a different experiment when suitable historical data are available.
+The comparison uses a fixed 40-session estimation window and a 15-minute forecast horizon. Its findings cover the period after the opening hour, when the feature window is ready. The B3 sample spans 87 sessions and contains relatively few extreme losses, limiting the strength of inference. The experiment estimates realized variation from 15-minute bars. Finer samples could reveal price movements within each bar.
 
-The results measure historical replay and isolated calculation on documented hardware. They leave live feed delay, network and queue behavior, and service-level latency to a dedicated operational evaluation. The architecture results also depend on the choice and severity of injected faults and the project team's initial thresholds. For replication, the repository records inputs under \path{data/}, the matched results under \path{realized_caviar/comparison/}, and the architecture scorecard and environment under \path{atam/results/}. From the repository root, \path{bash realized_caviar/run_comparison.sh} regenerates the statistical comparison and \path{bash atam/run.sh} invokes the architecture evaluation on Linux or macOS. The repository also supplies Windows scripts \cite{project-comparison,project-atam}.
+The timings describe model calculations during historical replay. The fault estimates depend on the injected defects. The repository includes the input data, matched results, and test settings. Run \verb|bash realized_caviar/run_comparison.sh| from the repository root to reproduce the comparison on Linux or macOS. A Windows script is also provided \cite{project-comparison,project-atam}.
 
-\chapter{Conclusion} \label{cap:consideracoes}
+\chapter{Final Considerations} \label{cap:consideracoes}
 
-This work implemented and evaluated 99\% intraday VaR forecasts using two portfolio engines and a matched single-instrument replay. Matching instruments, forecast times, and observed returns made it possible to compare four models on the same task. In the 15-minute experiments, GARCH-$t$ had the lowest average quantile loss and the exception rate nearest 1\% in both datasets. The tests did not establish a pooled accuracy advantage for Realized-CAViaR. Its model update was the fastest in the matched benchmark, while its daily calibration remained sensitive to missing and faulty inputs.
+\section{Project conclusions}
 
-Two follow-up experiments address the remaining uncertainty. A matched run on suitable five-second market data would examine the originally specified five-minute horizon and the value of measuring variation within a 15-minute bar. A study of calibration stability would test whether reducing the overlap between the aggregate-return and realized-variance features improves robustness while preserving accuracy on clean data. Completion of the stakeholder review would establish which robustness and latency thresholds should govern that evaluation.
+The replay produced matched 99\% intraday VaR forecasts for four models and evaluated them on the same observed 15-minute returns for each stock. The accuracy results apply after the opening hour, with calibration on a fixed 40-session window. GARCH-$t$ had the lowest average quantile loss and the exception rate closest to 1\% in both datasets. The pooled comparisons involving Realized-CAViaR were inconclusive. Realized-CAViaR had the fastest model update in the matched benchmark, which timed calculations with prepared inputs.
+
+The single-stock replay passed the causality and reproducibility checks in the cases tested. Realized-CAViaR missed both feed-fault tolerances. Under combined faults, about 23 out of every 100 comparable forecasts changed by more than 5\% relative to the reference replay. In the faulty synthetic-feed test, about half of the matched forecasts exceeding that 5\% threshold occurred on days when the fitted coefficients differed substantially. This association points to the role of calibration stability in the response to bad data.
+
+\section{Contributions}
+
+The team's software contribution is the matched replay and evaluation pipeline. It integrates four established forecasting approaches, manages their daily calibration and forecast records, and scores them against common observed returns. The team also implemented the Realized-CAViaR specification used in this study, with features computed from the preceding hour, and developed the scripts that reproduce the model comparison. The resulting forecasts, benchmark measurements, and feed-fault results document how the fitted models behaved on the two datasets.
+
+\section{Directions for further work}
+
+A matched run on suitable five-second market data would examine a five-minute forecast horizon and the value of measuring variation within a 15-minute bar. A calibration study could vary the length of the training window and test whether reducing the overlap between the aggregate-return and realized-variance features improves robustness while preserving forecast accuracy.
 
 % --------------------------------------------------------------------------
 % Post-textual elements
 % --------------------------------------------------------------------------
 \postextual
 
-\bibliography{abntex2-modelo-references}
+\begingroup
+  \renewcommand{\bibname}{REFERENCES}
+  \SingleSpacing*
+  \setlength{\parskip}{0pt}
+  \setlength{\bibitemsep}{\baselineskip}
+  \interlinepenalty=10000
+  \bibliography{abntex2-modelo-references}
+\endgroup
 
 % Consult the abnTeX2 manual if you want to include a glossary.
 %\glossary
@@ -635,11 +898,5 @@ Two follow-up experiments address the remaining uncertainty. A matched run on su
 % \lipsum[32]
 
 % \end{anexosenv}
-
-% --------------------------------------------------------------------------
-% Index
-% --------------------------------------------------------------------------
-\phantompart
-\printindex
 
 \end{document}
