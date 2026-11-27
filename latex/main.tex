@@ -41,6 +41,11 @@
 \usepackage[english,hyperpageref]{backref}	% citation back-references
 \usepackage[alf]{abntex2cite}	% ABNT-style citations
 \usepackage[final]{pdfpages}	% PDF inclusion
+\ifcsname l@portuguese\endcsname
+  \babelprovide[import,hyphenrules=portuguese]{brazilian}
+\else
+  \babelprovide[import,hyphenrules=unhyphenated]{brazilian}
+\fi
 
 % --------------------------------------------------------------------------
 % Settings
@@ -70,7 +75,7 @@
   Department of Computer Engineering and Digital Systems (PCS)}
 \tipotrabalho{Final Year Project report}
 % The preamble should state the type of work, purpose, institution, and area.
-\preambulo{Final Year Project report prepared in the Department of Computer Engineering and Digital Systems of the Polytechnic School at the University of São Paulo.}
+\preambulo{Report submitted in fulfillment of the Final Year Project requirements in the Department of Computer Engineering and Digital Systems of the Polytechnic School at the University of São Paulo.}
 
 % Poli formatting for the cover and title page.
 \newcommand{\PCScovertext}{\sffamily\fontsize{12pt}{14.4pt}\selectfont}
@@ -199,7 +204,7 @@
 % The * indicates that a catalog sheet will be included.
 \imprimirfolhaderosto*
 
-% Catalog sheet.
+% Draft catalog sheet. Replace with the official library record for submission if required.
 \begin{fichacatalografica}
 \sffamily
 \vspace*{\fill}
@@ -209,6 +214,8 @@
 \setlength{\parskip}{0.5em}
 \raggedright
 \vspace{0.4em}
+\textbf{Draft catalog record}
+
 \imprimirautor
 
 \imprimirtitulo. \imprimirlocal, \imprimirdata.
@@ -266,8 +273,19 @@ its development.
 % \end{epigrafe}
 
 \setlength{\absparsep}{18pt} % paragraph spacing inside the abstract
+\begin{otherlanguage*}{brazilian}
+\begin{resumo}[RESUMO]
+O Value at Risk (VaR) é um limiar de perda para um horizonte de previsão e um nível de confiança especificados. Este trabalho compara quatro modelos para estimar o VaR intradiário a 99\%. Os modelos EWMA-Normal, EWMA com cauda da distribuição $t$ de Student e GARCH-$t$ usam previsões de volatilidade para estimar o limiar de retorno. O Realized-CAViaR atualiza esse limiar diretamente a partir da estimativa anterior e das variações recentes de preço. O sistema reproduz os preços em ordem cronológica e avalia os quatro modelos sobre os mesmos retornos de 15 minutos para 15 ações simuladas e 15 ações negociadas na B3. O ajuste diário de cada modelo usa os 40 pregões anteriores. O GARCH-$t$ apresentou a menor perda quantílica média nos dois conjuntos de dados e a proporção de intervalos com perdas superiores ao VaR mais próxima da meta de 1\%. Em um teste com uma ação simulada e entradas já preparadas, o Realized-CAViaR teve o menor tempo médio de atualização do modelo e cálculo do VaR (10,5 ns) e a maior mediana do tempo de ajuste diário (21,74 ms). O EWMA-Normal teve a menor mediana de tempo de ajuste diário (0,079 ms). Sob falhas combinadas nos dados, mais de 10\% das previsões pareadas de cada modelo diferiram em mais de 5\% do VaR de referência nos dois conjuntos. As reproduções com falhas emitiram 2,42\% menos previsões para as ações simuladas e 3,56\% menos para as ações da B3.
+
+\vspace{\onelineskip}
+
+\noindent
+\textbf{Palavras-chave}: Value at Risk intradiário. avaliação de previsões. custo computacional. resiliência a falhas nos dados. mercado acionário.
+\end{resumo}
+\end{otherlanguage*}
+
 \begin{resumo}
-Value at Risk (VaR) is a loss threshold for a specified time horizon and confidence level. This work evaluates four models for 99\% intraday VaR on individual stocks: EWMA-Normal, EWMA with a Student-$t$ tail, GARCH-$t$, and Realized-CAViaR. A replay engine forecasts a 15-minute return threshold on common targets for 15 simulated stocks and 15 B3 equities, with daily calibration on the preceding 40 sessions. The evaluation compares forecast quality, computational cost, and resilience to feed faults. GARCH-$t$ had the lowest mean quantile loss and the exception rate closest to 1\% on both datasets. With prepared inputs, mean model-update and VaR calculation times ranged from 10.5 to 19.7 nanoseconds in the benchmark. The fastest update belonged to the most costly model to recalibrate. Under combined feed faults, more than 10\% of paired forecasts changed by more than 5\% for every model on both datasets. The degraded feed also caused the replay to withhold 2.42\% of forecasts on simulated stocks and 3.56\% on B3 equities.
+Value at Risk (VaR) is a loss threshold for a specified time horizon and confidence level. This study compares four models for 99\% intraday VaR. EWMA-Normal, EWMA with a Student-$t$ tail, and GARCH-$t$ use volatility forecasts to estimate the return threshold. Realized-CAViaR estimates the threshold directly from its previous estimate and recent price movements. The replay feeds prices to all four models in time order and scores them on the same 15-minute return targets for 15 simulated stocks and 15 B3 equities. Each model is fitted daily on the preceding 40 trading sessions. GARCH-$t$ had the lowest mean quantile loss on both datasets, and its share of intervals in which losses exceeded VaR was closest to the 1\% target. In a benchmark on one simulated stock, Realized-CAViaR had the shortest mean time to update the model and calculate VaR with prepared inputs (10.5 ns) and the longest median daily fit (21.74 ms). EWMA-Normal had the shortest median daily fit (0.079 ms). Under combined feed faults, more than 10\% of paired forecasts for every model differed from the corresponding clean-feed VaR by more than 5\% on both datasets. The degraded replays issued 2.42\% fewer forecasts for simulated stocks and 3.56\% fewer for B3 equities.
 
 \vspace{\onelineskip}
 
@@ -339,7 +357,9 @@ Value at Risk (VaR) is a loss threshold for a specified time horizon and confide
 
 Consider a stock position at 11:00. Its value at 11:15 is unknown, but recent prices provide information about how far it might fall. A 15-minute Value at Risk (VaR) forecast at 99\% confidence is a loss threshold. According to the model, the probability that the loss exceeds that threshold over the next 15 minutes is 1\%. When a new price arrives, the engine can revise that threshold for the next interval \cite{engle-manganelli-2004}.
 
-The engine has three tasks. It must estimate a threshold that reflects the observed losses, calculate each update with a known computational cost, and respond to incomplete or suspect prices. For example, a sharp price move can reflect a genuine change in the stock or an erroneous quote. The engine's treatment of that observation affects what it forecasts and whether it can issue a forecast at all. Comparing models on a shared replay makes it possible to examine those properties under the same conditions.
+Two approaches in the literature inform the comparison. RiskMetrics, a market-risk methodology documented by J.\ P.\ Morgan and Reuters, uses an exponentially weighted moving average to estimate volatility. GARCH also forecasts volatility and separates its response to recent price changes from its reliance on earlier estimates \cite{riskmetrics-1996,bollerslev-1986}. CAViaR forecasts a lower return threshold directly. Research on realized variance shows how to summarize the variation in observed prices for use in such forecasts \cite{engle-manganelli-2004,barndorff-nielsen-shephard-2002,wang-gerlach-chen-2018}.
+
+Putting these methods into one engine raises questions about how well they forecast, what each update costs, and how the system responds to incomplete or suspect prices. For example, a sharp price move can reflect a genuine change in the stock or an erroneous quote. The engine's treatment of the observation affects both what it forecasts and whether it can issue a forecast. A \emph{replay} feeds recorded prices to the engine in timestamp order and scores each forecast only once its target interval has ended. A shared replay makes it possible to compare the methods under the same conditions.
 
 \section{Objective}
 
@@ -348,19 +368,19 @@ The objective is to implement and evaluate a replay engine for 99\% intraday VaR
 \needspace{12\baselineskip}
 \section{Justification}
 
-A model can reach an average exception rate near 1\% while missing losses in clusters. It can also produce similar statistical results to another model while requiring a different amount of computation. Feed faults introduce another question: if an input price is missing or wrong, the engine may issue a materially different threshold or no threshold at that time. Coverage tests, quantile loss, update timings, and clean-versus-degraded replays answer these questions at different points in the system \cite{kupiec-1995,christoffersen-1998,diebold-mariano-1995,project-atam}.
+A loss that exceeds its forecast threshold is a VaR \emph{exception}. A model can have an average exception rate near 1\% and still see several exceptions in succession. Quantile loss measures forecast error and gives more weight to a loss beyond the threshold than to an equally large error on the other side. Models with similar statistical performance can require different amounts of computation. A missing or erroneous price can also change the loss threshold or prevent the engine from issuing one. Coverage tests, quantile loss, timing measurements, and clean-versus-degraded replays address these issues \cite{kupiec-1995,christoffersen-1998,diebold-mariano-1995,project-atam}.
 
-The replay pairs forecasts for the same stock, issue time, and future return. This makes an accuracy difference interpretable because the models face the same market outcomes. Timings use a common measurement boundary, and the degraded replays apply the same price faults to all four models. Simulated prices make it possible to control the faults introduced. Historical B3 prices show how the comparison behaves on observed equity data with the gaps already present in the sample \cite{project-data,project-comparison}.
+The replay pairs forecasts for the same stock, issue time, and future return. The models face the same outcomes, the timings cover the same stages of computation, and the fault tests use the same degraded prices for each model. Simulated prices make it possible to control the faults introduced. Historical prices from B3, the Brazilian stock exchange, show how the comparison behaves on observed equity data with gaps already present in the sample \cite{project-data,project-comparison}.
 
 \section{Organization of the report}
 
-Chapter~\ref{cap:conceitos} develops the concepts of prices, returns, and loss thresholds and explains the four forecasting models in Section~\ref{sec:modelos}. Chapter~\ref{cap:metodo} describes the development phases. Chapter~\ref{cap:requisitos} specifies the replay's functional and quality requirements. Chapter~\ref{cap:desenvolvimento} presents the implementation, experimental protocol, validation, and results. Chapter~\ref{cap:consideracoes} summarizes the findings, the team's contributions, and directions for further work.
+Chapter~\ref{cap:conceitos} develops the concepts of prices, returns, and loss thresholds and explains the four forecasting models. Chapter~\ref{cap:metodo} describes the development phases and evaluation criteria. Chapter~\ref{cap:requisitos} specifies the replay's functional and quality requirements. Chapter~\ref{cap:desenvolvimento} presents the implementation, experimental protocol, validation, and results. Chapter~\ref{cap:consideracoes} summarizes the findings, the team's contributions, and directions for further work.
 
 \chapter{Conceptual Aspects} \label{cap:conceitos}
 
 \section{Prices, positions, and returns}
 
-A long position gains value when its price rises and loses value when it falls. For example, 100 shares priced at BRL~50 have a market value of BRL~5,000. If the price falls to BRL~49.50, the position loses BRL~50. Its simple return, the price change divided by the starting price, is $-1\%$. A short position reverses the direction of the gain or loss.
+A long position gains value when its price rises and loses value when it falls. For example, 100 shares priced at BRL~50 have a market value of BRL~5,000, where BRL denotes Brazilian reais. If the price falls to BRL~49.50, the position loses BRL~50. Its simple return, the price change divided by the starting price, is $-1\%$. A short position reverses the direction of the gain or loss.
 
 The data group observations into consecutive intervals called \emph{bars}. A 15-minute bar records the opening price, highest price, lowest price, closing price, and volume traded during that interval. Its timestamp is the close of the interval. For example, the bar stamped 11:00 covers trading from 10:45 to 11:00. A \emph{session} is a trading day in the dataset.
 
@@ -379,12 +399,12 @@ A probability distribution describes which returns may occur and how likely they
 
 \section{From a return threshold to a monetary loss}
 
-Let $E$ denote the monetary exposure, the BRL value of the long position at the time of the forecast. The quantity $\operatorname{VaR}_{t}^{(0.99)}$ is the loss threshold in BRL, issued at the close of bar $t$ at 99\% confidence. To calculate it, convert the forecast log return $q_{t+1}$ to a simple return with $\exp(q_{t+1})-1$ and express the corresponding change in value as a loss:
+Let $E$ denote the monetary exposure, the BRL value of the long position at the time of the forecast. The quantity $\operatorname{VaR}_{t}^{(0.99)}$ is the loss threshold in BRL, issued at the close of bar $t$ at 99\% confidence. The exponential $\exp$ reverses the logarithm in Equation~\ref{eq:return}, so $\exp(q_{t+1})$ gives the price ratio at the threshold. Subtracting one gives the simple return. Multiplying by $E$ gives the change in value, and the minus sign expresses a negative change as a positive loss:
 \begin{equation}
   \operatorname{VaR}_{t}^{(0.99)} = -E\bigl(\exp(q_{t+1})-1\bigr).
   \label{eq:var}
 \end{equation}
-At 11:00, the 100 shares are worth BRL~4,950. Suppose the forecast for 11:00--11:15 sets the 1\% return threshold at another drop of the same size, $q_{t+1}\approx-0.01005$. The 99\% VaR is about BRL~49.50. The model assigns a 99\% probability to the loss staying at or below that threshold over the next bar. If the position actually loses BRL~60, the observed loss crosses the threshold and counts as a VaR \emph{exception}.
+At 11:00, the 100 shares are worth BRL~4,950. Suppose the forecast for 11:00--11:15 gives $q_{t+1}\approx-0.01005$, corresponding to another simple return of $-1\%$. The forecast loss threshold is $-4{,}950(-0.01)$, or BRL~49.50. The model assigns a 99\% probability to the loss staying at or below that threshold over the next bar. If the position actually loses BRL~60, the observed loss crosses the threshold and counts as a VaR exception.
 
 The \emph{forecast horizon} is how far forward the forecast looks. The \emph{update interval} is how often the engine issues forecasts. Here both are 15 minutes. The forecast issued at 11:00 is scored using the observed return from 11:00 to 11:15. The forecast at 11:15 covers the next interval. These intervals meet at 11:15 and share no period of price change.
 
@@ -448,7 +468,7 @@ Generalized Autoregressive Conditional Heteroskedasticity (GARCH) is another way
   \label{eq:garch}
 \end{equation}
 
-The term $a x_t^2$ controls the immediate response to the observed move. The term $b h_t$ carries information about earlier volatility. The constant $\omega$ adds variance even in a bar with zero return. Under the model, the expected squared shock at each step equals the predicted variance for that step. Write $\bar h$ for the long-run average variance. Both $x_t^2$ and $h_t$ have that same average, so in the long run the update balances as $\bar h=\omega+(a+b)\bar h$. Solving for $\bar h$ gives $\omega/(1-a-b)$. The restriction $a+b<1$ makes that level finite and causes the expected effect of a shock to fade.
+The term $a x_t^2$ controls the immediate response to the observed move. The term $b h_t$ carries information about earlier volatility. The constant $\omega$ adds variance even in a bar with zero return.
 
 EWMA ties the weight of the latest move to the weight on the previous variance through $\lambda$. GARCH fits the two weights separately and adds a constant. Use the same inputs as before, with illustrative coefficients $\omega=0.0000008$, $a=0.10$, and $b=0.85$. The update is
 \begin{equation*}
@@ -456,6 +476,8 @@ EWMA ties the weight of the latest move to the weight on the previous variance t
          =0.0000244.
 \end{equation*}
 This gives a standard deviation of about 0.494\%. Using the same illustrative $\nu=5$ as in the EWMA-$t$ example gives a threshold of about $-1.287\%$. Holding the tail fixed here lets us see the effect of the variance update alone. In the experiment, GARCH-$t$ estimates its own $\nu$ jointly with its variance coefficients. Its forecasts can therefore differ from EWMA-$t$ through both the variance and the tail.
+
+The coefficients also determine how a shock affects later forecasts. Under the model, the expected squared shock for a bar equals the variance predicted for that bar. Write $\bar h$ for the long-run average variance. The squared shock and the forecast variance have the same long-run average, so the recurrence gives $\bar h=\omega+(a+b)\bar h$. Solving gives $\bar h=\omega/(1-a-b)$. The restriction $a+b<1$ makes that level finite and causes the expected effect of a shock to fade.
 
 \subsection{Realized-CAViaR}
 
@@ -529,20 +551,20 @@ Realized-CAViaR & Return quantile using the previous quantile, net return magnit
 The project proceeded through specification, design, implementation, and evaluation. Each phase produced an input to the next:
 
 \begin{enumerate}
-  \item \textbf{Specification.} Define the loss threshold to forecast, the data available at the forecast time, and the conditions for a fair comparison. The requirements for the single-stock replay and its evaluation are set out in Chapter~\ref{cap:requisitos}.
-  \item \textbf{Design.} Define a common replay schedule and separate the price inputs used for forecasting from the recorded outcomes used for scoring. Use one calibration schedule across models and keep parameter fitting separate from updates within a session.
-  \item \textbf{Implementation.} Integrate the four forecasting models into the replay, record forecasts and fitted parameters, and build the scripts that generate the comparison from the individual stock runs. Chapter~\ref{cap:desenvolvimento} describes the system and its validation procedures.
-  \item \textbf{Evaluation.} Check forecast alignment and reproducibility. Evaluate each model on forecast quality, computational cost, and behavior under feed faults. Sections~\ref{sec:testing-evaluation} and~\ref{sec:resultados} give the protocol and results \cite{project-comparison,project-atam}.
+  \item \textbf{Specification.} The team defined the loss threshold to forecast, the data available at the forecast time, and the conditions for a fair comparison. Chapter~\ref{cap:requisitos} sets out the requirements.
+  \item \textbf{Design.} The team defined a common replay and calibration schedule, separated forecasting inputs from recorded outcomes, and separated parameter fitting from updates within a session.
+  \item \textbf{Implementation.} The team integrated the four models, recorded forecasts and fitted parameters, and built scripts to compare the individual stock runs. Chapter~\ref{cap:desenvolvimento} describes the system.
+  \item \textbf{Evaluation.} The team checked forecast alignment and reproducibility and evaluated forecast quality, computational cost, and behavior under feed faults. Sections~\ref{sec:testing-evaluation} and~\ref{sec:resultados} give the protocol and results \cite{project-comparison,project-atam}.
 \end{enumerate}
 
 \needspace{21\baselineskip}
 \section{Evaluation criteria}
 
-\textbf{Forecast quality.} Backtest the four models against the same realized returns. Coverage measures how often observed losses cross the forecast threshold and whether exceptions cluster. Quantile loss also accounts for the distance between the forecast threshold and the observed return. Use paired tests to assess differences in loss.
+\textbf{Forecast quality.} The team compared forecasts with the observed returns that followed them, a procedure called \emph{backtesting}. Coverage tests checked how often losses crossed the forecast threshold and whether exceptions clustered. Quantile loss accounted for the distance between the threshold and the observed return. Paired tests assessed differences in loss on common outcomes.
 
-\textbf{Computational cost.} Measure the work done for each forecast separately from the work done once per session during calibration. Use the same forecast schedule and measurement boundary for all four models. The model-stage benchmark times the update, quantile calculation, and conversion to monetary VaR, and records the bytes occupied by persistent model state. The daily benchmark measures how much time is needed to fit each model before it can be used in a new session. Separating the two costs shows whether a model that is quick to update also fits quickly. The number of forecasts issued between fits determines how often each cost is incurred.
+\textbf{Computational cost.} The team measured the work done for each forecast separately from the work done once per session during calibration. The timed model-stage test used the same schedule and measurement boundary for all four models. It covered the update, quantile calculation, and conversion to monetary VaR. The team also recorded the bytes occupied by the model coefficients and numerical quantities retained between updates. The separate calibration measurement showed whether a model that updated quickly also fitted quickly.
 
-\textbf{Resilience to feed faults.} Replay each stock with reference prices and with the same degraded prices for all four models. Measure whether the system still issues forecasts and how much a fault changes the forecasts issued by both runs. Score those pairs against the reference outcomes to see whether similar aggregate exception rates can coexist with large changes to individual forecasts. Assess the fault scenarios against their specified tolerances.
+\textbf{Resilience to feed faults.} The team replayed reference prices and degraded copies, with the same inputs for all four models. The tests measured whether the system still issued forecasts and how much faults changed the forecasts issued by both runs. The team scored those pairs against the reference outcomes and assessed the affected share against each scenario's tolerance.
 
 \chapter{Requirements Specification} \label{cap:requisitos}
 
@@ -552,7 +574,7 @@ The system supports a repeatable comparison of 99\% intraday VaR models for one 
 
 \begin{description}
   \item[F1. Replay market observations.] Read the timestamped price records for the selected stock and process the 15-minute observations in time order. Align the observations with the session grid, check model inputs for feed faults, and preserve the recorded prices used to calculate the evaluation targets.
-  \item[F2. Forecast a common event.] For each eligible time, produce a 1\% return quantile for the same stock and next 15-minute interval with all four models. Apply the same exposure to convert their quantiles to monetary VaR. The matched comparison begins after the same-session feature window is available.
+  \item[F2. Forecast a common event.] For each eligible time, produce a 1\% return quantile for the same stock and next 15-minute interval with all four models. Use the same rule for eligibility: Realized-CAViaR's preceding-hour price features must be available. Apply the same exposure to convert all four quantiles to monetary VaR.
   \item[F3. Refit on a common schedule.] Base the daily calibration on the preceding 40 completed trading sessions. Keep the fitted coefficients fixed during the session while the model states update with new bars. Record the training bounds, fitted parameters, and calibration status.
   \item[F4. Record forecasts and outcomes.] Store the model, issue time, target time, return quantile, and monetary VaR for each forecast. Associate observed target returns with forecasts by target time and mark forecasts with missing outcomes as unscored.
   \item[F5. Compare the forecasts.] Use the same eligible observed targets for all four models. Report exception rates, coverage tests, quantile loss, and paired comparisons of loss for each dataset \cite{project-comparison}.
@@ -564,7 +586,7 @@ The system supports a repeatable comparison of 99\% intraday VaR models for one 
 \begin{description}
   \item[Q1. Causality.] Each forecast must depend only on information available at issuance. Verify this by replacing and truncating prices after selected cutoffs and comparing the earlier forecasts and calibrations.
   \item[Q2. Reproducibility.] With the same executable, inputs, and settings, repeat runs must agree on forecasts, calibration, and scoring outputs. Compare those outputs across runs, with timing fields excluded from the comparison.
-  \item[Q3. Comparable timing.] Measure the model update, quantile calculation, and monetary VaR conversion for all four models under the same benchmark conditions. Report batch timing statistics and the size of each model's persistent numeric state.
+  \item[Q3. Comparable timing.] Time the model update, quantile calculation, and monetary VaR conversion for all four models under the same benchmark conditions. Report batch timing statistics and the size of each model's persistent numeric state. Record daily fitting time separately.
   \item[Q4. Stability under feed faults.] For each model, compare forecasts from degraded data with its reference replay. Flag changes in VaR greater than 5\% and record forecasts missing from either run. Apply the project tolerances of 1\% for the faulty synthetic feed and 10\% for combined faults, using each scenario's definition of an affected forecast \cite{project-atam}.
 \end{description}
 
@@ -622,7 +644,7 @@ Daily fitting has its own costs. The variance models share a time-of-day profile
 
 The loader aligns observations by timestamp and stock, handles duplicates, and checks for invalid prices. Missing prices leave gaps in the forecast inputs. A large return can also be a genuine market event. The jump filter compares new changes with a scale estimated from completed sessions and can use observations across stocks to recognize a market-wide move. Every model in a given run receives inputs from the same screened price series for its selected stock.
 
-The filter may hold an isolated jump until the next observation. If the next price reverses the jump, the held observation is treated as a bad tick. If the move persists, the filter can accept it at its observed size on confirmation. Confirmation keeps the suspect price out of an immediate forecast and can delay the response to a genuine stock-specific move by one bar.
+The filter may hold an isolated jump until the next valid observation in the same session. If that price reverses more than half the held log-return move, the filter treats the held price as a bad tick. Otherwise it accepts the price at its observed level. Acceptance normally takes one bar, and gaps in observations can extend the wait. A jump still pending at the end of the session is discarded.
 
 When a one-bar return is missing, EWMA keeps its stored variance and GARCH advances its variance using the model's expected squared shock. In the GARCH update, the expected squared shock is the variance already forecast for that bar. For the trailing-hour features, a missing interior price combines the returns on either side into one return between the remaining observations. With both endpoints available, the net log return is preserved, but the sum of squared returns can change. The matched replay permits up to two missing interior prices and withholds the forecasts for all four models if the feature window lacks an endpoint or has a larger gap. When the system confirms a held price, it can incorporate that price in the model states at confirmation time. It leaves the earlier forecast slot empty.
 
@@ -656,7 +678,7 @@ Historical B3 & 15 & 87 & 16,776 \\
 
 Both datasets supply 15-minute bars. Setting the forecast horizon and update interval to one bar gives the models the same observed next-bar target, with consecutive target intervals covering disjoint periods. At 11:00, for example, the engine can issue a forecast for 11:00--11:15. The return used to score it becomes available at 11:15, which is also when the next forecast can be issued.
 
-Realized-CAViaR first needs an observed hour from the same session for the features in Equation~\ref{eq:rv}. On a complete 10:00--17:00 session, the eligible target intervals therefore start at 11:00 through 16:45. The other models can update earlier in the session. Their scores are computed only for the targets shared with Realized-CAViaR so that every accuracy comparison uses the same observations. The reported accuracy therefore applies to the hours after the opening warm-up. Figure~\ref{fig:timeline} shows the first eligible forecast.
+Realized-CAViaR first needs an hour of prices from the same session to construct the features in Equation~\ref{eq:rv}. On a complete 10:00--17:00 session, the eligible target intervals therefore start at 11:00 through 16:45. The variance models can update earlier, but all four models issue forecasts on the schedule defined by the availability of that feature window. Accuracy is measured on the resulting common targets with observed returns. Figure~\ref{fig:timeline} shows the first eligible forecast.
 
 \begin{figure}[htbp]
 \centering
@@ -671,7 +693,7 @@ Issue $q_{t+1}$ at 11:00 & Score $q_{t+1}$ at 11:15
 \legend{Source: prepared by the project team. Times are exchange-local.}
 \end{figure}
 
-A forecast and its observed target are stored separately. A missing next-bar return leaves a forecast unscored. The engine can still issue the forecast if it has the inputs needed at the time of issuance. The scored target comes from the recorded prices, and the models receive inputs that have gone through the checks described in Section~\ref{sec:design-implementation}. This preserves the outcome against which the forecast is judged when those checks alter a model input.
+A forecast and its observed target are stored separately. A missing next-bar return leaves a forecast unscored. The engine can still issue the forecast if it has the inputs needed at the time of issuance. The scored target comes from the recorded prices, and the models receive inputs that have gone through the checks described in Section~\ref{sec:feed-controls}. This preserves the outcome against which the forecast is judged when those checks alter a model input.
 
 \subsection{Rolling calibration}
 
@@ -702,10 +724,10 @@ For example, an adjusted forecast of $-1.0\%$ for a target slot with factor 0.8 
 Each model fits the quantities it uses to forecast. The volatility models learn from past adjusted returns. Their fitting criteria use \emph{likelihood}, which measures how well a candidate model accounts for the observed data. For each bar, the model's probability density is the height of the forecast distribution's curve at the observed return. The fitting procedure adds the logarithms of these densities over the training observations used to score the candidate. A higher total indicates a better fit on those observations.
 
 \begin{itemize}
-  \item \textbf{EWMA-Normal.} Roughly the first quarter of the window initializes the variance. On the rest, the engine compares candidate values of $\lambda$ using Normal likelihood from one-step-ahead forecasts. The outcome is one decay coefficient for the next session.
+  \item \textbf{EWMA-Normal.} Roughly the first quarter of the window initializes the variance. On the rest, the engine compares candidate values of $\lambda$ using Normal likelihood. Each forecast in this calculation predicts one bar using earlier observations. The outcome is one decay coefficient for the next session.
   \item \textbf{EWMA-$t$.} Calibration uses the same EWMA variance forecasts. It divides each adjusted return after initialization by its forecast standard deviation, then fits $\nu$ to those standardized returns using a unit-variance Student-$t$ distribution. This keeps the variance forecast fixed while estimating tail thickness.
   \item \textbf{GARCH-$t$.} Calibration fits $\omega$, $a$, $b$, and $\nu$ jointly by likelihood. The variance recurrence determines the scale at each step. The zero-mean Student-$t$ distribution supplies the density of the observed return at that scale.
-  \item \textbf{Realized-CAViaR.} Calibration minimizes average quantile loss at the 1\% threshold using the checked prices for training. The search tries several starting points and considers the previous fit on subsequent sessions. It also considers a constant threshold given by the empirical 1\% quantile of the observed training returns. When a feature window is available but its target is missing, the quantile state can advance and that target contributes no term to the loss.
+  \item \textbf{Realized-CAViaR.} Calibration minimizes the average quantile loss defined in Equation~\ref{eq:pinball} using checked prices for training. The search tries several starting points and considers the previous fit on subsequent sessions. It also considers a constant threshold given by the empirical 1\% quantile of the observed training returns. When a feature window is available but its target is missing, the quantile state can advance and that target contributes no term to the loss.
 \end{itemize}
 
 \subsection{Forecast scoring} \label{sec:scoring}
@@ -744,9 +766,9 @@ This asymmetry matters in two ways. A forecast that repeatedly puts its threshol
 
 A difference in average loss describes the sample. The Diebold--Mariano test asks whether the observed difference is large relative to its uncertainty under the hypothesis that the models have equal expected forecast loss \cite{diebold-mariano-1995}. For each target, subtract the second model's quantile loss from the first model's loss on that same outcome. A positive difference favors the second model on that target. Pairing makes the comparison use the same market event on both sides.
 
-The test is run for each stock and again on differences pooled by timestamp. For the pooled test, first average the paired differences across the stocks available at a timestamp. For example, if the first model loses 0.0002 more on one stock and 0.0001 less on another at 11:15, the two differences give a single average of 0.00005 for 11:15. Each timestamp contributes one observation to the pooled test, even when several stocks respond to the same market event.
+The test is run for each stock and again on differences pooled by timestamp. For the pooled test, first average the paired differences across the stocks available at a timestamp. For example, if the first model's quantile loss is 0.0002 higher on one stock and 0.0001 lower on another at 11:15, the two differences give a single average of 0.00005 for 11:15. Each timestamp contributes one observation to the pooled test, even when several stocks respond to the same market event.
 
-Loss differences can still be related across successive entries in the time-ordered series, even though the forecast intervals do not overlap. The Newey--West calculation adjusts the estimated uncertainty for this dependence and gives less weight to pairs farther apart in that sequence \cite{newey-west-1987}. The result is a two-sided test using a Normal approximation. It can detect evidence of lower expected loss for either model.
+Loss differences can still be related across successive entries in the time-ordered series, even though the forecast intervals do not overlap. The Newey--West calculation adjusts the estimated uncertainty for this dependence. For a series of $n$ scored entries, the script includes up to $L=\lfloor 4(n/100)^{2/9}\rfloor$ lags. A lag counts entries in the scored sequence, so two adjacent entries may be separated by more than one bar. The Bartlett weights decrease linearly with lag, giving less weight to pairs farther apart \cite{newey-west-1987,project-comparison}. The test divides the mean difference by its estimated standard error and uses a two-sided Normal approximation.
 
 \subsubsection{Interpreting statistical evidence}
 
@@ -760,13 +782,13 @@ Numerical and integration tests cover return calculations, feature windows, loss
 
 \subsubsection{Measuring computational cost}
 
-The model-stage benchmark uses the same forecast schedule for all four models. It times the update from prepared inputs, the quantile calculation, and the conversion to monetary VaR. After a warm-up pass, it measures batches of 1,000 forecast steps to reduce the effect of reading the clock. A step may consume multiple variance updates if several returns have accumulated since the previous eligible forecast. The direct quantile model receives prepared features. Data validation, feature construction, output writing, and daily fitting lie outside this timing boundary \cite{project-atam}.
+The model-stage benchmark uses the same forecast schedule for all four models. It times the update from prepared inputs, the quantile calculation, and the conversion to monetary VaR. It starts from copies of the final fitted states and uses the final time-of-day profile. After an untimed warm-up pass, it cycles through the recorded forecast sequence in batches of 1,000 steps. Dividing each batch time by its size gives a time per step and reduces the effect of reading the clock. A step can consume several variance updates if returns have accumulated since the previous eligible forecast. The two EWMA variants are timed separately, although the four-model replay shares their variance update. The benchmark therefore measures isolated model-stage costs. Data validation, feature construction, output writing, and daily fitting lie outside this timing boundary \cite{project-atam}.
 
 The benchmark also reports the size of the persistent numeric model state. Daily calibration time is measured separately using the per-model fit timers in the replay's calibration records. The EWMA-$t$ fit includes the shared EWMA fit and the additional tail estimation. The recorded times cover model fitting and selected preparation within the fit timers. A full session's calibration also includes common work such as estimating the time-of-day profile.
 
 \subsubsection{Measuring the effect of feed faults}
 
-The experiment replays each stock on its reference prices and two types of degraded feed. The faulty synthetic feed contains corrupted, frozen, and missing prices. The combined-fault scenario applies several faults together, including missing and invalid observations, duplicates, delays, and truncation, to both datasets. The four models run with the same settings and the same feed controls. The daily fit is repeated on each feed, so the comparison includes how faults affect calibration as well as subsequent updates \cite{project-atam}.
+The experiment uses two degraded-feed scenarios. The faulty synthetic feed contains corrupted, frozen, and missing prices and is tested on simulated stocks. The combined-fault scenario is tested on both datasets and includes missing and invalid observations, duplicates, reordered rows, and truncation. The fault catalogue represents late delivery by moving a row later in the file while keeping its market timestamp. The loader sorts by market timestamp, so this tests disorder in an archived file. A live deadline would require evidence of when each row arrived. All four models use the same settings and feed controls. Repeating the daily fit on each feed captures how faults affect calibration as well as updates \cite{project-atam}.
 
 The comparison pairs forecasts by stock, issue time, and target time within each model. A pair with positive reference VaR is affected when the degraded-feed VaR differs from it by more than 5\%. For example, a change from BRL~100 to BRL~106 meets that criterion. The faulty synthetic-feed scenario also counts forecasts present on only one feed and compares the affected share with a tolerance of 1\%. The combined-fault scenario uses the paired share with a tolerance of 10\% and reports the share of reference forecasts missing from the degraded replay separately. For pairs with an observed reference outcome, the two forecast values are also scored against that same outcome. This checks whether material changes to individual forecasts also change the overall exception rate.
 
@@ -804,11 +826,11 @@ B3 & EWMA-Normal & 2.10\% & 1.2141 & 13 & 13 \\
 
 GARCH-$t$ had the exception rate closest to 1\% and the lowest mean loss on both datasets. It had the lowest loss on 8 of 15 simulated stocks and 10 of 15 B3 stocks. All four models exceeded the 1\% exception target on B3. EWMA-$t$ reduced exception rates and mean loss relative to EWMA-Normal on both datasets. The two variants share a variance forecast, so this comparison isolates the effect of the assumed return distribution \cite{project-comparison}.
 
-The pooled Diebold--Mariano tests found no significant pairwise loss difference on simulated stocks after adjusting for multiple comparisons. On B3, GARCH-$t$ had lower pooled loss than EWMA-Normal and EWMA-$t$, with adjusted $p$-values of 0.0009 and 0.0044. EWMA-$t$ also had lower pooled loss than EWMA-Normal, with an adjusted $p$-value of 0.0244. The remaining B3 pairs were inconclusive. The observed ordering in mean loss and the statistical evidence therefore answer different questions \cite{project-comparison}.
+The pooled Diebold--Mariano tests found no significant pairwise loss difference on simulated stocks after adjusting for multiple comparisons. On B3, GARCH-$t$ had lower pooled loss than EWMA-Normal by 0.0883~bp and EWMA-$t$ by 0.0520~bp, with adjusted $p$-values of 0.0009 and 0.0044. EWMA-$t$ had lower pooled loss than EWMA-Normal by 0.0362~bp, with an adjusted $p$-value of 0.0244. The tests left the remaining three B3 comparisons inconclusive \cite{project-comparison}.
 
 \subsection{Computational cost}
 
-Table~\ref{tab:cost} compares the four models on the same synthetic stock, XPET3. Each entry summarizes three sequential Linux replay runs of the Release build on an Intel Core i5-10500H. Within each run, p50 is the median batch mean. The p95 and p99 columns give the values at or below which 95\% and 99\% of the batch means fall. These percentiles describe batches, which can smooth out slow individual updates. The state figures count persistent numeric model state, including the applicable time-of-day profile and precomputed distribution quantiles. Input history, prepared features, and allocator overhead lie outside that count.
+Table~\ref{tab:cost} compares the four models on the same synthetic stock, XPET3. Each entry summarizes three sequential Linux replay runs of the Release build on an Intel Core i5-10500H. Within each run, p50 is the median batch mean. The p95 and p99 columns give the values at or below which 95\% and 99\% of the batch means fall. For example, EWMA-Normal averaged 19.7~ns per forecast step with prepared inputs, while its median daily fit took 0.079~ms. The maximum column reports the median of the three per-run maxima. State sizes include numerical values retained across forecasts, such as the applicable time-of-day profile and precomputed quantiles. Input history, prepared features, and allocator overhead lie outside that count.
 
 \begin{table}[htbp]
 \centering
@@ -827,14 +849,14 @@ GARCH-$t$       & 16.3 & 16.3 & 16.3 & 17.9 & 1.255 & 1.593 & 280 \\
 Realized-CAViaR & 10.5 & 10.4 & 10.5 & 12.3 & 21.740 & 31.012 & 40 \\
 \bottomrule
 \end{tabular}
-\legend{Source: matched XPET3 replay. Entries are medians of the three run summaries, with 110 daily fits per run.}
+\legend{Source: matched XPET3 replay \cite{project-xpet3-cost}. Entries are medians of three run summaries, with 110 daily fits per run.}
 \end{table}
 
 EWMA-Normal had the shortest daily fit. Adding the Student-$t$ tail increased fitting cost while both EWMA variants had the same rounded mean model-stage time. GARCH-$t$ was faster than either EWMA variant at the model stage and slower to fit. Realized-CAViaR had the lowest model-stage time and the smallest numeric state, but the longest daily fit. The cost ordering therefore depends on whether the system is issuing an update or fitting a model for the next session. These timings do not establish end-to-end latency, which also depends on the feed controls, feature generation, scoring, and output handling.
 
 \subsection{Correctness and reproducibility}
 
-In the XPET3 replay, the tests changed synthetic market prices after three cutoffs. The forecasts and calibrations at or before each cutoff were identical to the original run. Truncating the input at those cutoffs with a fixed training window also preserved the earlier results. Three runs of the same replay produced identical output values once timing fields were excluded \cite{project-atam}.
+In the XPET3 replay, changing prices after three cutoffs left the checked forecast values and calibration records unchanged at or before each cutoff. The truncation tests also preserved the checked values, allowing a row to be absent if its target lay after the cutoff. Three repeated runs produced identical checked output values once timing fields were excluded \cite{project-atam}.
 
 \subsection{Robustness to degraded inputs}
 
@@ -859,18 +881,21 @@ Realized-CAViaR & 11.92\% & 22.48\% & 22.55\% \\
 Project tolerance & 1\% & 10\% & 10\% \\
 \bottomrule
 \end{tabular}
-\legend{Source: matched single-stock replays of architecture evaluation scenarios R1 and R3.}
+\legend{Source: matched single-stock replays \cite{project-feed-faults}. A pair is affected when VaR changes by more than 5\%. The faulty synthetic column includes forecasts present on only one feed as affected. The combined columns show shares among paired forecasts only.}
 \end{table}
 
 Forecast availability is a shared property of the matched replay. The faulty synthetic feed removed 359 of 39,566 reference forecasts, or 0.91\%. Combined faults removed 957 of 39,566 on simulated stocks (2.42\%) and 597 of 16,777 on B3 (3.56\%). These are issuance counts. The reference B3 count includes one forecast with no observed outcome for scoring. All four models share the same eligibility rule, so these counts describe the system's forecast availability under that rule.
 
 On the common set of paired forecasts with observed reference outcomes, the largest absolute change in aggregate exception rate was about 0.07 percentage points across the fault comparisons. Substantial movements in individual thresholds can therefore coexist with similar overall exception rates. Forecast stability and availability reveal consequences of the faults that an aggregate coverage measure alone would miss.
 
+\needspace{10\baselineskip}
 \subsection{Scope and limitations}
 
-The comparison uses a fixed 40-session estimation window and a 15-minute forecast horizon. Its findings cover the period after the opening hour, when the feature window is ready. The B3 sample spans 87 sessions and contains relatively few extreme losses, limiting the strength of inference. The experiment measures realized variation from 15-minute bars. Finer samples could reveal price movements within each bar.
+The comparison applies to forecasts eligible under the shared preceding-hour rule, with a fixed 40-session estimation window and a 15-minute horizon. The B3 sample contains 15 selected stocks and 47 out-of-sample sessions after the initial fit. Relatively few extreme losses limit statistical precision. The results compare complete forecasting configurations, including the time-of-day adjustment used by the variance models. A comparison that varied this adjustment separately would help isolate its contribution. The 15-minute data also limit the measurement of price movements within each bar.
 
-The timing measurements describe one machine and stock. The fault results depend on the selected faults and the shared feed policy. Since both fitting and forecasting use the degraded feed, these replays measure their combined response. A test with fixed calibration would help determine how much of the difference comes from the model update alone.
+The timing measurements describe one machine and stock. The separately timed model stages include work shared in the actual replay, such as the EWMA variance update. Their sum therefore has no direct interpretation as elapsed replay time.
+
+The loader infers the session schedule from each complete input file. Later records can therefore affect the inferred schedule even though the checked forecasts were unchanged at the three tested cutoffs. A live evaluation would require a schedule specified in advance and records of when each price was received. The fault results describe the selected archived feeds and the shared feed policy. Since both fitting and forecasting use the degraded feed, these tests measure their combined response.
 
 The repository includes the input data, matched results, and test settings. The script \path{realized_caviar/run_comparison.sh} reproduces the accuracy comparison on Linux or macOS, and a Windows script is also provided \cite{project-comparison}. The script \path{realized_caviar/tools/compare_feed_faults.py} reproduces the matched fault counts using the Release replay binary. The comparison directory records the fault counts in \path{feed_faults.csv} and the three XPET3 timing summaries in \path{xpet3_cost.csv}.
 
@@ -878,11 +903,11 @@ The repository includes the input data, matched results, and test settings. The 
 
 \section{Project conclusions}
 
-The replay evaluated four models against the same observed 15-minute returns for each stock. The accuracy results apply after the opening hour, with calibration on a fixed 40-session window. GARCH-$t$ had the lowest average quantile loss and the exception rate closest to 1\% in both datasets. Adjusted pairwise tests found three differences on B3 and none on the simulated data. All four exception rates remained above 1\% on B3.
+The replay evaluated four models against the same observed 15-minute returns for each stock. The accuracy results apply after the opening hour, with calibration on a fixed 40-session window. GARCH-$t$ had the lowest average quantile loss and the exception rate closest to 1\% in both datasets. Three of the six pooled Holm-adjusted comparisons found a loss difference on B3. On simulated data, all six comparisons were inconclusive. All four observed exception rates exceeded 1\% on B3.
 
 The benchmark revealed a trade-off between within-session update cost and daily fitting cost. Realized-CAViaR had the lowest update cost with prepared inputs and the longest daily fit. EWMA-Normal had the shortest fit. GARCH-$t$ used more state than either EWMA variant and took less model-stage time.
 
-The replay passed the causality and reproducibility checks in the cases tested. All models exceeded the stability tolerance in both feed-fault scenarios. GARCH-$t$ showed the smallest affected share, while the shared forecast-eligibility rule withheld some forecasts for every model. The results show that forecast quality, computational cost, and continuity under degraded inputs each need their own acceptance measures.
+The replay passed the three cutoff checks and reproduced the checked results across repeated runs. All models exceeded the stability tolerances in the feed-fault tests. GARCH-$t$ showed the smallest affected share, while the shared forecast-eligibility rule withheld some forecasts for every model. GARCH-$t$ therefore led on observed loss and stability, while the timing measurements favored different models for frequent updates and daily fitting.
 
 \section{Contributions}
 

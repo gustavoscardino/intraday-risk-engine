@@ -36,8 +36,8 @@
 
 \bibitem[Engle e Manganelli 2004]{engle-manganelli-2004}
 \abntrefinfo{Engle e Manganelli}{ENGLE; MANGANELLI}{2004}
-{ENGLE, R.~F.; MANGANELLI, S. Caviar: Conditional autoregressive value at risk
-  by regression quantiles.
+{ENGLE, R.~F.; MANGANELLI, S. {CAViaR}: Conditional autoregressive value at
+  risk by regression quantiles.
 \emph{Journal of Business \& Economic Statistics}, v.~22, n.~4, p. 367--381,
   2004.}
 
@@ -82,13 +82,29 @@ Dispon{\'\i}vel em:
   \url{https://github.com/gustavoscardino/intraday-risk-engine/blob/63a7d00ffd9fa7339e39518fd0a028361d6c8d62/data/README.md}.
   Acesso em: 22 Nov. 2026.}
 
-\bibitem[Palassi, Lima e Scardino 2026]{project-comparison}
+\bibitem[Palassi, Lima e Scardino 2026]{project-feed-faults}
 \abntrefinfo{Palassi, Lima e Scardino}{PALASSI; LIMA; SCARDINO}{2026c}
+{PALASSI, G. C.~P.; LIMA, G. H. V.~d.; SCARDINO, G. \emph{Intraday Risk Engine:
+  Matched Feed-Fault Results}. 2026.
+Dispon{\'\i}vel em:
+  \url{https://github.com/gustavoscardino/intraday-risk-engine/blob/f05287d8914a72e58a7a0a9473881e37041c6e5a/realized\_caviar/comparison/feed\_faults.csv}.
+  Acesso em: 27 Nov. 2026.}
+
+\bibitem[Palassi, Lima e Scardino 2026]{project-comparison}
+\abntrefinfo{Palassi, Lima e Scardino}{PALASSI; LIMA; SCARDINO}{2026d}
 {PALASSI, G. C.~P.; LIMA, G. H. V.~d.; SCARDINO, G. \emph{Intraday Risk Engine:
   Matched Model Comparison Report}. 2026.
 Dispon{\'\i}vel em:
   \url{https://github.com/gustavoscardino/intraday-risk-engine/blob/27d1c3077f25da2c80db31f9780510c966e484dc/realized\_caviar/comparison/report.txt}.
   Acesso em: 22 Nov. 2026.}
+
+\bibitem[Palassi, Lima e Scardino 2026]{project-xpet3-cost}
+\abntrefinfo{Palassi, Lima e Scardino}{PALASSI; LIMA; SCARDINO}{2026e}
+{PALASSI, G. C.~P.; LIMA, G. H. V.~d.; SCARDINO, G. \emph{Intraday Risk Engine:
+  Matched {XPET3} Timing Results}. 2026.
+Dispon{\'\i}vel em:
+  \url{https://github.com/gustavoscardino/intraday-risk-engine/blob/f05287d8914a72e58a7a0a9473881e37041c6e5a/realized\_caviar/comparison/xpet3\_cost.csv}.
+  Acesso em: 27 Nov. 2026.}
 
 \bibitem[Wang, Gerlach e Chen 2018]{wang-gerlach-chen-2018}
 \abntrefinfo{Wang, Gerlach e Chen}{WANG; GERLACH; CHEN}{2018}
