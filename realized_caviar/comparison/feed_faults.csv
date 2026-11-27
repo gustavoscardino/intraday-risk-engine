@@ -1,0 +1,13 @@
+dataset,scenario,model,clean,faulty,paired,comparable,shifted,clean_only,faulty_only,scored,clean_exceptions,faulty_exceptions
+synthetic,combined,EWMA-N,39566,38609,38609,38609,4513,957,0,38609,645,647
+synthetic,combined,EWMA-t,39566,38609,38609,38609,4683,957,0,38609,479,464
+synthetic,combined,GARCH-t,39566,38609,38609,38609,4392,957,0,38609,395,385
+synthetic,combined,Realized-CAViaR,39566,38609,38609,38609,8679,957,0,38609,434,422
+synthetic,faulty_feed,EWMA-N,39566,39207,39207,39207,1025,359,0,39207,646,644
+synthetic,faulty_feed,EWMA-t,39566,39207,39207,39207,998,359,0,39207,477,480
+synthetic,faulty_feed,GARCH-t,39566,39207,39207,39207,898,359,0,39207,390,387
+synthetic,faulty_feed,Realized-CAViaR,39566,39207,39207,39207,4359,359,0,39207,443,439
+b3_real,combined,EWMA-N,16777,16180,16180,16180,2669,597,0,16179,344,342
+b3_real,combined,EWMA-t,16777,16180,16180,16180,2715,597,0,16179,258,256
+b3_real,combined,GARCH-t,16777,16180,16180,16180,2136,597,0,16179,235,235
+b3_real,combined,Realized-CAViaR,16777,16180,16180,16180,3648,597,0,16179,259,270

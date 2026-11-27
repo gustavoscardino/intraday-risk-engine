@@ -7,8 +7,10 @@
 
 \bibitem[Barndorff-Nielsen e Shephard 2002]{barndorff-nielsen-shephard-2002}
 \abntrefinfo{Barndorff-Nielsen e Shephard}{BARNDORFF-NIELSEN; SHEPHARD}{2002}
-{BARNDORFF-NIELSEN, O.~E.; SHEPHARD, N. Econometric analysis of realised volatility and its use in estimating stochastic volatility models.
-\emph{Journal of the Royal Statistical Society: Series B (Statistical Methodology)}, v.~64, n.~2, p. 253--280, 2002.}
+{BARNDORFF-NIELSEN, O.~E.; SHEPHARD, N. Econometric analysis of realised
+  volatility and its use in estimating stochastic volatility models.
+\emph{Journal of the Royal Statistical Society: Series B (Statistical
+  Methodology)}, v.~64, n.~2, p. 253--280, 2002.}
 
 \bibitem[Bollerslev 1986]{bollerslev-1986}
 \abntrefinfo{Bollerslev}{BOLLERSLEV}{1986}
@@ -17,7 +19,8 @@
 
 \bibitem[Bollerslev 1987]{bollerslev-1987}
 \abntrefinfo{Bollerslev}{BOLLERSLEV}{1987}
-{BOLLERSLEV, T. A conditionally heteroskedastic time series model for speculative prices and rates of return.
+{BOLLERSLEV, T. A conditionally heteroskedastic time series model for
+  speculative prices and rates of return.
 \emph{The Review of Economics and Statistics}, v.~69, n.~3, p. 542--547, 1987.}
 
 \bibitem[Christoffersen 1998]{christoffersen-1998}
@@ -28,12 +31,15 @@
 \bibitem[Diebold e Mariano 1995]{diebold-mariano-1995}
 \abntrefinfo{Diebold e Mariano}{DIEBOLD; MARIANO}{1995}
 {DIEBOLD, F.~X.; MARIANO, R.~S. Comparing predictive accuracy.
-\emph{Journal of Business \& Economic Statistics}, v.~13, n.~3, p. 253--263, 1995.}
+\emph{Journal of Business \& Economic Statistics}, v.~13, n.~3, p. 253--263,
+  1995.}
 
 \bibitem[Engle e Manganelli 2004]{engle-manganelli-2004}
 \abntrefinfo{Engle e Manganelli}{ENGLE; MANGANELLI}{2004}
-{ENGLE, R.~F.; MANGANELLI, S. Caviar: Conditional autoregressive value at risk by regression quantiles.
-\emph{Journal of Business \& Economic Statistics}, v.~22, n.~4, p. 367--381, 2004.}
+{ENGLE, R.~F.; MANGANELLI, S. Caviar: Conditional autoregressive value at risk
+  by regression quantiles.
+\emph{Journal of Business \& Economic Statistics}, v.~22, n.~4, p. 367--381,
+  2004.}
 
 \bibitem[Holm 1979]{holm-1979}
 \abntrefinfo{Holm}{HOLM}{1979}
@@ -41,39 +47,53 @@
 \emph{Scandinavian Journal of Statistics}, v.~6, n.~2, p. 65--70, 1979.
 Dispon{\'\i}vel em: \url{https://www.jstor.org/stable/4615733}.}
 
+\bibitem[{J. P. Morgan} e {Reuters} 1996]{riskmetrics-1996}
+\abntrefinfo{{J. P. Morgan} e {Reuters}}{{J. P. Morgan}; {Reuters}}{1996}
+{{J. P. Morgan}; {Reuters}. \emph{{RiskMetrics} Technical Document}.
+4. ed. New York, 1996. Dispon{\'\i}vel em:
+  \url{https://www.msci.com/research-and-insights/paper/1996-riskmetrics-technical-document}.
+  Acesso em: 27 Nov. 2026.}
+
 \bibitem[Kupiec 1995]{kupiec-1995}
 \abntrefinfo{Kupiec}{KUPIEC}{1995}
-{KUPIEC, P.~H. Techniques for verifying the accuracy of risk measurement models.
+{KUPIEC, P.~H. Techniques for verifying the accuracy of risk measurement
+  models.
 \emph{The Journal of Derivatives}, v.~3, n.~2, p. 73--84, 1995.}
-
-\bibitem[Longerstaey e More 1996]{longerstaey-morE-1996}
-\abntrefinfo{Longerstaey e More}{LONGERSTAEY; MORE}{1996}
-{LONGERSTAEY, J.; MORE, V. (Ed.). \emph{RiskMetrics Technical Document}.
-4. ed. New York, 1996.}
 
 \bibitem[Newey e West 1987]{newey-west-1987}
 \abntrefinfo{Newey e West}{NEWEY; WEST}{1987}
-{NEWEY, W.~K.; WEST, K.~D. A simple, positive semi-definite, heteroskedasticity and autocorrelation consistent covariance matrix.
+{NEWEY, W.~K.; WEST, K.~D. A simple, positive semi-definite, heteroskedasticity
+  and autocorrelation consistent covariance matrix.
 \emph{Econometrica}, v.~55, n.~3, p. 703--708, 1987.}
 
 \bibitem[Palassi, Lima e Scardino 2026]{project-atam}
 \abntrefinfo{Palassi, Lima e Scardino}{PALASSI; LIMA; SCARDINO}{2026a}
-{PALASSI, G. C.~P.; LIMA, G. H. V.~d.; SCARDINO, G. \emph{Intraday Risk Engine: Architecture Evaluation Report}. 2026.
-Dispon{\'\i}vel em: \url{https://github.com/gustavoscardino/intraday-risk-engine/blob/63a7d00ffd9fa7339e39518fd0a028361d6c8d62/atam/results/report.txt}. Acesso em: 22 Nov. 2026.}
+{PALASSI, G. C.~P.; LIMA, G. H. V.~d.; SCARDINO, G. \emph{Intraday Risk Engine:
+  Architecture Evaluation Report}. 2026.
+Dispon{\'\i}vel em:
+  \url{https://github.com/gustavoscardino/intraday-risk-engine/blob/63a7d00ffd9fa7339e39518fd0a028361d6c8d62/atam/results/report.txt}.
+  Acesso em: 22 Nov. 2026.}
 
 \bibitem[Palassi, Lima e Scardino 2026]{project-data}
 \abntrefinfo{Palassi, Lima e Scardino}{PALASSI; LIMA; SCARDINO}{2026b}
-{PALASSI, G. C.~P.; LIMA, G. H. V.~d.; SCARDINO, G. \emph{Intraday Risk Engine: Data Description and File Formats}. 2026.
-Dispon{\'\i}vel em: \url{https://github.com/gustavoscardino/intraday-risk-engine/blob/63a7d00ffd9fa7339e39518fd0a028361d6c8d62/data/README.md}. Acesso em: 22 Nov. 2026.}
+{PALASSI, G. C.~P.; LIMA, G. H. V.~d.; SCARDINO, G. \emph{Intraday Risk Engine:
+  Data Description and File Formats}. 2026.
+Dispon{\'\i}vel em:
+  \url{https://github.com/gustavoscardino/intraday-risk-engine/blob/63a7d00ffd9fa7339e39518fd0a028361d6c8d62/data/README.md}.
+  Acesso em: 22 Nov. 2026.}
 
 \bibitem[Palassi, Lima e Scardino 2026]{project-comparison}
 \abntrefinfo{Palassi, Lima e Scardino}{PALASSI; LIMA; SCARDINO}{2026c}
-{PALASSI, G. C.~P.; LIMA, G. H. V.~d.; SCARDINO, G. \emph{Intraday Risk Engine: Matched Model Comparison Report}. 2026.
-Dispon{\'\i}vel em: \url{https://github.com/gustavoscardino/intraday-risk-engine/blob/27d1c3077f25da2c80db31f9780510c966e484dc/realized\_caviar/comparison/report.txt}. Acesso em: 22 Nov. 2026.}
+{PALASSI, G. C.~P.; LIMA, G. H. V.~d.; SCARDINO, G. \emph{Intraday Risk Engine:
+  Matched Model Comparison Report}. 2026.
+Dispon{\'\i}vel em:
+  \url{https://github.com/gustavoscardino/intraday-risk-engine/blob/27d1c3077f25da2c80db31f9780510c966e484dc/realized\_caviar/comparison/report.txt}.
+  Acesso em: 22 Nov. 2026.}
 
 \bibitem[Wang, Gerlach e Chen 2018]{wang-gerlach-chen-2018}
 \abntrefinfo{Wang, Gerlach e Chen}{WANG; GERLACH; CHEN}{2018}
-{WANG, C.; GERLACH, R.; CHEN, Q. \emph{A Semi-parametric Realized Joint Value-at-Risk and Expected Shortfall Regression Framework}. 2018.
+{WANG, C.; GERLACH, R.; CHEN, Q. \emph{A Semi-parametric Realized Joint
+  Value-at-Risk and Expected Shortfall Regression Framework}. 2018.
 ArXiv preprint, arXiv:1807.02422.
 Dispon{\'\i}vel em: \url{https://arxiv.org/abs/1807.02422}.}
 
